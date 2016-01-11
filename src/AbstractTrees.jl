@@ -1,6 +1,9 @@
 module AbstractTrees
 
-export print_tree, TreeCharSet
+export print_tree, TreeCharSet, Leaves, PostOrderDFS, indenumerate, Tree,
+    AnnotationNode
+
+import Base: getindex, setindex!, start, next, done, nextind, print, show
 
 # This package is intended to provide an abstract interface for working.
 # Though the package itself is not particularly sophisticated, it defines
@@ -20,7 +23,7 @@ has_children(x) = children(x) !== ()
 
 # Print a single node. Override this if you want your print function to print
 # part of the tree by default
-printnode(io::IO, node) = print(io,node)
+printnode(io::IO, node) = showcompact(io,node)
 
 # Special cases
 
@@ -89,14 +92,19 @@ Dict{ASCIIString,Any}("b"=>['c','d'],"a"=>"b")
 ```
 
 """
-function print_tree(io::IO, tree, maxdepth = 5; depth = 0, active_levels = Int[],
-    charset = TreeCharSet())
-    printnode(io, tree)
+function _print_tree(printnode::Function, io::IO, tree, maxdepth = 5; depth = 0, active_levels = Int[],
+    charset = TreeCharSet(), withinds = false, inds = [])
+    if withinds
+        printnode(io, tree, inds)
+    else
+        printnode(io, tree)
+    end
     println(io)
     c = children(tree)
     if c !== ()
         i = start(c)
         while !done(c,i)
+            oldi = i
             child, i = next(c,i)
             active = false
             child_active_levels = active_levels
@@ -108,11 +116,172 @@ function print_tree(io::IO, tree, maxdepth = 5; depth = 0, active_levels = Int[]
                 child_active_levels = push!(copy(active_levels), depth)
             end
             print(io, charset.dash, ' ')
-            print_tree(io, child; depth = depth + 1,
-              active_levels = child_active_levels, charset = charset)
+            print_tree(printnode, io, child; depth = depth + 1,
+              active_levels = child_active_levels, charset = charset, withinds=withinds,
+              inds = withinds ? [inds; oldi] : [])
         end
     end
 end
+print_tree(f::Function, io::IO, tree, args...; kwargs...) = _print_tree(f, io, tree, args...; kwargs...)
+print_tree(io::IO, tree, args...; kwargs...) = print_tree(printnode, io, tree, args...; kwargs...)
 
+# Tree Indexing
+immutable Tree
+    x::Any
+end
+show(io::IO, tree::Tree) = print_tree(io, tree.x)
+
+type AnnotationNode{T}
+    val::T
+    children::Array{AnnotationNode{T}}
+end
+
+children(x::AnnotationNode) = x.children
+printnode(io::IO, x::AnnotationNode) = print(io, x.val)
+
+immutable ShadowTree
+    tree::Tree
+    shadow::Tree
+end
+
+make_zip(x::ShadowTree) = zip(children(x.tree.x),children(x.shadow.x))
+
+function children(x::ShadowTree)
+    map(x->ShadowTree(Tree(x[1]), Tree(x[2])),make_zip(x))
+end
+
+start(x::ShadowTree) = start(make_zip(x))
+next(x::ShadowTree, it) = next(make_zip(x), it)
+done(x::ShadowTree, it) = done(make_zip(x), it)
+
+function make_annotations(cb, tree)
+    AnnotationNode{Any}(cb(tree), AnnotationNode{Any}[make_annotations(cb, child) for child in children(tree)])
+end
+
+function getindex(tree::Tree, indices)
+    node = tree.x
+    for idx in indices
+        node = children(node)[idx]
+    end
+    node
+end
+
+function setindex!(tree::Tree, val, indices)
+    setindex!(children(getindex(tree,indices[1:end-1])),val,indices[end])
+end
+
+
+function setindex!(tree::ShadowTree, val, indices)
+    setindex!(tree.tree, val[1], indices)
+    setindex!(tree.shadow, val[2], indices)
+end
+
+# Utitlity Iterator - Should probably be moved elsewhere
+immutable IndEnumerate{I}
+    itr::I
+end
+indenumerate(itr) = IndEnumerate(itr)
+
+start(e::IndEnumerate) = start(e.itr)
+function next(e::IndEnumerate, state)
+    n = next(e.itr,state)
+    (state, n[1]), n[2]
+end
+done(e::IndEnumerate, state) = done(e.itr, state)
+
+eltype{I}(::Type{IndEnumerate{I}}) = Tuple{Any, eltype(I)}
+
+# Tree Iterators
+
+abstract TreeIterator
+
+"""
+Iterator to visit the leaves of a tree, e.g. for the tree
+
+Any[1,Any[2,3]]
+├─ 1
+└─ Any[2,3]
+   ├─ 2
+   └─ 3
+
+we will get [1,2,3]
+"""
+immutable Leaves <: TreeIterator
+    tree::Any
+end
+
+"""
+Iterator to visit the nodes of a tree, guaranteeing that children
+will be visited before there parents.
+
+e.g. for the tree
+
+Any[1,Any[2,3]]
+├─ 1
+└─ Any[2,3]
+   ├─ 2
+   └─ 3
+
+we will get [1,2,3,Any[2,3],Any[1,Any[2,3]]]
+"""
+immutable PostOrderDFS <: TreeIterator
+    tree::Any
+end
+
+function depthfirstinds(node)
+    inds = []
+    c = children(node)
+    while !isempty(c)
+        push!(inds,1)
+        node = first(c)
+        c = children(node)
+    end
+    inds
+end
+
+function nextind{T}(ti::TreeIterator, idxs::Array{T})
+    tree = ti.tree
+    if length(idxs) == 0
+        return nothing
+    elseif length(idxs) == 1
+        c = children(tree)
+        ind = nextind(c, idxs[1])
+        if isa(ti, PostOrderDFS) && done(c, ind)
+            return []
+        end
+        return start(ti, ind; c = c)
+    end
+    active_idxs = copy(idxs)
+    node = Tree(tree)[active_idxs[1:end-1]]
+    while node != tree
+        ind = pop!(active_idxs)
+        nodeleaves = typeof(ti)(node)
+        ni = nextind(nodeleaves, [ind])
+        if !done(nodeleaves, ni)
+            return vcat(active_idxs, ni)
+        end
+        node = Tree(tree)[active_idxs[1:end-1]]
+    end
+    return nextind(ti, [idxs[1]])
+end
+
+function done(leaves::Leaves, idxs)
+    idxs[1] > length(children(leaves.tree))
+end
+
+done(ti::PostOrderDFS, idxs::Void) = true
+done(ti::PostOrderDFS, idxs::Array) = false
+
+function start(ti::TreeIterator, ind=1; c = children(ti.tree))
+    if ind <= length(c)
+        return [ind, depthfirstinds(c[ind])...]
+    else
+        return [ind]
+    end
+end
+
+function next(ti::TreeIterator, idxs)
+    (Tree(ti.tree)[idxs], nextind(ti, idxs))
+end
 
 end # module
