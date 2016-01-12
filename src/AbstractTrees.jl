@@ -35,8 +35,8 @@ children(x::AbstractString) = ()
 # create a special iterator that `children` on `Associative` returns.
 # Even better, iteration over associatives should return pairs.
 
-printnode{K,V}(io::IO, kv::Tuple{K,V}) = printnode(io,kv[1])
-children{K,V}(kv::Tuple{K,V}) = kv[2]
+printnode{K,V}(io::IO, kv::Pair{K,V}) = printnode(io,kv[1])
+children{K,V}(kv::Pair{K,V}) = kv[2]
 
 # Utilities
 
@@ -93,7 +93,7 @@ Dict{ASCIIString,Any}("b"=>['c','d'],"a"=>"b")
 
 """
 function _print_tree(printnode::Function, io::IO, tree, maxdepth = 5; depth = 0, active_levels = Int[],
-    charset = TreeCharSet(), withinds = false, inds = [])
+    charset = TreeCharSet(), withinds = false, inds = [], from = nothing, to = nothing)
     if withinds
         printnode(io, tree, inds)
     else
@@ -102,8 +102,8 @@ function _print_tree(printnode::Function, io::IO, tree, maxdepth = 5; depth = 0,
     println(io)
     c = children(tree)
     if c !== ()
-        i = start(c)
-        while !done(c,i)
+        i = from === nothing ? start(c) : from
+        while !done(c,i) && (to === nothing || i !== to)
             oldi = i
             child, i = next(c,i)
             active = false
@@ -154,8 +154,9 @@ start(x::ShadowTree) = start(make_zip(x))
 next(x::ShadowTree, it) = next(make_zip(x), it)
 done(x::ShadowTree, it) = done(make_zip(x), it)
 
-function make_annotations(cb, tree)
-    AnnotationNode{Any}(cb(tree), AnnotationNode{Any}[make_annotations(cb, child) for child in children(tree)])
+function make_annotations(cb, tree, s)
+    s = cb(tree, s)
+    AnnotationNode{Any}(s, AnnotationNode{Any}[make_annotations(cb, child, s) for child in children(tree)])
 end
 
 function getindex(tree::Tree, indices)
