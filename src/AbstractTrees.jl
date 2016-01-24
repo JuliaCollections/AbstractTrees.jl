@@ -1,9 +1,10 @@
 module AbstractTrees
 
 export print_tree, TreeCharSet, Leaves, PostOrderDFS, indenumerate, Tree,
-    AnnotationNode
+    AnnotationNode, StatelessBFS, IndEnumerate, treemap
 
-import Base: getindex, setindex!, start, next, done, nextind, print, show
+import Base: getindex, setindex!, start, next, done, nextind, print, show,
+    eltype
 
 # This package is intended to provide an abstract interface for working.
 # Though the package itself is not particularly sophisticated, it defines
@@ -27,8 +28,9 @@ printnode(io::IO, node) = showcompact(io,node)
 
 # Special cases
 
-# Don't consider strings tree-iterable in general
+# Don't consider strings or reals tree-iterable in general
 children(x::AbstractString) = ()
+children(x::Real) = ()
 
 # To support iteration over associatives, define printnode on Tuples to return
 # the first element. If this doesn't work well in practice it may be better to
@@ -283,6 +285,142 @@ end
 
 function next(ti::TreeIterator, idxs)
     (Tree(ti.tree)[idxs], nextind(ti, idxs))
+end
+
+"""
+Iterator to visit the nodes of a tree, all nodes of a level will be visited
+before their children
+
+e.g. for the tree
+
+Any[1,Any[2,3]]
+├─ 1
+└─ Any[2,3]
+   ├─ 2
+   └─ 3
+
+we will get [Any[1,Any[2,3]],1,Any[2,3],2,3]
+
+WARNING: This is O(n^2), only use this if you know you need it, as opposed to
+a more standard statefull approach.
+"""
+immutable StatelessBFS <: TreeIterator
+    tree::Any
+end
+start(ti::StatelessBFS) = []
+
+function descend_left(newinds, next_node, level)
+    # Go down until we are at the correct level or a dead end
+    while length(newinds) != level
+        cs = children(next_node)
+        if isempty(cs)
+            break
+        end
+        push!(newinds, 1)
+        next_node = first(cs)
+    end
+    return newinds
+end
+
+function nextind_or_deadend(tree, ind, level)
+    current_level = active_level = length(ind)
+    active_inds = copy(ind)
+    # Go up until there is a right neighbor
+    while current_level > 0
+        # Check for next node at the current level
+        active_inds = ind[1:current_level-1]
+        parent = Tree(tree)[active_inds]
+        cur_child = ind[current_level]
+        ni = nextind(children(parent), cur_child)
+        current_level -= 1
+        if !done(children(parent), ni)
+            newinds = [active_inds; ni]
+            next_node = children(parent)[ni]
+            return descend_left(newinds, next_node, level)
+        end
+    end
+    return nothing
+end
+
+"""
+Stateless level-order bfs iteration. The algorithm is as follows:
+
+Go up. If there is a right neighbor, go right, then left until you reach the
+same level. If you reach the root, go left until you reach the next level.
+"""
+function next(ti::StatelessBFS, ind)
+    cur_node = Tree(ti.tree)[ind]
+    org_level = active_level = length(ind)
+    newinds = ind
+    while true
+        newinds = nextind_or_deadend(ti.tree, newinds, active_level)
+        if newinds === nothing
+            active_level += 1
+            if active_level > org_level + 1
+                return (cur_node,nothing)
+            end
+            newinds = descend_left([], ti.tree, active_level)
+        end
+        if length(newinds) == active_level
+            break
+        end
+    end
+    (cur_node,newinds)
+end
+
+done(ti::StatelessBFS, idxs::Void) = true
+done(ti::StatelessBFS, idxs::Array) = false
+
+
+function map_to!{T,F}(f::F, offs, dest::AbstractArray{T}, A::AbstractArray)
+    # map to dest array, checking the type of each result. if a result does not
+    # match, widen the result type and re-dispatch.
+    for i = offs:length(A)
+        @inbounds Ai = A[i]
+        el = f(Ai)
+        S = typeof(el)
+        if S === T || S <: T
+            @inbounds dest[i] = el::T
+        else
+            R = typejoin(T, S)
+            new = similar(dest, R)
+            copy!(new,1, dest,1, i-1)
+            @inbounds new[i] = el
+            return map_to!(f, i+1, new, A)
+        end
+    end
+    return dest
+end
+
+# Mapping over trees
+function treemap(f::Function, tree::PostOrderDFS)
+    new_tree = Any[Union{}[]]
+    current_length = 0
+    for (ind, node) in indenumerate(tree)
+        while length(new_tree) < length(ind)
+            push!(new_tree, Union{}[])
+        end
+        thechildren = Union{}[]
+        if length(ind) < length(new_tree)
+            thechildren = pop!(new_tree)
+        end
+        if ind == []
+            return f(node, thechildren)
+        end
+        siblings = new_tree[end]
+        el = f(node, thechildren)
+        S = typeof(el)
+        T = eltype(siblings)
+        if S === T || S <: T
+            push!(siblings, el)
+        else
+            R = typejoin(T, S)
+            new = similar(siblings, R)
+            copy!(new,1,siblings,1,length(siblings))
+            push!(new,el)
+            new_tree[end] = new
+        end
+    end
 end
 
 end # module
