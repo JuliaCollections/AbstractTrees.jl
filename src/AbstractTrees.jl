@@ -131,6 +131,7 @@ print_tree(io::IO, tree, args...; kwargs...) = print_tree(printnode, io, tree, a
 immutable Tree
     x::Any
 end
+Tree(x::Tree) = x
 show(io::IO, tree::Tree) = print_tree(io, tree.x)
 
 type AnnotationNode{T}
@@ -230,6 +231,7 @@ we will get [1,2,3,Any[2,3],Any[1,Any[2,3]]]
 immutable PostOrderDFS <: TreeIterator
     tree::Any
 end
+PostOrderDFS(tree::Tree) = PostOrderDFS(tree.x)
 
 function depthfirstinds(node)
     inds = []
