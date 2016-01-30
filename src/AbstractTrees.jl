@@ -1,10 +1,13 @@
 module AbstractTrees
 
 export print_tree, TreeCharSet, Leaves, PostOrderDFS, indenumerate, Tree,
-    AnnotationNode, StatelessBFS, IndEnumerate, treemap
+    AnnotationNode, StatelessBFS, IndEnumerate, treemap, treemap!, PreOrderDFS,
+    ShadowTree
 
 import Base: getindex, setindex!, start, next, done, nextind, print, show,
     eltype
+
+abstract AbstractShadowTree
 
 # This package is intended to provide an abstract interface for working.
 # Though the package itself is not particularly sophisticated, it defines
@@ -39,6 +42,8 @@ children(x::Real) = ()
 
 printnode{K,V}(io::IO, kv::Pair{K,V}) = printnode(io,kv[1])
 children{K,V}(kv::Pair{K,V}) = kv[2]
+
+nextind(x::Tuple, i::Integer) = i+1
 
 # Utilities
 
@@ -132,6 +137,7 @@ immutable Tree
     x::Any
 end
 Tree(x::Tree) = x
+Tree(x::AbstractShadowTree) = x
 show(io::IO, tree::Tree) = print_tree(io, tree.x)
 
 type AnnotationNode{T}
@@ -142,20 +148,22 @@ end
 children(x::AnnotationNode) = x.children
 printnode(io::IO, x::AnnotationNode) = print(io, x.val)
 
-immutable ShadowTree
+immutable ShadowTree <: AbstractShadowTree
     tree::Tree
     shadow::Tree
 end
+first_tree(x::ShadowTree) = x.tree
+second_tree(x::ShadowTree) = x.shadow
 
-make_zip(x::ShadowTree) = zip(children(x.tree.x),children(x.shadow.x))
+make_zip(x::AbstractShadowTree) = zip(children(x.tree.x),children(x.shadow.x))
 
-function children(x::ShadowTree)
-    map(x->ShadowTree(Tree(x[1]), Tree(x[2])),make_zip(x))
+function children(x::AbstractShadowTree)
+    map(res->typeof(x)(res[1], res[2]),make_zip(x))
 end
 
-start(x::ShadowTree) = start(make_zip(x))
-next(x::ShadowTree, it) = next(make_zip(x), it)
-done(x::ShadowTree, it) = done(make_zip(x), it)
+start(x::AbstractShadowTree) = start(make_zip(x))
+next(x::AbstractShadowTree, it) = next(make_zip(x), it)
+done(x::AbstractShadowTree, it) = done(make_zip(x), it)
 
 function make_annotations(cb, tree, s)
     s = cb(tree, s)
@@ -174,11 +182,20 @@ function setindex!(tree::Tree, val, indices)
     setindex!(children(getindex(tree,indices[1:end-1])),val,indices[end])
 end
 
-
-function setindex!(tree::ShadowTree, val, indices)
-    setindex!(tree.tree, val[1], indices)
-    setindex!(tree.shadow, val[2], indices)
+function getindex(tree::AbstractShadowTree, indices)
+    typeof(tree)(Tree(first_tree(tree))[indices],Tree(second_tree(tree))[indices])
 end
+
+function setindex!(tree::AbstractShadowTree, val, indices)
+    setindex!(Tree(first_tree(tree)), first_tree(val), indices)
+    setindex!(Tree(second_tree(tree)), second_tree(val), indices)
+end
+
+function setindex!(tree::AbstractShadowTree, val::Tuple, indices)
+    setindex!(Tree(first_tree(tree)), val[1], indices)
+    setindex!(Tree(second_tree(tree)), val[2], indices)
+end
+
 
 # Utitlity Iterator - Should probably be moved elsewhere
 immutable IndEnumerate{I}
@@ -233,6 +250,28 @@ immutable PostOrderDFS <: TreeIterator
 end
 PostOrderDFS(tree::Tree) = PostOrderDFS(tree.x)
 
+
+"""
+Iterator to visit the nodes of a tree, guaranteeing that parents
+will be visited before there parents.
+
+e.g. for the tree
+
+Any[Any[1,2],Any[3,4]]
+├─ Any[1,2]
+|  ├─ 1
+|  └─ 2
+└─ Any[3,4]
+   ├─ 3
+   └─ 4
+
+we will get [Any[Any[1,2],Any[3,4]],Any[1,2],1,2,Any[3,4],3,4]
+"""
+immutable PreOrderDFS <: TreeIterator
+    tree::Any
+end
+PreOrderDFS(tree::Tree) = PreOrderDFS(tree.x)
+
 function depthfirstinds(node)
     inds = []
     c = children(node)
@@ -270,12 +309,31 @@ function nextind{T}(ti::TreeIterator, idxs::Array{T})
     return nextind(ti, [idxs[1]])
 end
 
-function done(leaves::Leaves, idxs)
-    idxs[1] > length(children(leaves.tree))
+function nextind{T}(ti::PreOrderDFS, idxs::Array{T})
+    tree = ti.tree
+    node = Tree(tree)[idxs]
+    cs = children(node)
+    if !isempty(cs)
+        return [idxs; start(cs)]
+    end
+    active_idxs = copy(idxs)
+    while node != tree
+        node = Tree(tree)[active_idxs[1:end-1]]
+        ind = pop!(active_idxs)
+        cs = children(node)
+        ni = nextind(cs, ind)
+        if !done(cs, ni)
+            return vcat(active_idxs, ni)
+        end
+    end
+    return nothing
 end
 
-done(ti::PostOrderDFS, idxs::Void) = true
-done(ti::PostOrderDFS, idxs::Array) = false
+done(ti::TreeIterator, idxs::Void) = true
+done(ti::TreeIterator, idxs::Array) = false
+function done(leaves::Leaves, idxs::Array)
+    idxs[1] > length(children(leaves.tree))
+end
 
 function start(ti::TreeIterator, ind=1; c = children(ti.tree))
     if ind <= length(c)
@@ -288,6 +346,8 @@ end
 function next(ti::TreeIterator, idxs)
     (Tree(ti.tree)[idxs], nextind(ti, idxs))
 end
+
+start(ti::PreOrderDFS) = []
 
 """
 Iterator to visit the nodes of a tree, all nodes of a level will be visited
@@ -373,27 +433,6 @@ end
 done(ti::StatelessBFS, idxs::Void) = true
 done(ti::StatelessBFS, idxs::Array) = false
 
-
-function map_to!{T,F}(f::F, offs, dest::AbstractArray{T}, A::AbstractArray)
-    # map to dest array, checking the type of each result. if a result does not
-    # match, widen the result type and re-dispatch.
-    for i = offs:length(A)
-        @inbounds Ai = A[i]
-        el = f(Ai)
-        S = typeof(el)
-        if S === T || S <: T
-            @inbounds dest[i] = el::T
-        else
-            R = typejoin(T, S)
-            new = similar(dest, R)
-            copy!(new,1, dest,1, i-1)
-            @inbounds new[i] = el
-            return map_to!(f, i+1, new, A)
-        end
-    end
-    return dest
-end
-
 # Mapping over trees
 function treemap(f::Function, tree::PostOrderDFS)
     new_tree = Any[Union{}[]]
@@ -421,6 +460,17 @@ function treemap(f::Function, tree::PostOrderDFS)
             copy!(new,1,siblings,1,length(siblings))
             push!(new,el)
             new_tree[end] = new
+        end
+    end
+end
+
+function treemap!(f::Function, ti::PreOrderDFS)
+    for (ind, node) in indenumerate(ti)
+        new_node = f(node)
+        if new_node !== node
+            @show new_node
+            @show typeof(ti.tree)
+            Tree(ti.tree)[ind] = new_node
         end
     end
 end

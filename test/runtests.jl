@@ -10,6 +10,9 @@ AbstractTrees.print_tree(STDOUT, tree)
 @test collect(PostOrderDFS(tree)) == Any[1,2,3,Any[2,3],Any[1,Any[2,3]]]
 @test collect(StatelessBFS(tree)) == Any[Any[1,Any[2,3]],1,Any[2,3],2,3]
 
+tree2 = Any[Any[1,2],Any[3,4]]
+@test collect(PreOrderDFS(tree2)) == Any[tree2,Any[1,2],1,2,Any[3,4],3,4]
+
 immutable IntTree
     num::Int
     children::Vector{IntTree}
