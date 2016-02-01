@@ -23,3 +23,5 @@ end
     IntTree(isa(x,Int) ? x : mapreduce(x->x.num,+,0,children),
         isempty(children) ? IntTree[] : children)
 end == IntTree(6,[IntTree(1,IntTree[]),IntTree(5,[IntTree(2,IntTree[]),IntTree(3,IntTree[])])])
+
+@test collect(PostOrderDFS([])) == Any[[]]

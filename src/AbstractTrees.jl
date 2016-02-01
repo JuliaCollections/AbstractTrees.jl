@@ -165,9 +165,9 @@ start(x::AbstractShadowTree) = start(make_zip(x))
 next(x::AbstractShadowTree, it) = next(make_zip(x), it)
 done(x::AbstractShadowTree, it) = done(make_zip(x), it)
 
-function make_annotations(cb, tree, s)
-    s = cb(tree, s)
-    AnnotationNode{Any}(s, AnnotationNode{Any}[make_annotations(cb, child, s) for child in children(tree)])
+function make_annotations(cb, tree, parent, s)
+    s = cb(tree, parent, s)
+    AnnotationNode{Any}(s, AnnotationNode{Any}[make_annotations(cb, child, tree, s) for child in children(tree)])
 end
 
 function getindex(tree::Tree, indices)
@@ -176,6 +176,18 @@ function getindex(tree::Tree, indices)
         node = children(node)[idx]
     end
     node
+end
+
+function getindexhighest(tree::Tree, indices)
+    node = tree.x
+    for (i,idx) in enumerate(indices)
+        cs = children(node)
+        if idx > length(cs)
+            return (indices[1:i-1],node)
+        end
+        node = children(node)[idx]
+    end
+    (indices, node)
 end
 
 function setindex!(tree::Tree, val, indices)
@@ -336,7 +348,9 @@ function done(leaves::Leaves, idxs::Array)
 end
 
 function start(ti::TreeIterator, ind=1; c = children(ti.tree))
-    if ind <= length(c)
+    if isempty(c)
+        return []
+    elseif ind <= length(c)
         return [ind, depthfirstinds(c[ind])...]
     else
         return [ind]
@@ -446,10 +460,10 @@ function treemap(f::Function, tree::PostOrderDFS)
             thechildren = pop!(new_tree)
         end
         if ind == []
-            return f(node, thechildren)
+            return f(ind, node, thechildren)
         end
         siblings = new_tree[end]
-        el = f(node, thechildren)
+        el = f(ind, node, thechildren)
         S = typeof(el)
         T = eltype(siblings)
         if S === T || S <: T
