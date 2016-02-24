@@ -151,6 +151,8 @@ printnode(io::IO, x::AnnotationNode) = print(io, x.val)
 immutable ShadowTree <: AbstractShadowTree
     tree::Tree
     shadow::Tree
+    ShadowTree(x::Tree,y::Tree) = new(x,y)
+    ShadowTree(x,y) = ShadowTree(Tree(x),Tree(y))
 end
 first_tree(x::ShadowTree) = x.tree
 second_tree(x::ShadowTree) = x.shadow
@@ -482,8 +484,6 @@ function treemap!(f::Function, ti::PreOrderDFS)
     for (ind, node) in indenumerate(ti)
         new_node = f(node)
         if new_node !== node
-            @show new_node
-            @show typeof(ti.tree)
             Tree(ti.tree)[ind] = new_node
         end
     end
