@@ -3,7 +3,7 @@ module AbstractTrees
 
 export print_tree, TreeCharSet, Leaves, PostOrderDFS, indenumerate, Tree,
     AnnotationNode, StatelessBFS, IndEnumerate, treemap, treemap!, PreOrderDFS,
-    ShadowTree
+    ShadowTree, children
 
 import Base: getindex, setindex!, start, next, done, nextind, print, show,
     eltype
@@ -102,12 +102,17 @@ Dict{ASCIIString,Any}("b"=>['c','d'],"a"=>"b")
 """
 function _print_tree(printnode::Function, io::IO, tree, maxdepth = 5; depth = 0, active_levels = Int[],
     charset = TreeCharSet(), withinds = false, inds = [], from = nothing, to = nothing)
+    nodebuf = IOBuffer()
     if withinds
-        printnode(io, tree, inds)
+        printnode(nodebuf, tree, inds)
     else
-        printnode(io, tree)
+        printnode(nodebuf, tree)
     end
-    println(io)
+    str = takebuf_string(nodebuf)
+    for (i,line) in enumerate(split(str, '\n'))
+        i != 1 && print_prefix(io, depth, charset, active_levels)
+        println(io, line)
+    end
     c = children(tree)
     if c !== ()
         i = from === nothing ? start(c) : from
