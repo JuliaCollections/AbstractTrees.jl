@@ -103,12 +103,13 @@ Dict{ASCIIString,Any}("b"=>['c','d'],"a"=>"b")
 function _print_tree(printnode::Function, io::IO, tree, maxdepth = 5; depth = 0, active_levels = Int[],
     charset = TreeCharSet(), withinds = false, inds = [], from = nothing, to = nothing)
     nodebuf = IOBuffer()
+    isa(io, IOContext) && (nodebuf = IOContext(nodebuf, io))
     if withinds
         printnode(nodebuf, tree, inds)
     else
         printnode(nodebuf, tree)
     end
-    str = takebuf_string(nodebuf)
+    str = takebuf_string(isa(nodebuf, IOContext) ? nodebuf.io : nodebuf)
     for (i,line) in enumerate(split(str, '\n'))
         i != 1 && print_prefix(io, depth, charset, active_levels)
         println(io, line)
