@@ -36,6 +36,10 @@ printnode(io::IO, node) = showcompact(io,node)
 children(x::AbstractString) = ()
 children(x::Real) = ()
 
+# Define this here, there isn't really a good canonical package to define this
+# elsewhere
+children(x::Expr) = x.args
+
 # To support iteration over associatives, define printnode on Tuples to return
 # the first element. If this doesn't work well in practice it may be better to
 # create a special iterator that `children` on `Associative` returns.
