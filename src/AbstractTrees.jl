@@ -168,7 +168,17 @@ end
 first_tree(x::ShadowTree) = x.tree
 second_tree(x::ShadowTree) = x.shadow
 
-make_zip(x::AbstractShadowTree) = zip(children(x.tree.x),children(x.shadow.x))
+function zip_min(c1, c2)
+    n1, n2 = length(c1), length(c2)
+    if n1 < n2
+        c2 = take(c2,n1)
+    elseif n2 < n1
+        c1 = take(c1,n2)
+    end
+    zip(c1, c2)
+end
+
+make_zip(x::AbstractShadowTree) = zip_min(children(x.tree.x), children(x.shadow.x))
 
 function children(x::AbstractShadowTree)
     map(res->typeof(x)(res[1], res[2]),make_zip(x))
