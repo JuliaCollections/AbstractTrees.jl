@@ -18,7 +18,7 @@ abstract AbstractShadowTree
 # children. If an object is not iterable, assume it does not have children by
 # default.
 function children(x)
-    if applicable(start, x) && !isa(x, Integer) && !isa(x, Char)
+    if applicable(start, x) && !isa(x, Integer) && !isa(x, Char) && !isa(x, Task)
         return x
     else
         return ()
@@ -352,7 +352,7 @@ function nextind{T}(ti::PreOrderDFS, idxs::Array{T})
         return [idxs; start(cs)]
     end
     active_idxs = copy(idxs)
-    while node != tree
+    while node !== tree
         node = Tree(tree)[active_idxs[1:end-1]]
         ind = pop!(active_idxs)
         cs = children(node)
@@ -508,6 +508,7 @@ function treemap!(f::Function, ti::PreOrderDFS)
             Tree(ti.tree)[ind] = new_node
         end
     end
+    ti.tree
 end
 
 end # module
