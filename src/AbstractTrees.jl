@@ -6,7 +6,8 @@ export print_tree, TreeCharSet, Leaves, PostOrderDFS, indenumerate, Tree,
     ShadowTree, children
 
 import Base: getindex, setindex!, start, next, done, nextind, print, show,
-    eltype
+    eltype, iteratorsize, length
+using Base: SizeUnknown
 
 abstract AbstractShadowTree
 
@@ -238,6 +239,8 @@ immutable IndEnumerate{I}
 end
 indenumerate(itr) = IndEnumerate(itr)
 
+iteratorsize{I}(::Type{IndEnumerate{I}}) = iteratorsize(I)
+length(e::IndEnumerate) = length(e.itr)
 start(e::IndEnumerate) = start(e.itr)
 function next(e::IndEnumerate, state)
     n = next(e.itr,state)
@@ -284,7 +287,7 @@ immutable PostOrderDFS <: TreeIterator
     tree::Any
 end
 PostOrderDFS(tree::Tree) = PostOrderDFS(tree.x)
-
+iteratorsize(::Type{PostOrderDFS}) = SizeUnknown()
 
 """
 Iterator to visit the nodes of a tree, guaranteeing that parents
@@ -505,6 +508,7 @@ function treemap!(f::Function, ti::PreOrderDFS)
     for (ind, node) in indenumerate(ti)
         new_node = f(node)
         if new_node !== node
+            ind == Any[] && return new_node
             Tree(ti.tree)[ind] = new_node
         end
     end
