@@ -1,3 +1,4 @@
+isdefined(:AbstractTrees) && workspace()
 using AbstractTrees
 using Base.Test
 import Base: ==
@@ -19,7 +20,7 @@ immutable IntTree
 end
 ==(x::IntTree,y::IntTree) = x.num == y.num && x.children == y.children
 
-@test treemap(PostOrderDFS(tree)) do x, children
+@test treemap(PostOrderDFS(tree)) do ind, x, children
     IntTree(isa(x,Int) ? x : mapreduce(x->x.num,+,0,children),
         isempty(children) ? IntTree[] : children)
 end == IntTree(6,[IntTree(1,IntTree[]),IntTree(5,[IntTree(2,IntTree[]),IntTree(3,IntTree[])])])

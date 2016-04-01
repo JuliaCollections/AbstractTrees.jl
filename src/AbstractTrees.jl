@@ -3,7 +3,7 @@ module AbstractTrees
 
 export print_tree, TreeCharSet, Leaves, PostOrderDFS, indenumerate, Tree,
     AnnotationNode, StatelessBFS, IndEnumerate, treemap, treemap!, PreOrderDFS,
-    ShadowTree, children
+    ShadowTree, children, Leaves
 
 import Base: getindex, setindex!, start, next, done, nextind, print, show,
     eltype, iteratorsize, length
@@ -268,6 +268,7 @@ we will get [1,2,3]
 immutable Leaves <: TreeIterator
     tree::Any
 end
+iteratorsize(::Type{Leaves}) = SizeUnknown()
 
 """
 Iterator to visit the nodes of a tree, guaranteeing that children
