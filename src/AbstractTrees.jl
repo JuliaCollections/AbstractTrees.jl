@@ -309,6 +309,7 @@ immutable PreOrderDFS <: TreeIterator
     tree::Any
 end
 PreOrderDFS(tree::Tree) = PreOrderDFS(tree.x)
+iteratorsize(::Type{PreOrderDFS}) = SizeUnknown()
 
 function depthfirstinds(node)
     inds = []
@@ -410,6 +411,7 @@ immutable StatelessBFS <: TreeIterator
     tree::Any
 end
 start(ti::StatelessBFS) = []
+iteratorsize(::Type{StatelessBFS}) = SizeUnknown()
 
 function descend_left(newinds, next_node, level)
     # Go down until we are at the correct level or a dead end
