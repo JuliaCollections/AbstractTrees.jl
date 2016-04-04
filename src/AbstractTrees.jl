@@ -272,7 +272,7 @@ iteratorsize(::Type{Leaves}) = SizeUnknown()
 
 """
 Iterator to visit the nodes of a tree, guaranteeing that children
-will be visited before there parents.
+will be visited before their parents.
 
 e.g. for the tree
 
@@ -292,7 +292,11 @@ iteratorsize(::Type{PostOrderDFS}) = SizeUnknown()
 
 """
 Iterator to visit the nodes of a tree, guaranteeing that parents
-will be visited before there parents.
+will be visited before their children.
+
+Optionally takes a filter function that determines whether the iterator
+should continue iterating over a node's children (if it has any) or should
+consider that node a leaf.
 
 e.g. for the tree
 
@@ -308,8 +312,9 @@ we will get [Any[Any[1,2],Any[3,4]],Any[1,2],1,2,Any[3,4],3,4]
 """
 immutable PreOrderDFS <: TreeIterator
     tree::Any
+    filter::Function
 end
-PreOrderDFS(tree::Tree) = PreOrderDFS(tree.x)
+PreOrderDFS(tree::Tree,filter::Function=(args...)->true) = PreOrderDFS(tree.x,filter)
 iteratorsize(::Type{PreOrderDFS}) = SizeUnknown()
 
 function depthfirstinds(node)
@@ -353,7 +358,7 @@ function nextind{T}(ti::PreOrderDFS, idxs::Array{T})
     tree = ti.tree
     node = Tree(tree)[idxs]
     cs = children(node)
-    if !isempty(cs)
+    if !isempty(cs) && ti.filter(node)
         return [idxs; start(cs)]
     end
     active_idxs = copy(idxs)
