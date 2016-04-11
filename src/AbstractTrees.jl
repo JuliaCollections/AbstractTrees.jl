@@ -286,6 +286,7 @@ we will get [1,2,3,Any[2,3],Any[1,Any[2,3]]]
 """
 immutable PostOrderDFS <: TreeIterator
     tree::Any
+    PostOrderDFS(x::Any) = new(x)
 end
 PostOrderDFS(tree::Tree) = PostOrderDFS(tree.x)
 iteratorsize(::Type{PostOrderDFS}) = SizeUnknown()
@@ -313,6 +314,7 @@ we will get [Any[Any[1,2],Any[3,4]],Any[1,2],1,2,Any[3,4],3,4]
 immutable PreOrderDFS <: TreeIterator
     tree::Any
     filter::Function
+    PreOrderDFS(tree,filter::Function=(args...)->true) = new(tree,filter)
 end
 PreOrderDFS(tree::Tree,filter::Function=(args...)->true) = PreOrderDFS(tree.x,filter)
 iteratorsize(::Type{PreOrderDFS}) = SizeUnknown()
