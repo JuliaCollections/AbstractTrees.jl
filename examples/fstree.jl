@@ -3,18 +3,18 @@ import AbstractTrees: children, printnode
 import Base: start, done, next
 
 immutable Directory
-    path::UTF8String
+    path::String
 end
 
 immutable File
-    path::UTF8String
+    path::String
 end
 
 children(f::File) = ()
 
 immutable DirectoryListing
     d::Directory
-    names::Vector{UTF8String}
+    names::Vector{String}
 end
 
 children(d::Directory) = DirectoryListing(d,readdir(d.path))
