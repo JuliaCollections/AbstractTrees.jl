@@ -87,7 +87,7 @@ printing can be customized using the `charset` keyword argument.
 # Examples
 ```julia
 julia> print_tree(STDOUT,Dict("a"=>"b","b"=>['c','d']))
-Dict{ASCIIString,Any}("b"=>['c','d'],"a"=>"b")
+Dict{String,Any}("b"=>['c','d'],"a"=>"b")
 ├─ b
 │  ├─ c
 │  └─ d
@@ -96,7 +96,7 @@ Dict{ASCIIString,Any}("b"=>['c','d'],"a"=>"b")
 
 julia> print_tree(STDOUT,Dict("a"=>"b","b"=>['c','d']);
         charset = TreeCharSet('+','\\','|',"--"))
-Dict{ASCIIString,Any}("b"=>['c','d'],"a"=>"b")
+Dict{String,Any}("b"=>['c','d'],"a"=>"b")
 +-- b
 |   +-- c
 |   \-- d
