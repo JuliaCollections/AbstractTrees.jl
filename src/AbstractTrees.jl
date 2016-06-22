@@ -360,7 +360,7 @@ function nextind{T}(ti::PreOrderDFS, idxs::Array{T})
     tree = ti.tree
     node = Tree(tree)[idxs]
     cs = children(node)
-    if !isempty(cs) && ti.filter(node)
+    if ti.filter(node) && !isempty(cs)
         return [idxs; start(cs)]
     end
     active_idxs = copy(idxs)
