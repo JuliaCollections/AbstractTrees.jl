@@ -14,6 +14,56 @@ AbstractTrees.print_tree(STDOUT, tree)
 tree2 = Any[Any[1,2],Any[3,4]]
 @test collect(PreOrderDFS(tree2)) == Any[tree2,Any[1,2],1,2,Any[3,4],3,4]
 
+"""
+    A tree in which every node has 0 or 1 children
+"""
+immutable OneTree
+    nodes::Vector{Int}
+end
+AbstractTrees.treekind(::Type{OneTree}) = AbstractTrees.IndexedTree()
+AbstractTrees.siblinglinks(::Type{OneTree}) = AbstractTrees.StoredSiblings()
+AbstractTrees.relative_state(t::OneTree, _, __::Int) = 1
+Base.getindex(t::OneTree, idx) = t.nodes[idx]
+AbstractTrees.childindices(tree::OneTree, node::Int) =
+    (ret = (node == 0 || tree[node] == 0) ? () : (tree[node],))
+AbstractTrees.children(tree::OneTree) = AbstractTrees.children(tree, tree)
+AbstractTrees.rootstate(tree::OneTree) = 1
+AbstractTrees.printnode(io::IO, t::OneTree) =
+    AbstractTrees.printnode(io::IO, t[AbstractTrees.rootstate(t)])
+
+ot = OneTree([2,3,4,0])
+AbstractTrees.print_tree(STDOUT, ot)
+@test collect(AbstractTrees.Leaves(ot)) == [0]
+@test collect(AbstractTrees.PreOrderDFS(ot)) == [2,3,4,0]
+@test collect(AbstractTrees.PostOrderDFS(ot)) == [0,4,3,2]
+
+"""
+    Stores an explicit parent for some other kind of tree
+"""
+immutable ParentTree{T}
+    tree::T
+    parents::Vector{Int}
+end
+AbstractTrees.treekind{T}(::Type{ParentTree{T}}) = AbstractTrees.treekind(T)
+AbstractTrees.parentlinks{T}(::Type{ParentTree{T}}) = AbstractTrees.StoredParents()
+AbstractTrees.siblinglinks{T}(::Type{ParentTree{T}}) = AbstractTrees.siblinglinks(T)
+AbstractTrees.relative_state(t::ParentTree, _, __::Int) =
+    AbstractTrees.relative_state(t.tree, _, __)
+Base.getindex(t::ParentTree, idx) = t.tree[idx]
+AbstractTrees.childindices(tree::ParentTree, node::Int) = AbstractTrees.childindices(tree.tree, node)
+AbstractTrees.children(tree::ParentTree) = AbstractTrees.children(tree, tree)
+AbstractTrees.rootstate(tree::ParentTree) = AbstractTrees.rootstate(tree.tree)
+AbstractTrees.parentind(tree::ParentTree, node::Int) = tree.parents[node]
+AbstractTrees.printnode(io::IO, t::ParentTree) =
+    AbstractTrees.printnode(io::IO, t[AbstractTrees.rootstate(t)])
+
+pt = ParentTree(ot,[0,1,2,3])
+AbstractTrees.print_tree(STDOUT, pt)
+@test collect(AbstractTrees.Leaves(pt)) == [0]
+@test collect(AbstractTrees.PreOrderDFS(pt)) == [2,3,4,0]
+@test collect(AbstractTrees.PostOrderDFS(pt)) == [0,4,3,2]
+
+#=
 immutable IntTree
     num::Int
     children::Vector{IntTree}
@@ -26,3 +76,4 @@ end
 end == IntTree(6,[IntTree(1,IntTree[]),IntTree(5,[IntTree(2,IntTree[]),IntTree(3,IntTree[])])])
 
 @test collect(PostOrderDFS([])) == Any[[]]
+=#

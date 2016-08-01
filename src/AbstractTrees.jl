@@ -6,10 +6,13 @@ export print_tree, TreeCharSet, Leaves, PostOrderDFS, indenumerate, Tree,
     ShadowTree, children, Leaves
 
 import Base: getindex, setindex!, start, next, done, nextind, print, show,
-    eltype, iteratorsize, length
+    eltype, iteratorsize, length, push!, pop!
 using Base: SizeUnknown
 
 abstract AbstractShadowTree
+
+include("traits.jl")
+include("implicitstacks.jl")
 
 # This package is intended to provide an abstract interface for working.
 # Though the package itself is not particularly sophisticated, it defines
@@ -106,20 +109,23 @@ Dict{String,Any}("b"=>['c','d'],"a"=>"b")
 
 """
 function _print_tree(printnode::Function, io::IO, tree, maxdepth = 5; depth = 0, active_levels = Int[],
-    charset = TreeCharSet(), withinds = false, inds = [], from = nothing, to = nothing)
+    charset = TreeCharSet(), withinds = false, inds = [], from = nothing, to = nothing, roottree = tree)
     nodebuf = IOBuffer()
     isa(io, IOContext) && (nodebuf = IOContext(nodebuf, io))
     if withinds
         printnode(nodebuf, tree, inds)
     else
-        printnode(nodebuf, tree)
+        tree != roottree && isa(treekind(roottree), IndexedTree) ?
+            printnode(nodebuf, roottree[tree]) :
+            printnode(nodebuf, tree)
     end
     str = takebuf_string(isa(nodebuf, IOContext) ? nodebuf.io : nodebuf)
     for (i,line) in enumerate(split(str, '\n'))
         i != 1 && print_prefix(io, depth, charset, active_levels)
         println(io, line)
     end
-    c = children(tree)
+    c = isa(treekind(roottree), IndexedTree) ?
+        childindices(roottree, tree) : children(roottree, tree)
     if c !== ()
         i = from === nothing ? start(c) : from
         while !done(c,i) && (to === nothing || i !== to)
@@ -137,7 +143,7 @@ function _print_tree(printnode::Function, io::IO, tree, maxdepth = 5; depth = 0,
             print(io, charset.dash, ' ')
             print_tree(printnode, io, child; depth = depth + 1,
               active_levels = child_active_levels, charset = charset, withinds=withinds,
-              inds = withinds ? [inds; oldi] : [])
+              inds = withinds ? [inds; oldi] : [], roottree = roottree)
         end
     end
 end
@@ -201,6 +207,9 @@ function getindex(tree::Tree, indices)
     end
     node
 end
+getindex{T<:ImplicitNodeStack}(tree::Tree, indices::T) =
+    getindex(tree, indices.idx_stack.stack)
+
 
 function getindexhighest(tree::Tree, indices)
     node = tree.x
@@ -217,6 +226,8 @@ end
 function setindex!(tree::Tree, val, indices)
     setindex!(children(getindex(tree,indices[1:end-1])),val,indices[end])
 end
+setindex!{T<:ImplicitNodeStack}(tree::Tree, val, indices::Nullable{T}) =
+    setindex!(tree, val, get(indices).idx_stack.stack)
 
 function getindex(tree::AbstractShadowTree, indices)
     typeof(tree)(Tree(first_tree(tree))[indices],Tree(second_tree(tree))[indices])
@@ -252,7 +263,7 @@ eltype{I}(::Type{IndEnumerate{I}}) = Tuple{Any, eltype(I)}
 
 # Tree Iterators
 
-abstract TreeIterator
+abstract TreeIterator{T}
 
 """
 Iterator to visit the leaves of a tree, e.g. for the tree
@@ -265,10 +276,10 @@ Any[1,Any[2,3]]
 
 we will get [1,2,3]
 """
-immutable Leaves <: TreeIterator
-    tree::Any
+immutable Leaves{T} <: TreeIterator{T}
+    tree::T
 end
-iteratorsize(::Type{Leaves}) = SizeUnknown()
+iteratorsize{T}(::Type{Leaves{T}}) = SizeUnknown()
 
 """
 Iterator to visit the nodes of a tree, guaranteeing that children
@@ -311,92 +322,140 @@ Any[Any[1,2],Any[3,4]]
 
 we will get [Any[Any[1,2],Any[3,4]],Any[1,2],1,2,Any[3,4],3,4]
 """
-immutable PreOrderDFS <: TreeIterator
-    tree::Any
+immutable PreOrderDFS{T} <: TreeIterator
+    tree::T
     filter::Function
     PreOrderDFS(tree,filter::Function=(args...)->true) = new(tree,filter)
 end
+PreOrderDFS{T}(tree::T,filter::Function=(args...)->true) = PreOrderDFS{T}(tree,filter)
 PreOrderDFS(tree::Tree,filter::Function=(args...)->true) = PreOrderDFS(tree.x,filter)
-iteratorsize(::Type{PreOrderDFS}) = SizeUnknown()
+iteratorsize{T}(::Type{PreOrderDFS{T}}) = SizeUnknown()
 
-function depthfirstinds(node)
-    inds = []
-    c = children(node)
-    while !isempty(c)
-        push!(inds,1)
-        node = first(c)
-        c = children(node)
-    end
-    inds
-end
+# State depends on what kind of tree we have:
+#   - Parents/Siblings are not stored:
+#       - RegularTree: ImplicitNodeStack
+#       - IndexedTree: ImplicitIndexStack
+#   - Parents/Siblings are stored:
+#       - RegularTree: Nodes
+#       - IndexedTree: Indices
+#
+childstates(tree, state, ::IndexedTree) = childindices(tree, state)
+childstates(tree, state, ::RegularTree) = children(tree, state)
+parentstate(tree, state, ::IndexedTree) = parentind(tree, state)
+parentstate(tree, state, ::RegularTree) = parent(tree, state)
 
-function nextind{T}(ti::TreeIterator, idxs::Array{T})
-    tree = ti.tree
-    if length(idxs) == 0
-        return nothing
-    elseif length(idxs) == 1
-        c = children(tree)
-        ind = nextind(c, idxs[1])
-        if isa(ti, PostOrderDFS) && done(c, ind)
-            return []
-        end
-        return start(ti, ind; c = c)
-    end
-    active_idxs = copy(idxs)
-    node = Tree(tree)[active_idxs[1:end-1]]
-    while node != tree
-        ind = pop!(active_idxs)
-        nodeleaves = typeof(ti)(node)
-        ni = nextind(nodeleaves, [ind])
-        if !done(nodeleaves, ni)
-            return vcat(active_idxs, ni)
-        end
-        node = Tree(tree)[active_idxs[1:end-1]]
-    end
-    return nextind(ti, [idxs[1]])
-end
+parentstate(tree, state) = parentstate(tree, state, treekind(tree))
 
-function nextind{T}(ti::PreOrderDFS, idxs::Array{T})
-    tree = ti.tree
-    node = Tree(tree)[idxs]
-    cs = children(node)
-    if ti.filter(node) && !isempty(cs)
-        return [idxs; start(cs)]
-    end
-    active_idxs = copy(idxs)
-    while node !== tree
-        node = Tree(tree)[active_idxs[1:end-1]]
-        ind = pop!(active_idxs)
-        cs = children(node)
-        ni = nextind(cs, ind)
-        if !done(cs, ni)
-            return vcat(active_idxs, ni)
-        end
-    end
-    return nothing
-end
+update_state!(old_state, cs, idx) = next(cs, idx)[1]
 
-done(ti::TreeIterator, idxs::Void) = true
-done(ti::TreeIterator, idxs::Array) = false
-function done(leaves::Leaves, idxs::Array)
-    idxs[1] > length(children(leaves.tree))
-end
-
-function start(ti::TreeIterator, ind=1; c = children(ti.tree))
-    if isempty(c)
-        return []
-    elseif ind <= length(c)
-        return [ind, depthfirstinds(c[ind])...]
+function firststate{T}(ti::PreOrderDFS{T})
+    if isa(parentlinks(ti.tree), StoredParents) &&
+            isa(siblinglinks(ti.tree), SiblingLinks)
+        rootstate(ti.tree)
     else
-        return [ind]
+        state = ImplicitIndexStack(idxtype(ti.tree)[])
+        if !isa(treekind(typeof(ti.tree)), IndexedTree)
+            state = ImplicitNodeStack(nodetype(ti.tree)[], state)
+        end
+        state
     end
 end
-
-function next(ti::TreeIterator, idxs)
-    (Tree(ti.tree)[idxs], nextind(ti, idxs))
+function firststate(ti::Union{Leaves, PostOrderDFS})
+    state = firststate(PreOrderDFS(ti.tree))
+    while true
+        css = childstates(ti.tree, state)
+        isempty(css) && break
+        state = first(css)
+    end
+    state
 end
 
-start(ti::PreOrderDFS) = []
+nextind(::Base.Generator, idx) = idx + 1
+relative_state(tree, parentstate, childstate::ImplicitIndexStack) =
+    childstate.stack[end]
+relative_state(tree, parentstate, childstate::ImplicitNodeStack) =
+    relative_state(tree, parentstate, childstate.idx_stack)
+function nextsibling(tree, state)
+    ps = parentstate(tree, state)
+    cs = childstates(tree, ps)
+    isempty(cs) && return Nullable{typeof(state)}()
+    new_state = nextind(cs, relative_state(tree, ps, state))
+    if done(cs, new_state)
+        return Nullable{typeof(state)}()
+    end
+    Nullable(update_state!(ps, children(tree, ps), new_state))
+end
+
+isroot(tree, state, ::RegularTree) = tree == state
+isroot(tree, state, ::IndexedTree) = state == rootstate(tree)
+isroot(tree, state) = isroot(tree, state, treekind(tree))
+
+immutable Subtree{T,S}
+    tree::T
+    state::S
+end
+children(tree::Subtree) = children(tree.tree, tree.state)
+nodetype(tree::Subtree) = nodetype(tree.tree)
+idxtype(tree::Subtree) = idxtype(tree.tree)
+
+joinstate(a, b) = b
+
+function stepstate(ti::TreeIterator, state)
+    if isa(ti, PreOrderDFS) && ti.filter(getnode(ti.tree, state))
+        ccs = childstates(ti.tree, state)
+        !isempty(ccs) && return Nullable(first(ccs))
+    end
+    while !isroot(ti.tree, state)
+        nextstate = nextsibling(ti.tree, state)
+        if !isnull(nextstate)
+            return Nullable(joinstate(get(nextstate),firststate(
+                typeof(ti).name.primary(Subtree(ti.tree, get(nextstate))))))
+        end
+        state = parentstate(ti.tree, state)
+        isa(ti, PostOrderDFS) && return Nullable(state)
+    end
+    Nullable{typeof(state)}()
+end
+
+getnode(tree, ns::ImplicitIndexStack) = isempty(ns.stack) ? tree[rootstate(tree)] : tree[ns.stack[end]]
+getnode(tree, ns::ImplicitNodeStack) = isempty(ns.node_stack) ? tree : ns.node_stack[end]
+getnode(tree, ns) = isa(treekind(tree), IndexedTree) ? tree[ns] : ns
+getnode(tree::AbstractShadowTree, ns::ImplicitNodeStack) = tree[ns.idx_stack.stack]
+
+start(ti::TreeIterator) = Nullable(firststate(ti))
+next(ti::TreeIterator, state) = (getnode(ti.tree, get(state)), stepstate(ti, get(state)))
+done(ti::TreeIterator, state) = isnull(state)
+
+"""
+    Acends the tree, at each node choosing whether or not to continue.
+    Note that the parent is computed before the callback is exectuted, allowing
+    modification of the argument to the callback (as long as the overall tree
+    structure is not altered).
+"""
+function ascend(select, node)
+    isroot(node) && (select(node); return node)
+    p = parent(node)
+    while select(node) && !isroot(node)
+        node = p
+        p = parent(node)
+    end
+    node
+end
+
+"""
+    Descends the tree, at each node choosing the child given by select callback
+    or the current node if 0 is returned.
+"""
+function descend(select, tree)
+    idx = select(tree)
+    idx == 0 && return tree
+    node = children(tree)[idx]
+    while true
+        idx = select(node)
+        idx == 0 && return node
+        node = children(node)[idx]
+    end
+end
 
 """
 Iterator to visit the nodes of a tree, all nodes of a level will be visited
