@@ -226,8 +226,10 @@ end
 function setindex!(tree::Tree, val, indices)
     setindex!(children(getindex(tree,indices[1:end-1])),val,indices[end])
 end
+setindex!{T<:ImplicitNodeStack}(tree::Tree, val, indices::T) =
+    setindex!(tree, val, indices.idx_stack.stack)
 setindex!{T<:ImplicitNodeStack}(tree::Tree, val, indices::Nullable{T}) =
-    setindex!(tree, val, get(indices).idx_stack.stack)
+    setindex!(tree, val, get(indices))
 
 function getindex(tree::AbstractShadowTree, indices)
     typeof(tree)(Tree(first_tree(tree))[indices],Tree(second_tree(tree))[indices])
@@ -321,6 +323,13 @@ Any[Any[1,2],Any[3,4]]
    └─ 4
 
 we will get [Any[Any[1,2],Any[3,4]],Any[1,2],1,2,Any[3,4],3,4]
+
+# Invalidation
+Modifying the underlying tree while iterating over it, is allowed, however,
+if parents and sibling links are not explicitly stored, the identify of any
+parent of the last obtained node does not change (i.e. mutation is allowed,
+replacing nodes is not).
+
 """
 immutable PreOrderDFS{T} <: TreeIterator
     tree::T
@@ -347,6 +356,18 @@ parentstate(tree, state, ::RegularTree) = parent(tree, state)
 parentstate(tree, state) = parentstate(tree, state, treekind(tree))
 
 update_state!(old_state, cs, idx) = next(cs, idx)[1]
+
+
+immutable ImplicitRootState
+end
+getindex(x, ::ImplicitRootState) = x
+getindex(x::AbstractArray, ::ImplicitRootState) = x
+
+"""
+Trees must override with method if the state of the root is not the same as the
+tree itself (e.g. IndexedTrees should always override this method).
+"""
+rootstate(x) = ImplicitRootState()
 
 function firststate{T}(ti::PreOrderDFS{T})
     if isa(parentlinks(ti.tree), StoredParents) &&
@@ -383,7 +404,7 @@ function nextsibling(tree, state)
     if done(cs, new_state)
         return Nullable{typeof(state)}()
     end
-    Nullable(update_state!(ps, children(tree, ps), new_state))
+    Nullable(update_state!(tree, ps, children(tree, ps), new_state))
 end
 
 isroot(tree, state, ::RegularTree) = tree == state
@@ -398,7 +419,7 @@ children(tree::Subtree) = children(tree.tree, tree.state)
 nodetype(tree::Subtree) = nodetype(tree.tree)
 idxtype(tree::Subtree) = idxtype(tree.tree)
 
-joinstate(a, b) = b
+joinstate(tree, a, b) = b
 
 function stepstate(ti::TreeIterator, state)
     if isa(ti, PreOrderDFS) && ti.filter(getnode(ti.tree, state))
@@ -408,7 +429,7 @@ function stepstate(ti::TreeIterator, state)
     while !isroot(ti.tree, state)
         nextstate = nextsibling(ti.tree, state)
         if !isnull(nextstate)
-            return Nullable(joinstate(get(nextstate),firststate(
+            return Nullable(joinstate(ti.tree, get(nextstate),firststate(
                 typeof(ti).name.primary(Subtree(ti.tree, get(nextstate))))))
         end
         state = parentstate(ti.tree, state)
@@ -417,8 +438,6 @@ function stepstate(ti::TreeIterator, state)
     Nullable{typeof(state)}()
 end
 
-getnode(tree, ns::ImplicitIndexStack) = isempty(ns.stack) ? tree[rootstate(tree)] : tree[ns.stack[end]]
-getnode(tree, ns::ImplicitNodeStack) = isempty(ns.node_stack) ? tree : ns.node_stack[end]
 getnode(tree, ns) = isa(treekind(tree), IndexedTree) ? tree[ns] : ns
 getnode(tree::AbstractShadowTree, ns::ImplicitNodeStack) = tree[ns.idx_stack.stack]
 
@@ -574,12 +593,21 @@ function treemap(f::Function, tree::PostOrderDFS)
 end
 
 function treemap!(f::Function, ti::PreOrderDFS)
-    for (ind, node) in indenumerate(ti)
+    state = Nullable(firststate(ti))
+    while !isnull(state)
+        ind = get(state)
+        node = getnode(ti.tree, ind)
         new_node = f(node)
         if new_node !== node
-            ind == Any[] && return new_node
+            if isempty(ind)
+                return treemap!(PreOrderDFS(new_node)) do x
+                    x == new_node && return x
+                    f(x)
+                end
+            end
             Tree(ti.tree)[ind] = new_node
         end
+        state = stepstate(ti, ind)
     end
     ti.tree
 end

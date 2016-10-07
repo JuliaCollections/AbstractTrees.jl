@@ -63,6 +63,18 @@ AbstractTrees.print_tree(STDOUT, pt)
 @test collect(AbstractTrees.PreOrderDFS(pt)) == [2,3,4,0]
 @test collect(AbstractTrees.PostOrderDFS(pt)) == [0,4,3,2]
 
+# Test modification while iterating over PreOrderDFS
+a = [1,[2,[3]]]
+b = treemap!(PreOrderDFS(a)) do node
+    !isa(node, Vector) && return node
+    ret = unshift!(copy(node),0)
+    # And just for good measure stomp over the old node to make sure nothing
+    # is cached.
+    empty!(node)
+    ret
+end
+@assert b == Any[0,1,Any[0,2,[0,3]]]
+
 #=
 immutable IntTree
     num::Int
