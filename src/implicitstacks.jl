@@ -6,7 +6,7 @@ Base.copy(s::ImplicitIndexStack) = typeof(s)(copy(s.stack))
 """
 Keeps a stack of nodes and their corresponding indices. Note that the last node
 is not explicitly stored in the node_stack, such that length(node_stack) ==
-length(idx_stack-1) (unless we're at the root in which case both are empty)
+length(idx_stack)-1 (unless we're at the root in which case both are empty)
 """
 immutable ImplicitNodeStack{T, S} <: ImplicitStack
     node_stack::Vector{T}
