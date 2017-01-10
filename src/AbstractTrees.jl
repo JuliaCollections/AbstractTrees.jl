@@ -149,6 +149,7 @@ function _print_tree(printnode::Function, io::IO, tree, maxdepth = 5; depth = 0,
 end
 print_tree(f::Function, io::IO, tree, args...; kwargs...) = _print_tree(f, io, tree, args...; kwargs...)
 print_tree(io::IO, tree, args...; kwargs...) = print_tree(printnode, io, tree, args...; kwargs...)
+print_tree(tree, args...; kwargs...) = print_tree(STDOUT::IO, tree, args...; kwargs...)
 
 # Tree Indexing
 immutable Tree
