@@ -8,6 +8,7 @@ export print_tree, TreeCharSet, Leaves, PostOrderDFS, indenumerate, Tree,
 import Base: getindex, setindex!, start, next, done, nextind, print, show,
     eltype, iteratorsize, length, push!, pop!
 using Base: SizeUnknown
+using Compat
 
 abstract AbstractShadowTree
 
@@ -119,7 +120,7 @@ function _print_tree(printnode::Function, io::IO, tree, maxdepth = 5; depth = 0,
             printnode(nodebuf, roottree[tree]) :
             printnode(nodebuf, tree)
     end
-    str = takebuf_string(isa(nodebuf, IOContext) ? nodebuf.io : nodebuf)
+    str = String(take!(isa(nodebuf, IOContext) ? nodebuf.io : nodebuf))
     for (i,line) in enumerate(split(str, '\n'))
         i != 1 && print_prefix(io, depth, charset, active_levels)
         println(io, line)
