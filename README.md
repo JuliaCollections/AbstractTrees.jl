@@ -11,7 +11,7 @@ This package provides several utilities for working with tree-like data structur
 - `ShadowTree` is a tree object that combines two trees of equal structure into a single tree (indexing always produces another ShadowTree, but `setindex!` with tuples is allowed). Useful for adding annotation nodes to other trees without modifying that tree structure itself.
 - `Leaves` is an iterator to visit the leaves of a tree in order.
 - `PostOrderDFS` is a DFS (i.e. will vist node's children before it's lexicographically following siblings) that guarantees to visit children before their parents.
-- `PreeOrderDFS` is same as `PostOrderDFS` but visits parents before their children.
+- `PreOrderDFS` is same as `PostOrderDFS` but visits parents before their children.
 - `StatelessBFS` iterates over a tree level-by-level, but does not keep state (causing this to be O(n^2), but be able to handle changing trees).
 - `treemap` maps each node of a tree to obtain a new tree.
 - `treemap!` maps each node of a tree in place.
