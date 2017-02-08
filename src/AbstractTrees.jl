@@ -299,7 +299,7 @@ Any[1,Any[2,3]]
 
 we will get [1,2,3,Any[2,3],Any[1,Any[2,3]]]
 """
-immutable PostOrderDFS <: TreeIterator
+immutable PostOrderDFS <: TreeIterator{Any}
     tree::Any
     PostOrderDFS(x::Any) = new(x)
 end
@@ -333,10 +333,10 @@ parent of the last obtained node does not change (i.e. mutation is allowed,
 replacing nodes is not).
 
 """
-immutable PreOrderDFS{T} <: TreeIterator
+immutable PreOrderDFS{T} <: TreeIterator{T}
     tree::T
     filter::Function
-    PreOrderDFS(tree,filter::Function=(args...)->true) = new(tree,filter)
+    (::Type{PreOrderDFS{T}}){T}(tree,filter::Function=(args...)->true) = new{T}(tree,filter)
 end
 PreOrderDFS{T}(tree::T,filter::Function=(args...)->true) = PreOrderDFS{T}(tree,filter)
 PreOrderDFS(tree::Tree,filter::Function=(args...)->true) = PreOrderDFS(tree.x,filter)
@@ -423,6 +423,16 @@ idxtype(tree::Subtree) = idxtype(tree.tree)
 
 joinstate(tree, a, b) = b
 
+if isdefined(Base, :UnionAll)
+    Base.@pure function get_primary(T::DataType)
+        T.name.wrapper
+    end
+else
+    Base.@pure function get_primary(T::DataType)
+        T.name.primary
+    end
+end
+
 function stepstate(ti::TreeIterator, state)
     if isa(ti, PreOrderDFS) && ti.filter(getnode(ti.tree, state))
         ccs = childstates(ti.tree, state)
@@ -432,7 +442,7 @@ function stepstate(ti::TreeIterator, state)
         nextstate = nextsibling(ti.tree, state)
         if !isnull(nextstate)
             return Nullable(joinstate(ti.tree, get(nextstate),firststate(
-                typeof(ti).name.primary(Subtree(ti.tree, get(nextstate))))))
+                get_primary(typeof(ti))(Subtree(ti.tree, get(nextstate))))))
         end
         state = parentstate(ti.tree, state)
         isa(ti, PostOrderDFS) && return Nullable(state)
@@ -495,7 +505,7 @@ we will get [Any[1,Any[2,3]],1,Any[2,3],2,3]
 WARNING: This is O(n^2), only use this if you know you need it, as opposed to
 a more standard statefull approach.
 """
-immutable StatelessBFS <: TreeIterator
+immutable StatelessBFS <: TreeIterator{Any}
     tree::Any
 end
 start(ti::StatelessBFS) = []

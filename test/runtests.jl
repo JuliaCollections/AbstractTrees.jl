@@ -47,8 +47,8 @@ end
 AbstractTrees.treekind{T}(::Type{ParentTree{T}}) = AbstractTrees.treekind(T)
 AbstractTrees.parentlinks{T}(::Type{ParentTree{T}}) = AbstractTrees.StoredParents()
 AbstractTrees.siblinglinks{T}(::Type{ParentTree{T}}) = AbstractTrees.siblinglinks(T)
-AbstractTrees.relative_state(t::ParentTree, _, __::Int) =
-    AbstractTrees.relative_state(t.tree, _, __)
+AbstractTrees.relative_state(t::ParentTree, x, __::Int) =
+    AbstractTrees.relative_state(t.tree, x, __)
 Base.getindex(t::ParentTree, idx) = t.tree[idx]
 AbstractTrees.childindices(tree::ParentTree, node::Int) = AbstractTrees.childindices(tree.tree, node)
 AbstractTrees.children(tree::ParentTree) = AbstractTrees.children(tree, tree)
