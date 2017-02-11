@@ -1,4 +1,4 @@
-abstract ImplicitStack
+@compat abstract type ImplicitStack end
 immutable ImplicitIndexStack{S} <: ImplicitStack
     stack::Vector{S}
 end
@@ -18,7 +18,7 @@ Base.isempty(s::ImplicitIndexStack) = isempty(s.stack)
 getnode(tree, ns::ImplicitIndexStack) = isempty(ns.stack) ? tree[rootstate(tree)] :
     (@assert isa(treekind(tree), IndexedTree); tree[ns.stack[end]])
 function getnode(tree, stack::ImplicitNodeStack)
-    isempty(stack.node_stack) ? 
+    isempty(stack.node_stack) ?
     (isempty(stack.idx_stack) ? tree : children(tree)[stack.idx_stack.stack[end]]) :
     children(stack.node_stack[end])[stack.idx_stack.stack[end]]
 end
