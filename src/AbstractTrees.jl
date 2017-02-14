@@ -10,7 +10,7 @@ import Base: getindex, setindex!, start, next, done, nextind, print, show,
 using Base: SizeUnknown
 using Compat
 
-abstract AbstractShadowTree
+@compat abstract type AbstractShadowTree end
 
 include("traits.jl")
 include("implicitstacks.jl")
@@ -267,7 +267,7 @@ eltype{I}(::Type{IndEnumerate{I}}) = Tuple{Any, eltype(I)}
 
 # Tree Iterators
 
-abstract TreeIterator{T}
+@compat abstract type TreeIterator{T} end
 
 """
 Iterator to visit the leaves of a tree, e.g. for the tree

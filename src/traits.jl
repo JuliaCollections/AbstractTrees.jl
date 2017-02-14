@@ -1,4 +1,4 @@
-abstract ParentLinks
+@compat abstract type ParentLinks end
 
 """
   Indicates that this tree stores parent links explicitly. The implementation
@@ -11,7 +11,7 @@ immutable ImplicitParents <: ParentLinks; end
 parentlinks(::Type) = ImplicitParents()
 parentlinks(tree) = parentlinks(typeof(tree))
 
-abstract SiblingLinks
+@compat abstract type SiblingLinks end
 
 """
   Indicates that this tree stores sibling links explicitly, or can compute them
@@ -27,7 +27,7 @@ siblinglinks(::Type) = ImplicitSiblings()
 siblinglinks(tree) = parentlinks(typeof(tree))
 
 
-abstract TreeKind
+@compat abstract type TreeKind end
 immutable RegularTree <: TreeKind; end
 immutable IndexedTree <: TreeKind; end
 
@@ -38,7 +38,7 @@ children(tree, node, ::IndexedTree) = (tree[y] for y in childindices(tree, node)
 children(tree, node) = children(tree, node, treekind(tree))
 
 function rootstate()
-end  
+end
 
 childindices(tree, node) =
   tree == node ? childindices(tree, rootstate(tree)) :
