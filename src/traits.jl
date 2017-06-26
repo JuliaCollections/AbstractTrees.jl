@@ -1,17 +1,17 @@
-abstract ParentLinks
+@compat abstract type ParentLinks end
 
 """
   Indicates that this tree stores parent links explicitly. The implementation
   is responsible for defining the parentind function to expose this
   information.
 """
-immutable StoredParents <: ParentLinks; end
-immutable ImplicitParents <: ParentLinks; end
+@compat struct StoredParents <: ParentLinks; end
+@compat struct ImplicitParents <: ParentLinks; end
 
 parentlinks(::Type) = ImplicitParents()
 parentlinks(tree) = parentlinks(typeof(tree))
 
-abstract SiblingLinks
+@compat abstract type SiblingLinks end
 
 """
   Indicates that this tree stores sibling links explicitly, or can compute them
@@ -20,16 +20,16 @@ abstract SiblingLinks
   implementation is responsible for defining the relative_state function
   to expose this information.
 """
-immutable StoredSiblings <: SiblingLinks; end
-immutable ImplicitSiblings <: SiblingLinks; end
+@compat struct StoredSiblings <: SiblingLinks; end
+@compat struct ImplicitSiblings <: SiblingLinks; end
 
 siblinglinks(::Type) = ImplicitSiblings()
 siblinglinks(tree) = parentlinks(typeof(tree))
 
 
-abstract TreeKind
-immutable RegularTree <: TreeKind; end
-immutable IndexedTree <: TreeKind; end
+@compat abstract type TreeKind end
+@compat struct RegularTree <: TreeKind; end
+@compat struct IndexedTree <: TreeKind; end
 
 treekind(tree::Type) = RegularTree()
 treekind(tree) = treekind(typeof(tree))
@@ -38,7 +38,7 @@ children(tree, node, ::IndexedTree) = (tree[y] for y in childindices(tree, node)
 children(tree, node) = children(tree, node, treekind(tree))
 
 function rootstate()
-end  
+end
 
 childindices(tree, node) =
   tree == node ? childindices(tree, rootstate(tree)) :

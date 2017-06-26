@@ -9,7 +9,9 @@ import Base: getindex, setindex!, start, next, done, nextind, print, show,
     eltype, iteratorsize, length, push!, pop!
 using Base: SizeUnknown
 
-abstract AbstractShadowTree
+using Compat
+
+@compat abstract type AbstractShadowTree end
 
 include("traits.jl")
 include("implicitstacks.jl")
@@ -57,7 +59,7 @@ nextind(x::Tuple, i::Integer) = i+1
 # Utilities
 
 # Printing
-immutable TreeCharSet
+@compat struct TreeCharSet
     mid
     terminator
     skip
@@ -151,14 +153,14 @@ print_tree(f::Function, io::IO, tree, args...; kwargs...) = _print_tree(f, io, t
 print_tree(io::IO, tree, args...; kwargs...) = print_tree(printnode, io, tree, args...; kwargs...)
 
 # Tree Indexing
-immutable Tree
+@compat struct Tree
     x::Any
 end
 Tree(x::Tree) = x
 Tree(x::AbstractShadowTree) = x
 show(io::IO, tree::Tree) = print_tree(io, tree.x)
 
-type AnnotationNode{T}
+@compat mutable struct AnnotationNode{T}
     val::T
     children::Array{AnnotationNode{T}}
 end
@@ -166,7 +168,7 @@ end
 children(x::AnnotationNode) = x.children
 printnode(io::IO, x::AnnotationNode) = print(io, x.val)
 
-immutable ShadowTree <: AbstractShadowTree
+@compat struct ShadowTree <: AbstractShadowTree
     tree::Tree
     shadow::Tree
     ShadowTree(x::Tree,y::Tree) = new(x,y)
@@ -245,7 +247,7 @@ end
 
 
 # Utitlity Iterator - Should probably be moved elsewhere
-immutable IndEnumerate{I}
+@compat struct IndEnumerate{I}
     itr::I
 end
 indenumerate(itr) = IndEnumerate(itr)
@@ -263,7 +265,7 @@ eltype{I}(::Type{IndEnumerate{I}}) = Tuple{Any, eltype(I)}
 
 # Tree Iterators
 
-abstract TreeIterator{T}
+@compat abstract type TreeIterator{T} end
 
 """
 Iterator to visit the leaves of a tree, e.g. for the tree
@@ -276,7 +278,7 @@ Any[1,Any[2,3]]
 
 we will get [1,2,3]
 """
-immutable Leaves{T} <: TreeIterator{T}
+@compat struct Leaves{T} <: TreeIterator{T}
     tree::T
 end
 iteratorsize{T}(::Type{Leaves{T}}) = SizeUnknown()
@@ -295,9 +297,9 @@ Any[1,Any[2,3]]
 
 we will get [1,2,3,Any[2,3],Any[1,Any[2,3]]]
 """
-immutable PostOrderDFS <: TreeIterator
-    tree::Any
-    PostOrderDFS(x::Any) = new(x)
+@compat struct PostOrderDFS{T} <: TreeIterator{T}
+    tree::T
+    PostOrderDFS(tree::T) = new(tree)
 end
 PostOrderDFS(tree::Tree) = PostOrderDFS(tree.x)
 iteratorsize(::Type{PostOrderDFS}) = SizeUnknown()
@@ -322,7 +324,7 @@ Any[Any[1,2],Any[3,4]]
 
 we will get [Any[Any[1,2],Any[3,4]],Any[1,2],1,2,Any[3,4],3,4]
 """
-immutable PreOrderDFS{T} <: TreeIterator
+@compat struct PreOrderDFS{T} <: TreeIterator{T}
     tree::T
     filter::Function
     PreOrderDFS(tree,filter::Function=(args...)->true) = new(tree,filter)
@@ -390,7 +392,7 @@ isroot(tree, state, ::RegularTree) = tree == state
 isroot(tree, state, ::IndexedTree) = state == rootstate(tree)
 isroot(tree, state) = isroot(tree, state, treekind(tree))
 
-immutable Subtree{T,S}
+@compat struct Subtree{T,S}
     tree::T
     state::S
 end
@@ -474,7 +476,7 @@ we will get [Any[1,Any[2,3]],1,Any[2,3],2,3]
 WARNING: This is O(n^2), only use this if you know you need it, as opposed to
 a more standard statefull approach.
 """
-immutable StatelessBFS <: TreeIterator
+@compat struct StatelessBFS <: TreeIterator{Any}
     tree::Any
 end
 start(ti::StatelessBFS) = []

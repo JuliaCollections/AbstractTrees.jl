@@ -1,16 +1,16 @@
-abstract ImplicitStack
-immutable ImplicitIndexStack{S} <: ImplicitStack
+@compat abstract type ImplicitStack end
+@compat struct ImplicitIndexStack{S} <: ImplicitStack
     stack::Vector{S}
 end
 Base.copy(s::ImplicitIndexStack) = typeof(s)(copy(s.stack))
-immutable ImplicitNodeStack{T, S} <: ImplicitStack
+@compat struct ImplicitNodeStack{T, S} <: ImplicitStack
     node_stack::Vector{T}
     idx_stack::ImplicitIndexStack{S}
 end
 Base.copy(s::ImplicitNodeStack) = typeof(s)(copy(s.node_stack), copy(s.idx_stack))
 Base.isempty(s::ImplicitNodeStack) = isempty(s.node_stack)
 Base.isempty(s::ImplicitIndexStack) = isempty(s.stack)
-immutable ImplicitChildStates{T, S}
+@compat struct ImplicitChildStates{T, S}
     tree::T
     stack::S
 end
@@ -48,10 +48,10 @@ function update_state!(ns::ImplicitNodeStack, cs, idx)
     ns
 end
 
-joinstate(state::ImplicitNodeStack, new_state::ImplicitNodeStack) = 
+joinstate(state::ImplicitNodeStack, new_state::ImplicitNodeStack) =
     ImplicitNodeStack([state.node_stack; new_state.node_stack],
         joinstate(state.idx_stack, new_state.idx_stack))
 joinstate(state::ImplicitIndexStack, new_state::ImplicitIndexStack) =
     ImplicitIndexStack([state.stack; new_state.stack])
-    
+
 isroot(tree, state::ImplicitStack) = isempty(state)
