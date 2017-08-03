@@ -55,6 +55,9 @@ children{K,V}(kv::Pair{K,V}) = kv[2]
 
 nextind(x::Tuple, i::Integer) = i+1
 
+# Node equality predicate
+nodeequal(a, b) = a === b
+
 # Utilities
 
 # Printing
@@ -408,6 +411,36 @@ function nextsibling(tree, state)
     end
     Nullable(update_state!(tree, ps, children(tree, ps), new_state))
 end
+
+function nextsibling(node, ::StoredParents, ::ImplicitSiblings, ::RegularTree)
+    isroot(node) && return nothing
+    p = parent(node)
+    last_was_node = false
+    for c in children(p)
+        last_was_node && return c
+        (c == node) && (last_was_node = true)
+    end
+    last_was_node && return nothing
+    error("Tree inconsistency: node not a child of parent")
+end
+nextsibling(node, ::Any, ::StoredSiblings, ::Any) = error("Trees with explicit siblings must override the `prevsibling` method explicitly")
+nextsibling(node) = nextsibling(node, parentlinks(node), siblinglinks(node), treekind(node))
+
+function prevsibling(node, ::StoredParents, ::ImplicitSiblings, ::RegularTree)
+    isroot(node) && return nothing
+    p = parent(node)
+    last_c = nothing
+    for c in children(p)
+        (c == node) && return last_c
+        last_c = c
+    end
+    @show p
+    @show node
+    error("Tree inconsistency: node not a child of parent")
+end
+prevsibling(node, ::Any, ::StoredSiblings, ::Any) = error("Trees with explicit siblings must override the `prevsibling` method explicitly")
+prevsibling(node) = prevsibling(node, parentlinks(node), siblinglinks(node), treekind(node))
+prevsibling(tree, node) = prevsibling(node)
 
 isroot(tree, state, ::RegularTree) = tree == state
 isroot(tree, state, ::IndexedTree) = state == rootstate(tree)

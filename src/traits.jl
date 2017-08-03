@@ -24,7 +24,7 @@ immutable StoredSiblings <: SiblingLinks; end
 immutable ImplicitSiblings <: SiblingLinks; end
 
 siblinglinks(::Type) = ImplicitSiblings()
-siblinglinks(tree) = parentlinks(typeof(tree))
+siblinglinks(tree) = siblinglinks(typeof(tree))
 
 
 @compat abstract type TreeKind end
