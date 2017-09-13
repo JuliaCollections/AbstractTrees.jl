@@ -53,7 +53,9 @@ children(x::Expr) = x.args
 printnode{K,V}(io::IO, kv::Pair{K,V}) = printnode(io,kv[1])
 children{K,V}(kv::Pair{K,V}) = kv[2]
 
-nextind(x::Tuple, i::Integer) = i+1
+if VERSION < v"0.7.0-DEV.1661"
+    nextind(x::Tuple, i::Integer) = i + 1
+end
 
 # Node equality predicate
 nodeequal(a, b) = a === b
@@ -84,7 +86,7 @@ function print_prefix(io, depth, charset, active_levels)
     end
 end
 
-"""
+doc"""
 # Usage
 Prints an ASCII formatted representation of the `tree` to the given `io` object.
 By default all children will be printed up to a maximum level of 5, though this
