@@ -1,4 +1,7 @@
-isdefined(:AbstractTrees) && workspace()
+try
+    AbstractTrees
+    workspace()
+end
 using AbstractTrees
 using Base.Test
 import Base: ==
