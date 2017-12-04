@@ -51,7 +51,10 @@ children(x::Expr) = x.args
 # Even better, iteration over associatives should return pairs.
 
 printnode{K,V}(io::IO, kv::Pair{K,V}) = printnode(io,kv[1])
-children{K,V}(kv::Pair{K,V}) = kv[2]
+children{K,V}(kv::Pair{K,V}) = (kv[2],)
+
+printnode{K,V}(io::IO, d::Dict{K,V}) = print(io, Dict{K,V})
+printnode{T}(io::IO, d::Vector{T}) = print(io, Vector{T})
 
 if VERSION < v"0.7.0-DEV.1661"
     nextind(x::Tuple, i::Integer) = i + 1
