@@ -1,5 +1,5 @@
-@compat abstract type ImplicitStack end
-immutable ImplicitIndexStack{S} <: ImplicitStack
+abstract type ImplicitStack end
+struct ImplicitIndexStack{S} <: ImplicitStack
     stack::Vector{S}
 end
 Base.copy(s::ImplicitIndexStack) = typeof(s)(copy(s.stack))
@@ -8,7 +8,7 @@ Keeps a stack of nodes and their corresponding indices. Note that the last node
 is not explicitly stored in the node_stack, such that length(node_stack) ==
 length(idx_stack)-1 (unless we're at the root in which case both are empty)
 """
-immutable ImplicitNodeStack{T, S} <: ImplicitStack
+struct ImplicitNodeStack{T, S} <: ImplicitStack
     node_stack::Vector{T}
     idx_stack::ImplicitIndexStack{S}
 end
@@ -22,11 +22,11 @@ function getnode(tree, stack::ImplicitNodeStack)
     (isempty(stack.idx_stack) ? tree : children(tree)[stack.idx_stack.stack[end]]) :
     children(stack.node_stack[end])[stack.idx_stack.stack[end]]
 end
-immutable ImplicitChildStates{T, S}
+struct ImplicitChildStates{T, S}
     tree::T
     stack::S
 end
-Base.iteratorsize{T<:ImplicitChildStates}(::Type{T}) = Base.SizeUnknown()
+Base.iteratorsize(::Type{T}) where {T<:ImplicitChildStates} = Base.SizeUnknown()
 children(states::ImplicitChildStates) = children(states.tree, states.stack)
 
 parentstate(tree, state::ImplicitNodeStack) =

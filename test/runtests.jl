@@ -20,7 +20,7 @@ tree2 = Any[Any[1,2],Any[3,4]]
 """
     A tree in which every node has 0 or 1 children
 """
-immutable OneTree
+struct OneTree
     nodes::Vector{Int}
 end
 AbstractTrees.treekind(::Type{OneTree}) = AbstractTrees.IndexedTree()
@@ -43,13 +43,13 @@ AbstractTrees.print_tree(STDOUT, ot)
 """
     Stores an explicit parent for some other kind of tree
 """
-immutable ParentTree{T}
+struct ParentTree{T}
     tree::T
     parents::Vector{Int}
 end
-AbstractTrees.treekind{T}(::Type{ParentTree{T}}) = AbstractTrees.treekind(T)
-AbstractTrees.parentlinks{T}(::Type{ParentTree{T}}) = AbstractTrees.StoredParents()
-AbstractTrees.siblinglinks{T}(::Type{ParentTree{T}}) = AbstractTrees.siblinglinks(T)
+AbstractTrees.treekind(::Type{ParentTree{T}}) where {T} = AbstractTrees.treekind(T)
+AbstractTrees.parentlinks(::Type{ParentTree{T}}) where {T} = AbstractTrees.StoredParents()
+AbstractTrees.siblinglinks(::Type{ParentTree{T}}) where {T} = AbstractTrees.siblinglinks(T)
 AbstractTrees.relative_state(t::ParentTree, x, __::Int) =
     AbstractTrees.relative_state(t.tree, x, __)
 Base.getindex(t::ParentTree, idx) = t.tree[idx]

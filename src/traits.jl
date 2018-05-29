@@ -1,17 +1,17 @@
-@compat abstract type ParentLinks end
+abstract type ParentLinks end
 
 """
   Indicates that this tree stores parent links explicitly. The implementation
   is responsible for defining the parentind function to expose this
   information.
 """
-immutable StoredParents <: ParentLinks; end
-immutable ImplicitParents <: ParentLinks; end
+struct StoredParents <: ParentLinks; end
+struct ImplicitParents <: ParentLinks; end
 
 parentlinks(::Type) = ImplicitParents()
 parentlinks(tree) = parentlinks(typeof(tree))
 
-@compat abstract type SiblingLinks end
+abstract type SiblingLinks end
 
 """
   Indicates that this tree stores sibling links explicitly, or can compute them
@@ -20,16 +20,16 @@ parentlinks(tree) = parentlinks(typeof(tree))
   implementation is responsible for defining the relative_state function
   to expose this information.
 """
-immutable StoredSiblings <: SiblingLinks; end
-immutable ImplicitSiblings <: SiblingLinks; end
+struct StoredSiblings <: SiblingLinks; end
+struct ImplicitSiblings <: SiblingLinks; end
 
 siblinglinks(::Type) = ImplicitSiblings()
 siblinglinks(tree) = siblinglinks(typeof(tree))
 
 
-@compat abstract type TreeKind end
-immutable RegularTree <: TreeKind; end
-immutable IndexedTree <: TreeKind; end
+abstract type TreeKind end
+struct RegularTree <: TreeKind; end
+struct IndexedTree <: TreeKind; end
 
 treekind(tree::Type) = RegularTree()
 treekind(tree) = treekind(typeof(tree))
