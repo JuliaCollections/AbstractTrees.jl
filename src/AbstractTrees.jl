@@ -10,7 +10,7 @@ import Base: getindex, setindex!, start, next, done, nextind, print, show,
 using Base: SizeUnknown
 using Compat
 
-@compat abstract type AbstractShadowTree end
+abstract type AbstractShadowTree end
 
 include("traits.jl")
 include("implicitstacks.jl")
@@ -50,11 +50,11 @@ children(x::Expr) = x.args
 # create a special iterator that `children` on `Associative` returns.
 # Even better, iteration over associatives should return pairs.
 
-printnode{K,V}(io::IO, kv::Pair{K,V}) = printnode(io,kv[1])
-children{K,V}(kv::Pair{K,V}) = (kv[2],)
+printnode(io::IO, kv::Pair{K,V}) where {K,V} = printnode(io,kv[1])
+children(kv::Pair{K,V}) where {K,V} = (kv[2],)
 
-printnode{K,V}(io::IO, d::Dict{K,V}) = print(io, Dict{K,V})
-printnode{T}(io::IO, d::Vector{T}) = print(io, Vector{T})
+printnode(io::IO, d::Dict{K,V}) where {K,V} = print(io, Dict{K,V})
+printnode(io::IO, d::Vector{T}) where {T} = print(io, Vector{T})
 
 if VERSION < v"0.7.0-DEV.1661"
     nextind(x::Tuple, i::Integer) = i + 1
@@ -66,7 +66,7 @@ nodeequal(a, b) = a === b
 # Utilities
 
 # Printing
-immutable TreeCharSet
+struct TreeCharSet
     mid
     terminator
     skip
@@ -161,14 +161,14 @@ print_tree(io::IO, tree, args...; kwargs...) = print_tree(printnode, io, tree, a
 print_tree(tree, args...; kwargs...) = print_tree(STDOUT::IO, tree, args...; kwargs...)
 
 # Tree Indexing
-immutable Tree
+struct Tree
     x::Any
 end
 Tree(x::Tree) = x
 Tree(x::AbstractShadowTree) = x
 show(io::IO, tree::Tree) = print_tree(io, tree.x)
 
-type AnnotationNode{T}
+mutable struct AnnotationNode{T}
     val::T
     children::Array{AnnotationNode{T}}
 end
@@ -176,7 +176,7 @@ end
 children(x::AnnotationNode) = x.children
 printnode(io::IO, x::AnnotationNode) = print(io, x.val)
 
-immutable ShadowTree <: AbstractShadowTree
+struct ShadowTree <: AbstractShadowTree
     tree::Tree
     shadow::Tree
     ShadowTree(x::Tree,y::Tree) = new(x,y)
@@ -217,7 +217,7 @@ function getindex(tree::Tree, indices)
     end
     node
 end
-getindex{T<:ImplicitNodeStack}(tree::Tree, indices::T) =
+getindex(tree::Tree, indices::T) where {T<:ImplicitNodeStack} =
     getindex(tree, indices.idx_stack.stack)
 
 
@@ -236,9 +236,9 @@ end
 function setindex!(tree::Tree, val, indices)
     setindex!(children(getindex(tree,indices[1:end-1])),val,indices[end])
 end
-setindex!{T<:ImplicitNodeStack}(tree::Tree, val, indices::T) =
+setindex!(tree::Tree, val, indices::T) where {T<:ImplicitNodeStack} =
     setindex!(tree, val, indices.idx_stack.stack)
-setindex!{T<:ImplicitNodeStack}(tree::Tree, val, indices::Nullable{T}) =
+setindex!(tree::Tree, val, indices::Nullable{T}) where {T<:ImplicitNodeStack} =
     setindex!(tree, val, get(indices))
 
 function getindex(tree::AbstractShadowTree, indices)
@@ -257,12 +257,12 @@ end
 
 
 # Utitlity Iterator - Should probably be moved elsewhere
-immutable IndEnumerate{I}
+struct IndEnumerate{I}
     itr::I
 end
 indenumerate(itr) = IndEnumerate(itr)
 
-iteratorsize{I}(::Type{IndEnumerate{I}}) = iteratorsize(I)
+iteratorsize(::Type{IndEnumerate{I}}) where {I} = iteratorsize(I)
 length(e::IndEnumerate) = length(e.itr)
 start(e::IndEnumerate) = start(e.itr)
 function next(e::IndEnumerate, state)
@@ -271,11 +271,11 @@ function next(e::IndEnumerate, state)
 end
 done(e::IndEnumerate, state) = done(e.itr, state)
 
-eltype{I}(::Type{IndEnumerate{I}}) = Tuple{Any, eltype(I)}
+eltype(::Type{IndEnumerate{I}}) where {I} = Tuple{Any, eltype(I)}
 
 # Tree Iterators
 
-@compat abstract type TreeIterator{T} end
+abstract type TreeIterator{T} end
 
 """
 Iterator to visit the leaves of a tree, e.g. for the tree
@@ -288,10 +288,10 @@ Any[1,Any[2,3]]
 
 we will get [1,2,3]
 """
-immutable Leaves{T} <: TreeIterator{T}
+struct Leaves{T} <: TreeIterator{T}
     tree::T
 end
-iteratorsize{T}(::Type{Leaves{T}}) = SizeUnknown()
+iteratorsize(::Type{Leaves{T}}) where {T} = SizeUnknown()
 
 """
 Iterator to visit the nodes of a tree, guaranteeing that children
@@ -307,7 +307,7 @@ Any[1,Any[2,3]]
 
 we will get [1,2,3,Any[2,3],Any[1,Any[2,3]]]
 """
-immutable PostOrderDFS <: TreeIterator{Any}
+struct PostOrderDFS <: TreeIterator{Any}
     tree::Any
     PostOrderDFS(x::Any) = new(x)
 end
@@ -341,14 +341,14 @@ parent of the last obtained node does not change (i.e. mutation is allowed,
 replacing nodes is not).
 
 """
-immutable PreOrderDFS{T} <: TreeIterator{T}
+struct PreOrderDFS{T} <: TreeIterator{T}
     tree::T
     filter::Function
-    (::Type{PreOrderDFS{T}}){T}(tree,filter::Function=(args...)->true) = new{T}(tree,filter)
+    PreOrderDFS{T}(tree,filter::Function=(args...)->true) where {T} = new{T}(tree,filter)
 end
-PreOrderDFS{T}(tree::T,filter::Function=(args...)->true) = PreOrderDFS{T}(tree,filter)
+PreOrderDFS(tree::T,filter::Function=(args...)->true) where {T} = PreOrderDFS{T}(tree,filter)
 PreOrderDFS(tree::Tree,filter::Function=(args...)->true) = PreOrderDFS(tree.x,filter)
-iteratorsize{T}(::Type{PreOrderDFS{T}}) = SizeUnknown()
+iteratorsize(::Type{PreOrderDFS{T}}) where {T} = SizeUnknown()
 
 # State depends on what kind of tree we have:
 #   - Parents/Siblings are not stored:
@@ -368,7 +368,7 @@ parentstate(tree, state) = parentstate(tree, state, treekind(tree))
 update_state!(old_state, cs, idx) = next(cs, idx)[1]
 
 
-immutable ImplicitRootState
+struct ImplicitRootState
 end
 getindex(x, ::ImplicitRootState) = x
 getindex(x::AbstractArray, ::ImplicitRootState) = x
@@ -379,7 +379,7 @@ tree itself (e.g. IndexedTrees should always override this method).
 """
 rootstate(x) = ImplicitRootState()
 
-function firststate{T}(ti::PreOrderDFS{T})
+function firststate(ti::PreOrderDFS{T}) where T
     if isa(parentlinks(ti.tree), StoredParents) &&
             isa(siblinglinks(ti.tree), SiblingLinks)
         rootstate(ti.tree)
@@ -451,7 +451,7 @@ isroot(tree, state, ::RegularTree) = tree == state
 isroot(tree, state, ::IndexedTree) = state == rootstate(tree)
 isroot(tree, state) = isroot(tree, state, treekind(tree))
 
-immutable Subtree{T,S}
+struct Subtree{T,S}
     tree::T
     state::S
 end
@@ -543,7 +543,7 @@ we will get [Any[1,Any[2,3]],1,Any[2,3],2,3]
 WARNING: This is O(n^2), only use this if you know you need it, as opposed to
 a more standard statefull approach.
 """
-immutable StatelessBFS <: TreeIterator{Any}
+struct StatelessBFS <: TreeIterator{Any}
     tree::Any
 end
 start(ti::StatelessBFS) = []

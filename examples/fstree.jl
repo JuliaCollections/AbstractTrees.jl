@@ -2,17 +2,17 @@ using AbstractTrees
 import AbstractTrees: children, printnode
 import Base: start, done, next
 
-immutable Directory
+struct Directory
     path::String
 end
 
-immutable File
+struct File
     path::String
 end
 
 children(f::File) = ()
 
-immutable DirectoryListing
+struct DirectoryListing
     d::Directory
     names::Vector{String}
 end
