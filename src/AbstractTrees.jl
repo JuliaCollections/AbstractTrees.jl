@@ -1,14 +1,14 @@
-VERSION >= v"0.4.0-dev+6641" && __precompile__()
+__precompile__()
 module AbstractTrees
 
-export print_tree, TreeCharSet, Leaves, PostOrderDFS, indenumerate, Tree,
-    AnnotationNode, StatelessBFS, IndEnumerate, treemap, treemap!, PreOrderDFS,
+export print_tree, TreeCharSet, Leaves, PostOrderDFS, Tree,
+    AnnotationNode, StatelessBFS, treemap, treemap!, PreOrderDFS,
     ShadowTree, children, Leaves
 
-import Base: getindex, setindex!, start, next, done, nextind, print, show,
-    eltype, iteratorsize, length, push!, pop!
+import Base: getindex, setindex!, iterate, nextind, print, show,
+    eltype, IteratorSize, length, push!, pop!
 using Base: SizeUnknown
-using Compat
+using Markdown
 
 abstract type AbstractShadowTree end
 
@@ -23,7 +23,7 @@ include("implicitstacks.jl")
 # children. If an object is not iterable, assume it does not have children by
 # default.
 function children(x)
-    if applicable(start, x) && !isa(x, Integer) && !isa(x, Char) && !isa(x, Task)
+    if Base.isiterable(x) && !isa(x, Integer) && !isa(x, Char) && !isa(x, Task)
         return x
     else
         return ()
@@ -33,7 +33,7 @@ has_children(x) = children(x) !== ()
 
 # Print a single node. Override this if you want your print function to print
 # part of the tree by default
-printnode(io::IO, node) = showcompact(io,node)
+printnode(io::IO, node) = show(IOContext(io, :compact => true), node)
 
 # Special cases
 
@@ -76,20 +76,17 @@ end
 # Default charset
 TreeCharSet() = TreeCharSet('├','└','│','─')
 
-_charwidth(c::Char) = charwidth(c)
-_charwidth(s) = sum(map(charwidth,collect(s)))
-
 function print_prefix(io, depth, charset, active_levels)
     for current_depth in 0:(depth-1)
         if current_depth in active_levels
-            print(io,charset.skip," "^(_charwidth(charset.dash)+1))
+            print(io,charset.skip," "^(textwidth(charset.dash)+1))
         else
-            print(io," "^(_charwidth(charset.skip)+_charwidth(charset.dash)+1))
+            print(io," "^(textwidth(charset.skip)+textwidth(charset.dash)+1))
         end
     end
 end
 
-doc"""
+@doc doc"""
 # Usage
 Prints an ASCII formatted representation of the `tree` to the given `io` object.
 By default all children will be printed up to a maximum level of 5, though this
@@ -136,14 +133,14 @@ function _print_tree(printnode::Function, io::IO, tree, maxdepth = 5; depth = 0,
     c = isa(treekind(roottree), IndexedTree) ?
         childindices(roottree, tree) : children(roottree, tree)
     if c !== ()
-        i = from === nothing ? start(c) : from
-        while !done(c,i) && (to === nothing || i !== to)
-            oldi = i
-            child, i = next(c,i)
+        s = Iterators.Stateful(from === nothing ? pairs(c) : Iterators.Rest(pairs(c), from))
+        while !isempty(s)
+            ind, child = popfirst!(s)
+            ind === to && break
             active = false
             child_active_levels = active_levels
             print_prefix(io, depth, charset, active_levels)
-            if done(c,i)
+            if isempty(s)
                 print(io, charset.terminator)
             else
                 print(io, charset.mid)
@@ -152,7 +149,7 @@ function _print_tree(printnode::Function, io::IO, tree, maxdepth = 5; depth = 0,
             print(io, charset.dash, ' ')
             print_tree(printnode, io, child; depth = depth + 1,
               active_levels = child_active_levels, charset = charset, withinds=withinds,
-              inds = withinds ? [inds; oldi] : [], roottree = roottree)
+              inds = withinds ? [inds; ind] : [], roottree = roottree)
         end
     end
 end
@@ -201,9 +198,7 @@ function children(x::AbstractShadowTree)
     map(res->typeof(x)(res[1], res[2]),make_zip(x))
 end
 
-start(x::AbstractShadowTree) = start(make_zip(x))
-next(x::AbstractShadowTree, it) = next(make_zip(x), it)
-done(x::AbstractShadowTree, it) = done(make_zip(x), it)
+iterate(x::AbstractShadowTree, state...) = iterate(make_zip(x), state...)
 
 function make_annotations(cb, tree, parent, s)
     s = cb(tree, parent, s)
@@ -238,8 +233,6 @@ function setindex!(tree::Tree, val, indices)
 end
 setindex!(tree::Tree, val, indices::T) where {T<:ImplicitNodeStack} =
     setindex!(tree, val, indices.idx_stack.stack)
-setindex!(tree::Tree, val, indices::Nullable{T}) where {T<:ImplicitNodeStack} =
-    setindex!(tree, val, get(indices))
 
 function getindex(tree::AbstractShadowTree, indices)
     typeof(tree)(Tree(first_tree(tree))[indices],Tree(second_tree(tree))[indices])
@@ -254,24 +247,6 @@ function setindex!(tree::AbstractShadowTree, val::Tuple, indices)
     setindex!(Tree(first_tree(tree)), val[1], indices)
     setindex!(Tree(second_tree(tree)), val[2], indices)
 end
-
-
-# Utitlity Iterator - Should probably be moved elsewhere
-struct IndEnumerate{I}
-    itr::I
-end
-indenumerate(itr) = IndEnumerate(itr)
-
-iteratorsize(::Type{IndEnumerate{I}}) where {I} = iteratorsize(I)
-length(e::IndEnumerate) = length(e.itr)
-start(e::IndEnumerate) = start(e.itr)
-function next(e::IndEnumerate, state)
-    n = next(e.itr,state)
-    (state, n[1]), n[2]
-end
-done(e::IndEnumerate, state) = done(e.itr, state)
-
-eltype(::Type{IndEnumerate{I}}) where {I} = Tuple{Any, eltype(I)}
 
 # Tree Iterators
 
@@ -291,7 +266,7 @@ we will get [1,2,3]
 struct Leaves{T} <: TreeIterator{T}
     tree::T
 end
-iteratorsize(::Type{Leaves{T}}) where {T} = SizeUnknown()
+IteratorSize(::Type{Leaves{T}}) where {T} = SizeUnknown()
 
 """
 Iterator to visit the nodes of a tree, guaranteeing that children
@@ -312,7 +287,7 @@ struct PostOrderDFS <: TreeIterator{Any}
     PostOrderDFS(x::Any) = new(x)
 end
 PostOrderDFS(tree::Tree) = PostOrderDFS(tree.x)
-iteratorsize(::Type{PostOrderDFS}) = SizeUnknown()
+IteratorSize(::Type{PostOrderDFS}) = SizeUnknown()
 
 """
 Iterator to visit the nodes of a tree, guaranteeing that parents
@@ -348,7 +323,7 @@ struct PreOrderDFS{T} <: TreeIterator{T}
 end
 PreOrderDFS(tree::T,filter::Function=(args...)->true) where {T} = PreOrderDFS{T}(tree,filter)
 PreOrderDFS(tree::Tree,filter::Function=(args...)->true) = PreOrderDFS(tree.x,filter)
-iteratorsize(::Type{PreOrderDFS{T}}) where {T} = SizeUnknown()
+IteratorSize(::Type{PreOrderDFS{T}}) where {T} = SizeUnknown()
 
 # State depends on what kind of tree we have:
 #   - Parents/Siblings are not stored:
@@ -409,12 +384,10 @@ relative_state(tree, parentstate, childstate::ImplicitNodeStack) =
 function nextsibling(tree, state)
     ps = parentstate(tree, state)
     cs = childstates(tree, ps)
-    isempty(cs) && return Nullable{typeof(state)}()
+    isempty(cs) && return nothing
     new_state = nextind(cs, relative_state(tree, ps, state))
-    if done(cs, new_state)
-        return Nullable{typeof(state)}()
-    end
-    Nullable(update_state!(tree, ps, children(tree, ps), new_state))
+    iterate(cs, new_state) === nothing && return nothing
+    update_state!(tree, ps, children(tree, ps), new_state)
 end
 
 function nextsibling(node, ::StoredParents, ::ImplicitSiblings, ::RegularTree)
@@ -474,26 +447,32 @@ end
 function stepstate(ti::TreeIterator, state)
     if isa(ti, PreOrderDFS) && ti.filter(getnode(ti.tree, state))
         ccs = childstates(ti.tree, state)
-        !isempty(ccs) && return Nullable(first(ccs))
+        !isempty(ccs) && return first(ccs)
     end
     while !isroot(ti.tree, state)
         nextstate = nextsibling(ti.tree, state)
-        if !isnull(nextstate)
-            return Nullable(joinstate(ti.tree, get(nextstate),firststate(
-                get_primary(typeof(ti))(Subtree(ti.tree, get(nextstate))))))
+        if nextstate !== nothing
+            return joinstate(ti.tree, nextstate, firststate(
+                get_primary(typeof(ti))(Subtree(ti.tree, nextstate))))
         end
         state = parentstate(ti.tree, state)
-        isa(ti, PostOrderDFS) && return Nullable(state)
+        isa(ti, PostOrderDFS) && return state
     end
-    Nullable{typeof(state)}()
+    nothing
 end
 
 getnode(tree, ns) = isa(treekind(tree), IndexedTree) ? tree[ns] : ns
 getnode(tree::AbstractShadowTree, ns::ImplicitNodeStack) = tree[ns.idx_stack.stack]
 
-start(ti::TreeIterator) = Nullable(firststate(ti))
-next(ti::TreeIterator, state) = (getnode(ti.tree, get(state)), stepstate(ti, get(state)))
-done(ti::TreeIterator, state) = isnull(state)
+function iterate(ti::TreeIterator)
+    state = firststate(ti)
+    (getnode(ti.tree, state), state)
+end
+function iterate(ti::TreeIterator, state)
+    state = stepstate(ti, state)
+    state === nothing && return nothing
+    (getnode(ti.tree, state), state)
+end
 
 """
     Acends the tree, at each node choosing whether or not to continue.
@@ -546,8 +525,7 @@ a more standard statefull approach.
 struct StatelessBFS <: TreeIterator{Any}
     tree::Any
 end
-start(ti::StatelessBFS) = []
-iteratorsize(::Type{StatelessBFS}) = SizeUnknown()
+IteratorSize(::Type{StatelessBFS}) = SizeUnknown()
 
 function descend_left(newinds, next_node, level)
     # Go down until we are at the correct level or a dead end
@@ -573,7 +551,7 @@ function nextind_or_deadend(tree, ind, level)
         cur_child = ind[current_level]
         ni = nextind(children(parent), cur_child)
         current_level -= 1
-        if !done(children(parent), ni)
+        if iterate(children(parent), ni) !== nothing
             newinds = [active_inds; ni]
             next_node = children(parent)[ni]
             return descend_left(newinds, next_node, level)
@@ -582,14 +560,14 @@ function nextind_or_deadend(tree, ind, level)
     return nothing
 end
 
+iterate(ti::StatelessBFS) = (Tree(ti.tree)[[]], [])
 """
 Stateless level-order bfs iteration. The algorithm is as follows:
 
 Go up. If there is a right neighbor, go right, then left until you reach the
 same level. If you reach the root, go left until you reach the next level.
 """
-function next(ti::StatelessBFS, ind)
-    cur_node = Tree(ti.tree)[ind]
+function iterate(ti::StatelessBFS, ind)
     org_level = active_level = length(ind)
     newinds = ind
     while true
@@ -597,7 +575,7 @@ function next(ti::StatelessBFS, ind)
         if newinds === nothing
             active_level += 1
             if active_level > org_level + 1
-                return (cur_node,nothing)
+                return nothing
             end
             newinds = descend_left([], ti.tree, active_level)
         end
@@ -605,17 +583,14 @@ function next(ti::StatelessBFS, ind)
             break
         end
     end
-    (cur_node,newinds)
+    Tree(ti.tree)[newinds], newinds
 end
-
-done(ti::StatelessBFS, idxs::Void) = true
-done(ti::StatelessBFS, idxs::Array) = false
 
 # Mapping over trees
 function treemap(f::Function, tree::PostOrderDFS)
     new_tree = Any[Union{}[]]
     current_length = 0
-    for (ind, node) in indenumerate(tree)
+    for (ind, node) in pairs(tree)
         while length(new_tree) < length(ind)
             push!(new_tree, Union{}[])
         end
@@ -643,9 +618,9 @@ function treemap(f::Function, tree::PostOrderDFS)
 end
 
 function treemap!(f::Function, ti::PreOrderDFS)
-    state = Nullable(firststate(ti))
-    while !isnull(state)
-        ind = get(state)
+    state = firststate(ti)
+    while state !== nothing
+        ind = state
         node = getnode(ti.tree, ind)
         new_node = f(node)
         if new_node !== node

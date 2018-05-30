@@ -26,7 +26,7 @@ struct ImplicitChildStates{T, S}
     tree::T
     stack::S
 end
-Base.iteratorsize(::Type{T}) where {T<:ImplicitChildStates} = Base.SizeUnknown()
+Base.IteratorSize(::Type{T}) where {T<:ImplicitChildStates} = Base.SizeUnknown()
 children(states::ImplicitChildStates) = children(states.tree, states.stack)
 
 parentstate(tree, state::ImplicitNodeStack) =
@@ -42,16 +42,16 @@ childstates(s::ImplicitChildStates) = isempty(s.stack) ?
   childstates(s.tree, s.tree) : childstates(s.tree,
     isa(s.stack, ImplicitNodeStack) ? getnode(s.tree, s.stack) : s.stack.stack[end])
 nextind(s::ImplicitChildStates, ind) = nextind(childstates(s), ind)
-start(s::ImplicitChildStates) = start(childstates(s))
-function next(s::ImplicitChildStates, ind)
-    ni = next(childstates(s), ind)[2]
+function iterate(s::ImplicitChildStates, ind=1)
+    y = iterate(childstates(s), ind)
+    y === nothing && return nothing
+    _, ni = y
     (update_state!(s.tree, copy(s.stack), childstates(s), ind, treekind(s.tree)), ni)
 end
-done(s::ImplicitChildStates, ind) = done(childstates(s), ind)
 
 update_state!(tree, ns, cs, idx, _) = update_state!(tree, ns, cs, idx)
 update_state!(tree, ns::ImplicitIndexStack, cs, idx) = (push!(ns.stack, idx); ns)
-update_state!(tree, ns::ImplicitIndexStack, cs, idx, ::IndexedTree) = (push!(ns.stack, next(cs, idx)[1]); ns)
+update_state!(tree, ns::ImplicitIndexStack, cs, idx, ::IndexedTree) = (push!(ns.stack, iterate(cs, idx)[1]); ns)
 function update_state!(tree, ns::ImplicitNodeStack, cs, idx)
     !isempty(ns) && push!(ns.node_stack, getnode(tree, ns))
     update_state!(tree, ns.idx_stack, cs, idx)
@@ -65,5 +65,5 @@ function joinstate(tree, state::ImplicitNodeStack, new_state::ImplicitNodeStack)
 end
 joinstate(tree, state::ImplicitIndexStack, new_state::ImplicitIndexStack) =
     ImplicitIndexStack([state.stack; new_state.stack])
-    
+
 isroot(tree, state::ImplicitStack) = isempty(state)

@@ -3,13 +3,13 @@ try
     workspace()
 end
 using AbstractTrees
-using Base.Test
+using Test
 import Base: ==
 
 AbstractTrees.children(x::Array) = x
 tree = Any[1,Any[2,3]]
 
-AbstractTrees.print_tree(STDOUT, tree)
+AbstractTrees.print_tree(stdout, tree)
 @test collect(Leaves(tree)) == [1,2,3]
 @test collect(PostOrderDFS(tree)) == Any[1,2,3,Any[2,3],Any[1,Any[2,3]]]
 @test collect(StatelessBFS(tree)) == Any[Any[1,Any[2,3]],1,Any[2,3],2,3]
@@ -35,7 +35,7 @@ AbstractTrees.printnode(io::IO, t::OneTree) =
     AbstractTrees.printnode(io::IO, t[AbstractTrees.rootstate(t)])
 
 ot = OneTree([2,3,4,0])
-AbstractTrees.print_tree(STDOUT, ot)
+AbstractTrees.print_tree(stdout, ot)
 @test collect(AbstractTrees.Leaves(ot)) == [0]
 @test collect(AbstractTrees.PreOrderDFS(ot)) == [2,3,4,0]
 @test collect(AbstractTrees.PostOrderDFS(ot)) == [0,4,3,2]
@@ -50,8 +50,8 @@ end
 AbstractTrees.treekind(::Type{ParentTree{T}}) where {T} = AbstractTrees.treekind(T)
 AbstractTrees.parentlinks(::Type{ParentTree{T}}) where {T} = AbstractTrees.StoredParents()
 AbstractTrees.siblinglinks(::Type{ParentTree{T}}) where {T} = AbstractTrees.siblinglinks(T)
-AbstractTrees.relative_state(t::ParentTree, x, __::Int) =
-    AbstractTrees.relative_state(t.tree, x, __)
+AbstractTrees.relative_state(t::ParentTree, x, r::Int) =
+    AbstractTrees.relative_state(t.tree, x, r)
 Base.getindex(t::ParentTree, idx) = t.tree[idx]
 AbstractTrees.childindices(tree::ParentTree, node::Int) = AbstractTrees.childindices(tree.tree, node)
 AbstractTrees.children(tree::ParentTree) = AbstractTrees.children(tree, tree)
@@ -61,7 +61,7 @@ AbstractTrees.printnode(io::IO, t::ParentTree) =
     AbstractTrees.printnode(io::IO, t[AbstractTrees.rootstate(t)])
 
 pt = ParentTree(ot,[0,1,2,3])
-AbstractTrees.print_tree(STDOUT, pt)
+AbstractTrees.print_tree(stdout, pt)
 @test collect(AbstractTrees.Leaves(pt)) == [0]
 @test collect(AbstractTrees.PreOrderDFS(pt)) == [2,3,4,0]
 @test collect(AbstractTrees.PostOrderDFS(pt)) == [0,4,3,2]
@@ -70,7 +70,7 @@ AbstractTrees.print_tree(STDOUT, pt)
 a = [1,[2,[3]]]
 b = treemap!(PreOrderDFS(a)) do node
     !isa(node, Vector) && return node
-    ret = unshift!(copy(node),0)
+    ret = pushfirst!(copy(node),0)
     # And just for good measure stomp over the old node to make sure nothing
     # is cached.
     empty!(node)
