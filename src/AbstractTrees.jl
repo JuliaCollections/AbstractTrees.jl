@@ -56,10 +56,6 @@ children(kv::Pair{K,V}) where {K,V} = (kv[2],)
 printnode(io::IO, d::Dict{K,V}) where {K,V} = print(io, Dict{K,V})
 printnode(io::IO, d::Vector{T}) where {T} = print(io, Vector{T})
 
-if VERSION < v"0.7.0-DEV.1661"
-    nextind(x::Tuple, i::Integer) = i + 1
-end
-
 # Node equality predicate
 nodeequal(a, b) = a === b
 
@@ -155,7 +151,7 @@ function _print_tree(printnode::Function, io::IO, tree, maxdepth = 5; depth = 0,
 end
 print_tree(f::Function, io::IO, tree, args...; kwargs...) = _print_tree(f, io, tree, args...; kwargs...)
 print_tree(io::IO, tree, args...; kwargs...) = print_tree(printnode, io, tree, args...; kwargs...)
-print_tree(tree, args...; kwargs...) = print_tree(STDOUT::IO, tree, args...; kwargs...)
+print_tree(tree, args...; kwargs...) = print_tree(stdout::IO, tree, args...; kwargs...)
 
 # Tree Indexing
 struct Tree
