@@ -1,6 +1,7 @@
 try
     AbstractTrees
     workspace()
+catch
 end
 using AbstractTrees
 using Test
