@@ -23,7 +23,7 @@ include("implicitstacks.jl")
 # children. If an object is not iterable, assume it does not have children by
 # default.
 function children(x)
-    if Base.isiterable(x) && !isa(x, Integer) && !isa(x, Char) && !isa(x, Task)
+    if Base.isiterable(typeof(x)) && !isa(x, Integer) && !isa(x, Char) && !isa(x, Task)
         return x
     else
         return ()
