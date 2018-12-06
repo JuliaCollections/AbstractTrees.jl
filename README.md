@@ -15,3 +15,9 @@ This package provides several utilities for working with tree-like data structur
 - `StatelessBFS` iterates over a tree level-by-level, but does not keep state (causing this to be O(n^2), but be able to handle changing trees).
 - `treemap` maps each node of a tree to obtain a new tree.
 - `treemap!` maps each node of a tree in place.
+
+# Breaking changes in v0.3
+
+- `getindex(::Any, ::ImplicitRootState)` is no longer defined; packages
+  that used this method will now throw a `MethodError`. To circumvent this,
+  define `Base.getindex(x::MyTreeType, ::AbstractTrees.ImplicitRootState) = x`.

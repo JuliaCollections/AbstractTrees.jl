@@ -379,7 +379,6 @@ update_state!(old_state, cs, idx) = next(cs, idx)[1]
 
 struct ImplicitRootState
 end
-getindex(x, ::ImplicitRootState) = x
 getindex(x::AbstractArray, ::ImplicitRootState) = x
 
 """

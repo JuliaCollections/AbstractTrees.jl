@@ -2,6 +2,14 @@ using AbstractTrees
 using Test
 import Base: ==
 
+if !isdefined(@__MODULE__, :isfirstrun)
+    const isfirstrun = Ref(true)
+end
+if isfirstrun[] && VERSION >= v"1.1.0-DEV.838" # requires https://github.com/JuliaLang/julia/pull/30291
+    @test isempty(detect_ambiguities(AbstractTrees, Base, Core))
+    isfirstrun[] = false
+end
+
 AbstractTrees.children(x::Array) = x
 tree = Any[1,Any[2,3]]
 
