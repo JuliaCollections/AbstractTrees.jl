@@ -90,17 +90,28 @@ b = treemap!(PreOrderDFS(a)) do node
 end
 @assert b == Any[0,1,Any[0,2,[0,3]]]
 
-#=
-immutable IntTree
+struct IntTree
     num::Int
     children::Vector{IntTree}
 end
 ==(x::IntTree,y::IntTree) = x.num == y.num && x.children == y.children
+AbstractTrees.children(itree::IntTree) = itree.children
 
+itree = IntTree(1, [IntTree(2, IntTree[])])
+Base.eltype(::Type{<:TreeIterator{IntTree}}) = IntTree
+Base.IteratorEltype(::Type{<:TreeIterator{IntTree}}) = Base.HasEltype()
+AbstractTrees.nodetype(::IntTree) = IntTree
+iter = Leaves(itree)
+@test @inferred(first(iter)) == IntTree(2, IntTree[])
+val, state = iterate(iter)
+@test Base.return_types(iterate, Tuple{typeof(iter), typeof(state)}) ==
+    [Union{Nothing, Tuple{IntTree,typeof(state)}}]
+
+#=
 @test treemap(PostOrderDFS(tree)) do ind, x, children
     IntTree(isa(x,Int) ? x : mapreduce(x->x.num,+,0,children),
         isempty(children) ? IntTree[] : children)
 end == IntTree(6,[IntTree(1,IntTree[]),IntTree(5,[IntTree(2,IntTree[]),IntTree(3,IntTree[])])])
+=#
 
 @test collect(PostOrderDFS([])) == Any[[]]
-=#

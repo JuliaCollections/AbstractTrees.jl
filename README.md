@@ -16,6 +16,14 @@ This package provides several utilities for working with tree-like data structur
 - `treemap` maps each node of a tree to obtain a new tree.
 - `treemap!` maps each node of a tree in place.
 
+# Traits
+
+- `AbstractTrees.nodetype(tree)` can be defined to make iteration inferrable.
+- `AbstractTrees.ParentLinks` can be defined to return `AbstractTrees.StoredParents()`
+  if a tree type stores explicit links to a parent; `AbstractTrees.SiblingLinks`,
+  when set to `AbstractTrees.StoredSiblings()`, serves the same role for siblings.
+  See their docstrings for more information.
+
 # Breaking changes in v0.3
 
 - `getindex(::Any, ::ImplicitRootState)` is no longer defined; packages
