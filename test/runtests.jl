@@ -44,7 +44,7 @@ Base.eltype(::Type{<:TreeIterator{OneTree}}) = Int
 Base.IteratorEltype(::Type{<:TreeIterator{OneTree}}) = Base.HasEltype()
 
 ot = OneTree([2,3,4,0])
-AbstractTrees.print_tree(io, ot)
+print_tree(io, ot)
 @test String(take!(io)) == "2\n└─ 3\n   └─ 4\n      └─ 0\n"
 @test @inferred(collect(Leaves(ot))) == [0]
 @test eltype(collect(Leaves(ot))) === Int
@@ -72,11 +72,11 @@ AbstractTrees.printnode(io::IO, t::ParentTree) =
     AbstractTrees.printnode(io::IO, t[AbstractTrees.rootstate(t)])
 
 pt = ParentTree(ot,[0,1,2,3])
-AbstractTrees.print_tree(io, pt)
+print_tree(io, pt)
 @test String(take!(io)) == "2\n└─ 3\n   └─ 4\n      └─ 0\n"
-@test collect(AbstractTrees.Leaves(pt)) == [0]
-@test collect(AbstractTrees.PreOrderDFS(pt)) == [2,3,4,0]
-@test collect(AbstractTrees.PostOrderDFS(pt)) == [0,4,3,2]
+@test collect(Leaves(pt)) == [0]
+@test collect(PreOrderDFS(pt)) == [2,3,4,0]
+@test collect(PostOrderDFS(pt)) == [0,4,3,2]
 
 # Test modification while iterating over PreOrderDFS
 a = [1,[2,[3]]]
