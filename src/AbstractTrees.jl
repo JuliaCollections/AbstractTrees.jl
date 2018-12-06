@@ -112,34 +112,6 @@ function print_prefix(io, depth, charset, active_levels)
     end
 end
 
-@doc doc"""
-# Usage
-Prints an ASCII formatted representation of the `tree` to the given `io` object.
-By default all children will be printed up to a maximum level of 5, though this
-valud can be overriden by the `maxdepth` parameter. The charset to use in
-printing can be customized using the `charset` keyword argument.
-
-# Examples
-```julia
-julia> print_tree(STDOUT,Dict("a"=>"b","b"=>['c','d']))
-Dict{String,Any}("b"=>['c','d'],"a"=>"b")
-├─ b
-│  ├─ c
-│  └─ d
-└─ a
-   └─ b
-
-julia> print_tree(STDOUT,Dict("a"=>"b","b"=>['c','d']);
-        charset = TreeCharSet('+','\\','|',"--"))
-Dict{String,Any}("b"=>['c','d'],"a"=>"b")
-+-- b
-|   +-- c
-|   \-- d
-\-- a
-   \-- b
-```
-
-"""
 function _print_tree(printnode::Function, io::IO, tree, maxdepth = 5; depth = 0, active_levels = Int[],
                      charset = TreeCharSet(), withinds = false, inds = [], from = nothing, to = nothing, roottree = tree)
     nodebuf = IOBuffer()
@@ -182,6 +154,42 @@ end
 print_tree(f::Function, io::IO, tree, args...; kwargs...) = _print_tree(f, io, tree, args...; kwargs...)
 print_tree(io::IO, tree, args...; kwargs...) = print_tree(printnode, io, tree, args...; kwargs...)
 print_tree(tree, args...; kwargs...) = print_tree(stdout::IO, tree, args...; kwargs...)
+
+"""
+    print_tree(tree, maxdepth=5; kwargs...)
+    print_tree(io, tree, maxdepth=5; kwargs...)
+    print_tree(f::Function, io, tree, maxdepth=5; kwargs...)
+
+# Usage
+Prints an ASCII formatted representation of the `tree` to the given `io` object.
+By default all children will be printed up to a maximum level of 5, though this
+valud can be overriden by the `maxdepth` parameter. The charset to use in
+printing can be customized using the `charset` keyword argument.
+You can control the printing of individual nodes by passing a function `f(io, node)`;
+the default is [`AbstractTrees.printnode`](@ref).
+
+# Examples
+```julia
+julia> print_tree(STDOUT,Dict("a"=>"b","b"=>['c','d']))
+Dict{String,Any}("b"=>['c','d'],"a"=>"b")
+├─ b
+│  ├─ c
+│  └─ d
+└─ a
+   └─ b
+
+julia> print_tree(STDOUT,Dict("a"=>"b","b"=>['c','d']);
+        charset = TreeCharSet('+','\\','|',"--"))
+Dict{String,Any}("b"=>['c','d'],"a"=>"b")
++-- b
+|   +-- c
+|   \\-- d
+\\-- a
+   \\-- b
+```
+
+"""
+print_tree
 
 # Tree Indexing
 struct Tree
