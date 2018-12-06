@@ -1,4 +1,3 @@
-__precompile__()
 module AbstractTrees
 
 export print_tree, TreeCharSet, Leaves, PostOrderDFS, Tree,
@@ -15,14 +14,31 @@ abstract type AbstractShadowTree end
 include("traits.jl")
 include("implicitstacks.jl")
 
-# This package is intended to provide an abstract interface for working.
+# This package is intended to provide an abstract interface for working
+# with tree structures.
 # Though the package itself is not particularly sophisticated, it defines
 # the interface that can be used by other packages to talk about trees.
 
-# By default assume that if an object is iterable, it's iteration gives the
-# children. If an object is not iterable, assume it does not have children by
-# default.
+"""
+    children(x)
+
+Return the immediate children of node `x`. You should specialize this method
+for custom tree structures.
+
+# Example
+
+```
+struct MyNode{T}
+    data::T
+    children::Vector{MyNode{T}}
+end
+AbstractTrees.children(node::MyNode) = node.children
+```
+"""
 function children(x)
+    # By default assume that if an object is iterable, its iteration gives the
+    # children. If an object is not iterable, assume it does not have children by
+    # default.
     if Base.isiterable(typeof(x)) && !isa(x, Integer) && !isa(x, Char) && !isa(x, Task)
         return x
     else
@@ -31,11 +47,26 @@ function children(x)
 end
 has_children(x) = children(x) !== ()
 
-# Print a single node. Override this if you want your print function to print
-# part of the tree by default
+"""
+    printnode(io::IO, node)
+
+Print a single node. The default is to show a compact representation of `node`.
+Override this if you want nodes printed in a custom way in [`print_tree`](@ref),
+or if you want your print function to print part of the tree by default.
+
+# Example
+
+```
+struct MyNode{T}
+    data::T
+    children::Vector{MyNode{T}}
+end
+AbstractTrees.printnode(io::IO, node::MyNode) = print(io, "MyNode(\$(node.data))")
+```
+"""
 printnode(io::IO, node) = show(IOContext(io, :compact => true), node)
 
-# Special cases
+## Special cases
 
 # Don't consider strings or reals tree-iterable in general
 children(x::AbstractString) = ()
@@ -45,13 +76,12 @@ children(x::Real) = ()
 # elsewhere
 children(x::Expr) = x.args
 
-# To support iteration over associatives, define printnode on Tuples to return
-# the first element. If this doesn't work well in practice it may be better to
-# create a special iterator that `children` on `Associative` returns.
-# Even better, iteration over associatives should return pairs.
+# For AbstractDicts
 
 printnode(io::IO, kv::Pair{K,V}) where {K,V} = printnode(io,kv[1])
 children(kv::Pair{K,V}) where {K,V} = (kv[2],)
+
+# For potentially-large containers, just show the type
 
 printnode(io::IO, d::Dict{K,V}) where {K,V} = print(io, Dict{K,V})
 printnode(io::IO, d::Vector{T}) where {T} = print(io, Vector{T})
@@ -111,7 +141,7 @@ Dict{String,Any}("b"=>['c','d'],"a"=>"b")
 
 """
 function _print_tree(printnode::Function, io::IO, tree, maxdepth = 5; depth = 0, active_levels = Int[],
-    charset = TreeCharSet(), withinds = false, inds = [], from = nothing, to = nothing, roottree = tree)
+                     charset = TreeCharSet(), withinds = false, inds = [], from = nothing, to = nothing, roottree = tree)
     nodebuf = IOBuffer()
     isa(io, IOContext) && (nodebuf = IOContext(nodebuf, io))
     if withinds
