@@ -1,12 +1,12 @@
 module AbstractTrees
 
-export print_tree, TreeCharSet, Leaves, PostOrderDFS, Tree,
+export print_tree, TreeCharSet, TreeIterator, Leaves, PostOrderDFS, Tree,
     AnnotationNode, StatelessBFS, treemap, treemap!, PreOrderDFS,
     ShadowTree, children, Leaves
 
 import Base: getindex, setindex!, iterate, nextind, print, show,
-    eltype, IteratorSize, length, push!, pop!
-using Base: SizeUnknown
+    eltype, IteratorSize, IteratorEltype, length, push!, pop!
+using Base: SizeUnknown, EltypeUnknown
 using Markdown
 
 abstract type AbstractShadowTree end
@@ -285,6 +285,7 @@ end
 # Tree Iterators
 
 abstract type TreeIterator{T} end
+IteratorEltype(::Type{<:TreeIterator}) = EltypeUnknown()
 
 """
 Iterator to visit the leaves of a tree, e.g. for the tree

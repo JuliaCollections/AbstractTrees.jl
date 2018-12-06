@@ -17,6 +17,7 @@ io = IOBuffer()
 print_tree(io, tree)
 @test String(take!(io)) == "Array{Any,1}\n├─ 1\n└─ Array{Any,1}\n   ├─ 2\n   └─ 3\n"
 @test collect(Leaves(tree)) == [1,2,3]
+@test collect(Leaves(tree)) isa Vector{Int}
 @test collect(PostOrderDFS(tree)) == Any[1,2,3,Any[2,3],Any[1,Any[2,3]]]
 @test collect(StatelessBFS(tree)) == Any[Any[1,Any[2,3]],1,Any[2,3],2,3]
 
@@ -39,13 +40,16 @@ AbstractTrees.children(tree::OneTree) = AbstractTrees.children(tree, tree)
 AbstractTrees.rootstate(tree::OneTree) = 1
 AbstractTrees.printnode(io::IO, t::OneTree) =
     AbstractTrees.printnode(io::IO, t[AbstractTrees.rootstate(t)])
+Base.eltype(::Type{<:TreeIterator{OneTree}}) = Int
+Base.IteratorEltype(::Type{<:TreeIterator{OneTree}}) = Base.HasEltype()
 
 ot = OneTree([2,3,4,0])
 AbstractTrees.print_tree(io, ot)
 @test String(take!(io)) == "2\n└─ 3\n   └─ 4\n      └─ 0\n"
-@test collect(AbstractTrees.Leaves(ot)) == [0]
-@test collect(AbstractTrees.PreOrderDFS(ot)) == [2,3,4,0]
-@test collect(AbstractTrees.PostOrderDFS(ot)) == [0,4,3,2]
+@test @inferred(collect(Leaves(ot))) == [0]
+@test eltype(collect(Leaves(ot))) === Int
+@test collect(PreOrderDFS(ot)) == [2,3,4,0]
+@test collect(PostOrderDFS(ot)) == [0,4,3,2]
 
 """
     Stores an explicit parent for some other kind of tree
