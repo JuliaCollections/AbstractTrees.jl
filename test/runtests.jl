@@ -5,7 +5,9 @@ import Base: ==
 AbstractTrees.children(x::Array) = x
 tree = Any[1,Any[2,3]]
 
-AbstractTrees.print_tree(stdout, tree)
+io = IOBuffer()
+print_tree(io, tree)
+@test String(take!(io)) == "Array{Any,1}\n├─ 1\n└─ Array{Any,1}\n   ├─ 2\n   └─ 3\n"
 @test collect(Leaves(tree)) == [1,2,3]
 @test collect(PostOrderDFS(tree)) == Any[1,2,3,Any[2,3],Any[1,Any[2,3]]]
 @test collect(StatelessBFS(tree)) == Any[Any[1,Any[2,3]],1,Any[2,3],2,3]
@@ -31,7 +33,8 @@ AbstractTrees.printnode(io::IO, t::OneTree) =
     AbstractTrees.printnode(io::IO, t[AbstractTrees.rootstate(t)])
 
 ot = OneTree([2,3,4,0])
-AbstractTrees.print_tree(stdout, ot)
+AbstractTrees.print_tree(io, ot)
+@test String(take!(io)) == "2\n└─ 3\n   └─ 4\n      └─ 0\n"
 @test collect(AbstractTrees.Leaves(ot)) == [0]
 @test collect(AbstractTrees.PreOrderDFS(ot)) == [2,3,4,0]
 @test collect(AbstractTrees.PostOrderDFS(ot)) == [0,4,3,2]
@@ -57,7 +60,8 @@ AbstractTrees.printnode(io::IO, t::ParentTree) =
     AbstractTrees.printnode(io::IO, t[AbstractTrees.rootstate(t)])
 
 pt = ParentTree(ot,[0,1,2,3])
-AbstractTrees.print_tree(stdout, pt)
+AbstractTrees.print_tree(io, pt)
+@test String(take!(io)) == "2\n└─ 3\n   └─ 4\n      └─ 0\n"
 @test collect(AbstractTrees.Leaves(pt)) == [0]
 @test collect(AbstractTrees.PreOrderDFS(pt)) == [2,3,4,0]
 @test collect(AbstractTrees.PostOrderDFS(pt)) == [0,4,3,2]
