@@ -28,8 +28,8 @@ siblinglinks(tree) = siblinglinks(typeof(tree))
 
 
 abstract type TreeKind end
-struct RegularTree <: TreeKind; end
-struct IndexedTree <: TreeKind; end
+abstract type RegularTree <: TreeKind end
+abstract type IndexedTree <: TreeKind end
 
 treekind(tree::Type) = RegularTree()
 treekind(tree) = treekind(typeof(tree))
