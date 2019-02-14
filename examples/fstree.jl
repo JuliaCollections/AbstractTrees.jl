@@ -1,29 +1,29 @@
 using AbstractTrees
 import AbstractTrees: children, printnode
 
-struct Directory
-    path::String
-end
-
 struct File
     path::String
 end
 
 children(f::File) = ()
 
-struct DirectoryListing
-    d::Directory
-    names::Vector{String}
+struct Directory
+    path::String
 end
 
-children(d::Directory) = DirectoryListing(d,readdir(d.path))
-
-function Base.iterate(l::DirectoryListing, state...)
-    (v,i) = iterate(l.names, state...)
-    path = joinpath(l.d.path,v)
-    (isdir(path) ? Directory(path) : File(path), i)
+function children(d::Directory)
+    contents = readdir(d.path)
+    children = Vector{Union{Directory,File}}(undef,length(contents))
+    for (i,c) in enumerate(contents)
+        path = joinpath(d.path,c)
+        children[i] = isdir(path) ? Directory(path) : File(path)
+    end
+    return children
 end
 
-# Pretty printing
-printnode(io::IO, d::Directory) = Base.print_with_color(:blue, io, basename(d.path))
+printnode(io::IO, d::Directory) = print(io, basename(d.path))
 printnode(io::IO, f::File) = print(io, basename(f.path))
+
+dirpath = realpath(joinpath(dirname(pathof(AbstractTrees)),".."))
+d = Directory(dirpath)
+print_tree(d)
