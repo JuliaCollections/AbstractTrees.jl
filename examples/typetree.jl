@@ -1,8 +1,8 @@
 # DataType
-function AbstractTrees.children(t::DataType)
+function AbstractTrees.children(t::Type)
     t === Function ? Vector{Type}() : filter!(x -> x !== Any,subtypes(t))
 end
-AbstractTrees.printnode(io::IO,t::DataType) = print(io,t)
+AbstractTrees.printnode(io::IO,t::Type) = print(io,t)
 
 print_tree(IO)
 
