@@ -181,9 +181,9 @@ second_tree(x::ShadowTree) = x.shadow
 function zip_min(c1, c2)
     n1, n2 = length(c1), length(c2)
     if n1 < n2
-        c2 = take(c2,n1)
+        c2 = Iterators.take(c2,n1)
     elseif n2 < n1
-        c1 = take(c1,n2)
+        c1 = Iterators.take(c1,n2)
     end
     zip(c1, c2)
 end
