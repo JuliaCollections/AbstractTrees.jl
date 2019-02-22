@@ -50,8 +50,9 @@ children(x::Expr) = x.args
 # create a special iterator that `children` on `Associative` returns.
 # Even better, iteration over associatives should return pairs.
 
-printnode(io::IO, kv::Pair{K,V}) where {K,V} = printnode(io,kv[1])
-children(kv::Pair{K,V}) where {K,V} = (kv[2],)
+children(d::Dict) = [p for p in d]
+children(kv::Pair) = children(kv[2])
+printnode(io::IO, kv::Pair) = isempty(children(kv[2])) ? print(io,"$(kv[1]): $(kv[2])") : print(io,"$(kv[1]):")
 
 printnode(io::IO, d::Dict{K,V}) where {K,V} = print(io, Dict{K,V})
 printnode(io::IO, d::Vector{T}) where {T} = print(io, Vector{T})
