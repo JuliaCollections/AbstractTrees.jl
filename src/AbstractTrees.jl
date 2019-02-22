@@ -52,7 +52,7 @@ children(x::Expr) = x.args
 
 children(d::Dict) = [p for p in d]
 children(kv::Pair) = children(kv[2])
-printnode(io::IO, kv::Pair) = isempty(children(kv[2])) ? print(io,"$(kv[1]): $(kv[2])") : print(io,"$(kv[1]):")
+printnode(io::IO, kv::Pair) = isempty(children(kv[2])) ? print(io,"$(kv[1]): $(kv[2])") : print(io,"$(kv[1]): $(typeof(kv[2]))")
 
 printnode(io::IO, d::Dict{K,V}) where {K,V} = print(io, Dict{K,V})
 printnode(io::IO, d::Vector{T}) where {T} = print(io, Vector{T})
