@@ -83,7 +83,7 @@ function print_prefix(io, depth, charset, active_levels)
     end
 end
 
-@doc doc"""
+@doc raw"""
 # Usage
 Prints an ASCII formatted representation of the `tree` to the given `io` object.
 By default all children will be printed up to a maximum level of 5, though this
@@ -111,6 +111,8 @@ Dict{String,Any}("b"=>['c','d'],"a"=>"b")
 ```
 
 """
+print_tree
+
 function _print_tree(printnode::Function, io::IO, tree, maxdepth = 5; depth = 0, active_levels = Int[],
     charset = TreeCharSet(), withinds = false, inds = [], from = nothing, to = nothing, roottree = tree)
     nodebuf = IOBuffer()
