@@ -67,10 +67,11 @@ struct TreeCharSet
     terminator
     skip
     dash
+    ellipsis
 end
 
 # Default charset
-TreeCharSet() = TreeCharSet('├','└','│','─')
+TreeCharSet() = TreeCharSet('├','└','│','─','…')
 
 function print_prefix(io, depth, charset, active_levels)
     for current_depth in 0:(depth-1)
@@ -126,6 +127,7 @@ function _print_tree(printnode::Function, io::IO, tree, maxdepth = 5; depth = 0,
         i != 1 && print_prefix(io, depth, charset, active_levels)
         println(io, line)
     end
+    depth > maxdepth && return
     c = isa(treekind(roottree), IndexedTree) ?
         childindices(roottree, tree) : children(roottree, tree)
     if c !== ()
@@ -143,9 +145,10 @@ function _print_tree(printnode::Function, io::IO, tree, maxdepth = 5; depth = 0,
                 child_active_levels = push!(copy(active_levels), depth)
             end
             print(io, charset.dash, ' ')
-            print_tree(printnode, io, child; depth = depth + 1,
-              active_levels = child_active_levels, charset = charset, withinds=withinds,
-              inds = withinds ? [inds; ind] : [], roottree = roottree)
+            print_tree(depth == maxdepth ? (io, val) -> print(io, charset.ellipsis) : printnode,
+                io, child, maxdepth; depth = depth + 1,
+                active_levels = child_active_levels, charset = charset, withinds=withinds,
+                inds = withinds ? [inds; ind] : [], roottree = roottree)
         end
     end
 end
