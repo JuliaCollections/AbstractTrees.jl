@@ -49,5 +49,24 @@ end
 function parentind
 end
 
+"""
+    nodetype(tree)
+
+A trait function, defined on the tree object, specifying the types of the nodes.
+The default is `Any`. When applicable, define this trait to make iteration inferrable.
+
+# Example
+
+```jldoctest
+struct IntTree
+    num::Int
+    children::Vector{IntTree}
+end
+AbstractTrees.children(itree::IntTree) = itree.children
+AbstractTrees.nodetype(::IntTree) = IntTree
+```
+
+This suffices to make iteration over, e.g., `Leaves(itree::IntTree)` inferrable.
+"""
 nodetype(tree) = Any
 idxtype(tree) = Int

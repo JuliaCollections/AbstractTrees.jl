@@ -1,17 +1,23 @@
-try
-    AbstractTrees
-    workspace()
-catch
-end
 using AbstractTrees
 using Test
 import Base: ==
 
+if !isdefined(@__MODULE__, :isfirstrun)
+    const isfirstrun = Ref(true)
+end
+if isfirstrun[] && VERSION >= v"1.1.0-DEV.838" # requires https://github.com/JuliaLang/julia/pull/30291
+    @test isempty(detect_ambiguities(AbstractTrees, Base, Core))
+    isfirstrun[] = false
+end
+
 AbstractTrees.children(x::Array) = x
 tree = Any[1,Any[2,3]]
 
-AbstractTrees.print_tree(stdout, tree)
+io = IOBuffer()
+print_tree(io, tree)
+@test String(take!(io)) == "Array{Any,1}\n├─ 1\n└─ Array{Any,1}\n   ├─ 2\n   └─ 3\n"
 @test collect(Leaves(tree)) == [1,2,3]
+@test collect(Leaves(tree)) isa Vector{Int}
 @test collect(PostOrderDFS(tree)) == Any[1,2,3,Any[2,3],Any[1,Any[2,3]]]
 @test collect(StatelessBFS(tree)) == Any[Any[1,Any[2,3]],1,Any[2,3],2,3]
 
@@ -34,12 +40,16 @@ AbstractTrees.children(tree::OneTree) = AbstractTrees.children(tree, tree)
 AbstractTrees.rootstate(tree::OneTree) = 1
 AbstractTrees.printnode(io::IO, t::OneTree) =
     AbstractTrees.printnode(io::IO, t[AbstractTrees.rootstate(t)])
+Base.eltype(::Type{<:TreeIterator{OneTree}}) = Int
+Base.IteratorEltype(::Type{<:TreeIterator{OneTree}}) = Base.HasEltype()
 
 ot = OneTree([2,3,4,0])
-AbstractTrees.print_tree(stdout, ot)
-@test collect(AbstractTrees.Leaves(ot)) == [0]
-@test collect(AbstractTrees.PreOrderDFS(ot)) == [2,3,4,0]
-@test collect(AbstractTrees.PostOrderDFS(ot)) == [0,4,3,2]
+print_tree(io, ot)
+@test String(take!(io)) == "2\n└─ 3\n   └─ 4\n      └─ 0\n"
+@test @inferred(collect(Leaves(ot))) == [0]
+@test eltype(collect(Leaves(ot))) === Int
+@test collect(PreOrderDFS(ot)) == [2,3,4,0]
+@test collect(PostOrderDFS(ot)) == [0,4,3,2]
 
 """
     Stores an explicit parent for some other kind of tree
@@ -62,10 +72,11 @@ AbstractTrees.printnode(io::IO, t::ParentTree) =
     AbstractTrees.printnode(io::IO, t[AbstractTrees.rootstate(t)])
 
 pt = ParentTree(ot,[0,1,2,3])
-AbstractTrees.print_tree(stdout, pt)
-@test collect(AbstractTrees.Leaves(pt)) == [0]
-@test collect(AbstractTrees.PreOrderDFS(pt)) == [2,3,4,0]
-@test collect(AbstractTrees.PostOrderDFS(pt)) == [0,4,3,2]
+print_tree(io, pt)
+@test String(take!(io)) == "2\n└─ 3\n   └─ 4\n      └─ 0\n"
+@test collect(Leaves(pt)) == [0]
+@test collect(PreOrderDFS(pt)) == [2,3,4,0]
+@test collect(PostOrderDFS(pt)) == [0,4,3,2]
 
 # Test modification while iterating over PreOrderDFS
 a = [1,[2,[3]]]
@@ -79,17 +90,28 @@ b = treemap!(PreOrderDFS(a)) do node
 end
 @assert b == Any[0,1,Any[0,2,[0,3]]]
 
-#=
-immutable IntTree
+struct IntTree
     num::Int
     children::Vector{IntTree}
 end
 ==(x::IntTree,y::IntTree) = x.num == y.num && x.children == y.children
+AbstractTrees.children(itree::IntTree) = itree.children
 
+itree = IntTree(1, [IntTree(2, IntTree[])])
+Base.eltype(::Type{<:TreeIterator{IntTree}}) = IntTree
+Base.IteratorEltype(::Type{<:TreeIterator{IntTree}}) = Base.HasEltype()
+AbstractTrees.nodetype(::IntTree) = IntTree
+iter = Leaves(itree)
+@test @inferred(first(iter)) == IntTree(2, IntTree[])
+val, state = iterate(iter)
+@test Base.return_types(iterate, Tuple{typeof(iter), typeof(state)}) ==
+    [Union{Nothing, Tuple{IntTree,typeof(state)}}]
+
+#=
 @test treemap(PostOrderDFS(tree)) do ind, x, children
     IntTree(isa(x,Int) ? x : mapreduce(x->x.num,+,0,children),
         isempty(children) ? IntTree[] : children)
 end == IntTree(6,[IntTree(1,IntTree[]),IntTree(5,[IntTree(2,IntTree[]),IntTree(3,IntTree[])])])
+=#
 
 @test collect(PostOrderDFS([])) == Any[[]]
-=#
