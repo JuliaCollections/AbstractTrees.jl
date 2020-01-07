@@ -163,7 +163,7 @@ print_tree(tree, args...; kwargs...) = print_tree(stdout::IO, tree, args...; kwa
 # Usage
 Prints an ASCII formatted representation of the `tree` to the given `io` object.
 By default all children will be printed up to a maximum level of 5, though this
-valud can be overriden by the `maxdepth` parameter. The charset to use in
+value can be overriden by the `maxdepth` parameter. The charset to use in
 printing can be customized using the `charset` keyword argument.
 You can control the printing of individual nodes by passing a function `f(io, node)`;
 the default is [`AbstractTrees.printnode`](@ref).
