@@ -115,3 +115,14 @@ end == IntTree(6,[IntTree(1,IntTree[]),IntTree(5,[IntTree(2,IntTree[]),IntTree(3
 =#
 
 @test collect(PostOrderDFS([])) == Any[[]]
+
+# Ensure the examples run
+const exampledir = joinpath(dirname(@__DIR__), "examples")
+examples = readdir(exampledir)
+mktemp() do filename, io
+    redirect_stdout(io) do
+        for ex in examples
+            include(joinpath(exampledir, ex))
+        end
+    end
+end
