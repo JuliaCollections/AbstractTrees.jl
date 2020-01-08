@@ -201,7 +201,7 @@ show(io::IO, tree::Tree) = print_tree(io, tree.x)
 
 mutable struct AnnotationNode{T}
     val::T
-    children::Array{AnnotationNode{T}}
+    children::Vector{AnnotationNode{T}}
 end
 
 children(x::AnnotationNode) = x.children
