@@ -1,13 +1,12 @@
-__precompile__()
 module AbstractTrees
 
-export print_tree, TreeCharSet, Leaves, PostOrderDFS, Tree,
+export print_tree, TreeCharSet, TreeIterator, Leaves, PostOrderDFS, Tree,
     AnnotationNode, StatelessBFS, treemap, treemap!, PreOrderDFS,
-    ShadowTree, children, Leaves
+    ShadowTree, children
 
 import Base: getindex, setindex!, iterate, nextind, print, show,
-    eltype, IteratorSize, length, push!, pop!
-using Base: SizeUnknown
+    eltype, IteratorSize, IteratorEltype, length, push!, pop!
+using Base: SizeUnknown, EltypeUnknown
 using Markdown
 
 abstract type AbstractShadowTree end
@@ -15,14 +14,31 @@ abstract type AbstractShadowTree end
 include("traits.jl")
 include("implicitstacks.jl")
 
-# This package is intended to provide an abstract interface for working.
+# This package is intended to provide an abstract interface for working
+# with tree structures.
 # Though the package itself is not particularly sophisticated, it defines
 # the interface that can be used by other packages to talk about trees.
 
-# By default assume that if an object is iterable, it's iteration gives the
-# children. If an object is not iterable, assume it does not have children by
-# default.
+"""
+    children(x)
+
+Return the immediate children of node `x`. You should specialize this method
+for custom tree structures.
+
+# Example
+
+```
+struct MyNode{T}
+    data::T
+    children::Vector{MyNode{T}}
+end
+AbstractTrees.children(node::MyNode) = node.children
+```
+"""
 function children(x)
+    # By default assume that if an object is iterable, its iteration gives the
+    # children. If an object is not iterable, assume it does not have children by
+    # default.
     if Base.isiterable(typeof(x)) && !isa(x, Integer) && !isa(x, Char) && !isa(x, Task)
         return x
     else
@@ -31,11 +47,26 @@ function children(x)
 end
 has_children(x) = children(x) !== ()
 
-# Print a single node. Override this if you want your print function to print
-# part of the tree by default
+"""
+    printnode(io::IO, node)
+
+Print a single node. The default is to show a compact representation of `node`.
+Override this if you want nodes printed in a custom way in [`print_tree`](@ref),
+or if you want your print function to print part of the tree by default.
+
+# Example
+
+```
+struct MyNode{T}
+    data::T
+    children::Vector{MyNode{T}}
+end
+AbstractTrees.printnode(io::IO, node::MyNode) = print(io, "MyNode(\$(node.data))")
+```
+"""
 printnode(io::IO, node) = show(IOContext(io, :compact => true), node)
 
-# Special cases
+## Special cases
 
 # Don't consider strings or reals tree-iterable in general
 children(x::AbstractString) = ()
@@ -45,13 +76,12 @@ children(x::Real) = ()
 # elsewhere
 children(x::Expr) = x.args
 
-# To support iteration over associatives, define printnode on Tuples to return
-# the first element. If this doesn't work well in practice it may be better to
-# create a special iterator that `children` on `Associative` returns.
-# Even better, iteration over associatives should return pairs.
+# For AbstractDicts
 
 printnode(io::IO, kv::Pair{K,V}) where {K,V} = printnode(io,kv[1])
 children(kv::Pair{K,V}) where {K,V} = (kv[2],)
+
+# For potentially-large containers, just show the type
 
 printnode(io::IO, d::Dict{K,V}) where {K,V} = print(io, Dict{K,V})
 printnode(io::IO, d::Vector{T}) where {T} = print(io, Vector{T})
@@ -83,38 +113,8 @@ function print_prefix(io, depth, charset, active_levels)
     end
 end
 
-@doc raw"""
-# Usage
-Prints an ASCII formatted representation of the `tree` to the given `io` object.
-By default all children will be printed up to a maximum level of 5, though this
-valud can be overriden by the `maxdepth` parameter. The charset to use in
-printing can be customized using the `charset` keyword argument.
-
-# Examples
-```julia
-julia> print_tree(STDOUT,Dict("a"=>"b","b"=>['c','d']))
-Dict{String,Any}("b"=>['c','d'],"a"=>"b")
-├─ b
-│  ├─ c
-│  └─ d
-└─ a
-   └─ b
-
-julia> print_tree(STDOUT,Dict("a"=>"b","b"=>['c','d']);
-        charset = TreeCharSet('+','\\','|',"--"))
-Dict{String,Any}("b"=>['c','d'],"a"=>"b")
-+-- b
-|   +-- c
-|   \-- d
-\-- a
-   \-- b
-```
-
-"""
-print_tree
-
 function _print_tree(printnode::Function, io::IO, tree, maxdepth = 5; depth = 0, active_levels = Int[],
-    charset = TreeCharSet(), withinds = false, inds = [], from = nothing, to = nothing, roottree = tree)
+                     charset = TreeCharSet(), withinds = false, inds = [], from = nothing, to = nothing, roottree = tree)
     nodebuf = IOBuffer()
     isa(io, IOContext) && (nodebuf = IOContext(nodebuf, io))
     if withinds
@@ -157,6 +157,42 @@ end
 print_tree(f::Function, io::IO, tree, args...; kwargs...) = _print_tree(f, io, tree, args...; kwargs...)
 print_tree(io::IO, tree, args...; kwargs...) = print_tree(printnode, io, tree, args...; kwargs...)
 print_tree(tree, args...; kwargs...) = print_tree(stdout::IO, tree, args...; kwargs...)
+
+"""
+    print_tree(tree, maxdepth=5; kwargs...)
+    print_tree(io, tree, maxdepth=5; kwargs...)
+    print_tree(f::Function, io, tree, maxdepth=5; kwargs...)
+
+# Usage
+Prints an ASCII formatted representation of the `tree` to the given `io` object.
+By default all children will be printed up to a maximum level of 5, though this
+value can be overriden by the `maxdepth` parameter. The charset to use in
+printing can be customized using the `charset` keyword argument.
+You can control the printing of individual nodes by passing a function `f(io, node)`;
+the default is [`AbstractTrees.printnode`](@ref).
+
+# Examples
+```julia
+julia> print_tree(STDOUT,Dict("a"=>"b","b"=>['c','d']))
+Dict{String,Any}("b"=>['c','d'],"a"=>"b")
+├─ b
+│  ├─ c
+│  └─ d
+└─ a
+   └─ b
+
+julia> print_tree(STDOUT,Dict("a"=>"b","b"=>['c','d']);
+        charset = TreeCharSet('+','\\','|',"--"))
+Dict{String,Any}("b"=>['c','d'],"a"=>"b")
++-- b
+|   +-- c
+|   \\-- d
+\\-- a
+   \\-- b
+```
+
+"""
+print_tree
 
 # Tree Indexing
 struct Tree
@@ -252,6 +288,7 @@ end
 # Tree Iterators
 
 abstract type TreeIterator{T} end
+IteratorEltype(::Type{<:TreeIterator}) = EltypeUnknown()
 
 """
 Iterator to visit the leaves of a tree, e.g. for the tree
@@ -346,7 +383,6 @@ update_state!(old_state, cs, idx) = next(cs, idx)[1]
 
 struct ImplicitRootState
 end
-getindex(x, ::ImplicitRootState) = x
 getindex(x::AbstractArray, ::ImplicitRootState) = x
 
 """
