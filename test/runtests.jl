@@ -127,6 +127,6 @@ function num_printed_lines(node, maxdepth)
     length([l for l in split(printed_text, '\n') if ~isempty(l)])
 end
 
-# should print number of maxdepth + 1 (the original node)
+# should print 'maxdepth + 1' number of lines (one for each layer plus the original node)
 @test num_printed_lines(SingleChildInfiniteDepth(), 3) == 4
 @test num_printed_lines(SingleChildInfiniteDepth(), 10) == 11
