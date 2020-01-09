@@ -115,3 +115,17 @@ end == IntTree(6,[IntTree(1,IntTree[]),IntTree(5,[IntTree(2,IntTree[]),IntTree(3
 =#
 
 @test collect(PostOrderDFS([])) == Any[[]]
+
+
+struct SingleChildInfiniteDepth end
+AbstractTrees.children(::SingleChildInfiniteDepth) = (SingleChildInfiniteDepth(),)
+
+function num_printed_lines(node, maxdepth)
+    buffer = IOBuffer()
+    print_tree(buffer, node, maxdepth)
+    printed_text = String(take!(buffer))
+    length([l for l in split(printed_text, '\n') if ~isempty(l)])
+end
+
+@test num_printed_lines(SingleChildInfiniteDepth(), 3) == 4
+@test num_printed_lines(SingleChildInfiniteDepth(), 10) == 11

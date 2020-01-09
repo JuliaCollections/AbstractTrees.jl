@@ -114,6 +114,7 @@ end
 
 function _print_tree(printnode::Function, io::IO, tree, maxdepth = 5; depth = 0, active_levels = Int[],
                      charset = TreeCharSet(), withinds = false, inds = [], from = nothing, to = nothing, roottree = tree)
+#depth >= maxdepth && return
     nodebuf = IOBuffer()
     isa(io, IOContext) && (nodebuf = IOContext(nodebuf, io))
     if withinds
@@ -130,7 +131,7 @@ function _print_tree(printnode::Function, io::IO, tree, maxdepth = 5; depth = 0,
     end
     c = isa(treekind(roottree), IndexedTree) ?
         childindices(roottree, tree) : children(roottree, tree)
-    if c !== ()
+    if c !== () && depth <  maxdepth
         s = Iterators.Stateful(from === nothing ? pairs(c) : Iterators.Rest(pairs(c), from))
         while !isempty(s)
             ind, child = popfirst!(s)
@@ -145,7 +146,7 @@ function _print_tree(printnode::Function, io::IO, tree, maxdepth = 5; depth = 0,
                 child_active_levels = push!(copy(active_levels), depth)
             end
             print(io, charset.dash, ' ')
-            print_tree(printnode, io, child; depth = depth + 1,
+            print_tree(printnode, io, child, maxdepth; depth = depth + 1,
               active_levels = child_active_levels, charset = charset, withinds=withinds,
               inds = withinds ? [inds; ind] : [], roottree = roottree)
         end
