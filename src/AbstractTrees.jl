@@ -114,7 +114,6 @@ end
 
 function _print_tree(printnode::Function, io::IO, tree, maxdepth = 5; depth = 0, active_levels = Int[],
                      charset = TreeCharSet(), withinds = false, inds = [], from = nothing, to = nothing, roottree = tree)
-#depth >= maxdepth && return
     nodebuf = IOBuffer()
     isa(io, IOContext) && (nodebuf = IOContext(nodebuf, io))
     if withinds
