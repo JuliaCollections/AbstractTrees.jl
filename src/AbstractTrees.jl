@@ -318,12 +318,11 @@ Any[1,Any[2,3]]
 
 we will get [1,2,3,Any[2,3],Any[1,Any[2,3]]]
 """
-struct PostOrderDFS <: TreeIterator{Any}
-    tree::Any
-    PostOrderDFS(x::Any) = new(x)
+struct PostOrderDFS{T} <: TreeIterator{T}
+    tree::T
 end
 PostOrderDFS(tree::Tree) = PostOrderDFS(tree.x)
-IteratorSize(::Type{PostOrderDFS}) = SizeUnknown()
+IteratorSize(::Type{PostOrderDFS{T}}) where T = SizeUnknown()
 
 """
 Iterator to visit the nodes of a tree, guaranteeing that parents
