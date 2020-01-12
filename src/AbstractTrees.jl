@@ -23,7 +23,8 @@ include("implicitstacks.jl")
     children(x)
 
 Return the immediate children of node `x`. You should specialize this method
-for custom tree structures.
+for custom tree structures. It should return an iterable object for which an
+appropriate implementation of `Base.pairs` is available.
 
 # Example
 
@@ -201,7 +202,7 @@ show(io::IO, tree::Tree) = print_tree(io, tree.x)
 
 mutable struct AnnotationNode{T}
     val::T
-    children::Array{AnnotationNode{T}}
+    children::Vector{AnnotationNode{T}}
 end
 
 children(x::AnnotationNode) = x.children
@@ -317,12 +318,11 @@ Any[1,Any[2,3]]
 
 we will get [1,2,3,Any[2,3],Any[1,Any[2,3]]]
 """
-struct PostOrderDFS <: TreeIterator{Any}
-    tree::Any
-    PostOrderDFS(x::Any) = new(x)
+struct PostOrderDFS{T} <: TreeIterator{T}
+    tree::T
 end
 PostOrderDFS(tree::Tree) = PostOrderDFS(tree.x)
-IteratorSize(::Type{PostOrderDFS}) = SizeUnknown()
+IteratorSize(::Type{PostOrderDFS{T}}) where T = SizeUnknown()
 
 """
 Iterator to visit the nodes of a tree, guaranteeing that parents
@@ -378,15 +378,7 @@ parentstate(tree, state) = parentstate(tree, state, treekind(tree))
 update_state!(old_state, cs, idx) = next(cs, idx)[1]
 
 
-struct ImplicitRootState
-end
 getindex(x::AbstractArray, ::ImplicitRootState) = x
-
-"""
-Trees must override with method if the state of the root is not the same as the
-tree itself (e.g. IndexedTrees should always override this method).
-"""
-rootstate(x) = ImplicitRootState()
 
 function firststate(ti::PreOrderDFS{T}) where T
     if isa(parentlinks(ti.tree), StoredParents) &&
@@ -415,6 +407,7 @@ relative_state(tree, parentstate, childstate::ImplicitIndexStack) =
     childstate.stack[end]
 relative_state(tree, parentstate, childstate::ImplicitNodeStack) =
     relative_state(tree, parentstate, childstate.idx_stack)
+
 function nextsibling(tree, state)
     ps = parentstate(tree, state)
     cs = childstates(tree, ps)
@@ -435,7 +428,7 @@ function nextsibling(node, ::StoredParents, ::ImplicitSiblings, ::RegularTree)
     last_was_node && return nothing
     error("Tree inconsistency: node not a child of parent")
 end
-nextsibling(node, ::Any, ::StoredSiblings, ::Any) = error("Trees with explicit siblings must override the `prevsibling` method explicitly")
+nextsibling(node, ::Any, ::StoredSiblings, ::Any) = error("Trees with explicit siblings must override the `nextsibling` method explicitly")
 nextsibling(node) = nextsibling(node, parentlinks(node), siblinglinks(node), treekind(node))
 
 function prevsibling(node, ::StoredParents, ::ImplicitSiblings, ::RegularTree)
@@ -465,6 +458,8 @@ end
 children(tree::Subtree) = children(tree.tree, tree.state)
 nodetype(tree::Subtree) = nodetype(tree.tree)
 idxtype(tree::Subtree) = idxtype(tree.tree)
+rootstate(tree::Subtree) = tree.state
+parentlinks(::Type{Subtree{T,S}}) where {T,S} = parentlinks(T)
 
 joinstate(tree, a, b) = b
 
@@ -495,8 +490,11 @@ function stepstate(ti::TreeIterator, state)
     nothing
 end
 
-getnode(tree, ns) = isa(treekind(tree), IndexedTree) ? tree[ns] : ns
 getnode(tree::AbstractShadowTree, ns::ImplicitNodeStack) = tree[ns.idx_stack.stack]
+getnode(tree, ns) = getnode(tree, ns, treekind(tree))
+getnode(tree, ns, ::IndexedTree) = tree[ns]
+getnode(tree, ns, ::RegularTree) = ns
+getnode(tree, ::ImplicitRootState, ::RegularTree) = tree
 
 function iterate(ti::TreeIterator)
     state = firststate(ti)
