@@ -115,7 +115,7 @@ function print_prefix(io, depth, charset, active_levels)
     end
 end
 
-function _print_tree(printnode::Function, io::IO, tree, maxdepth = nothing, indicate_truncation = false;
+function _print_tree(printnode::Function, io::IO, tree, maxdepth = nothing; indicate_truncation = false,
                      depth = 0, active_levels = Int[], charset = TreeCharSet(), withinds = false,
                      inds = [], from = nothing, to = nothing, roottree = tree)
     if maxdepth === nothing
@@ -156,7 +156,8 @@ function _print_tree(printnode::Function, io::IO, tree, maxdepth = nothing, indi
                     child_active_levels = push!(copy(active_levels), depth)
                 end
                 print(io, charset.dash, ' ')
-                print_tree(printnode, io, child, maxdepth, indicate_truncation; depth = depth + 1,
+                print_tree(printnode, io, child, maxdepth;
+                indicate_truncation=indicate_truncation, depth = depth + 1,
                 active_levels = child_active_levels, charset = charset, withinds=withinds,
                 inds = withinds ? [inds; ind] : [], roottree = roottree)
             end
