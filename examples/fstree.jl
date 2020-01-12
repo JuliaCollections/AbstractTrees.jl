@@ -24,6 +24,6 @@ end
 printnode(io::IO, d::Directory) = print(io, basename(d.path))
 printnode(io::IO, f::File) = print(io, basename(f.path))
 
-dirpath = realpath(joinpath(dirname(pathof(AbstractTrees)),".."))
+dirpath = realpath(dirname(@__DIR__))
 d = Directory(dirpath)
 print_tree(d)
