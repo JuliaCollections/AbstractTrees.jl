@@ -160,7 +160,8 @@ end  # @testset "Examples"
 #       ├─ 3
 #       └─ 3
 #
-struct Num{I} end
+struct Num{I}
+end
 Num(I::Int) = Num{I}()
 Base.show(io::IO, ::Num{I}) where {I} = print(io, I)
 AbstractTrees.children(::Num{I}) where {I} = (Num(I+1),Num(I+1))
@@ -196,7 +197,8 @@ for i in 1:length(lines)
 end
 
 # test correct number of lines printed 1
-struct SingleChildInfiniteDepth end
+struct SingleChildInfiniteDepth
+end
 AbstractTrees.children(::SingleChildInfiniteDepth) = (SingleChildInfiniteDepth(),)
 buffer = IOBuffer()
 print_tree(buffer, SingleChildInfiniteDepth())
@@ -207,6 +209,13 @@ numlines = sum([1 for c in split(ptxt, '\n') if ~isempty(strip(c))])
 # test correct number of lines printed 2
 buffer = IOBuffer()
 print_tree(buffer, SingleChildInfiniteDepth(), 3)
+ptxt = String(take!(buffer))
+numlines = sum([1 for c in split(ptxt, '\n') if ~isempty(strip(c))])
+@test numlines == 5 # 1 (head node) + 3 (depth) + 1 (truncation char)
+
+# test correct number of lines printed 3
+buffer = IOBuffer()
+print_tree(buffer, SingleChildInfiniteDepth(), 3, indicate_truncation=false)
 ptxt = String(take!(buffer))
 numlines = sum([1 for c in split(ptxt, '\n') if ~isempty(strip(c))])
 @test numlines == 4 # 1 (head node) + 3 (depth)

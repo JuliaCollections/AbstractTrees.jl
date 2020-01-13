@@ -116,7 +116,7 @@ function print_prefix(io, depth, charset, active_levels)
     end
 end
 
-function _print_tree(printnode::Function, io::IO, tree, maxdepth = nothing; indicate_truncation = false,
+function _print_tree(printnode::Function, io::IO, tree, maxdepth = nothing; indicate_truncation = true,
                      depth = 0, active_levels = Int[], charset = TreeCharSet(), withinds = false,
                      inds = [], from = nothing, to = nothing, roottree = tree)
     if maxdepth === nothing
@@ -182,14 +182,17 @@ print_tree(tree, args...; kwargs...) = print_tree(stdout::IO, tree, args...; kwa
 # Usage
 Prints an ASCII formatted representation of the `tree` to the given `io` object.
 By default all children will be printed up to a maximum level of 5, though this
-value can be overriden by the `maxdepth` parameter. The charset to use in
+value can be overriden by the `maxdepth` parameter. Nodes that are truncated are
+indicated by a vertical ellipsis below the truncated node, this indication can be
+turned off by providing `indicate_truncation=false` as a kwarg. The charset to use in
 printing can be customized using the `charset` keyword argument.
 You can control the printing of individual nodes by passing a function `f(io, node)`;
 the default is [`AbstractTrees.printnode`](@ref).
+You can control whether charset.trunc
 
 # Examples
 ```julia
-julia> print_tree(STDOUT,Dict("a"=>"b","b"=>['c','d']))
+julia> print_tree(stdout, Dict("a"=>"b","b"=>['c','d']))
 Dict{String,Any}("b"=>['c','d'],"a"=>"b")
 ├─ b
 │  ├─ c
@@ -197,8 +200,14 @@ Dict{String,Any}("b"=>['c','d'],"a"=>"b")
 └─ a
    └─ b
 
-julia> print_tree(STDOUT,Dict("a"=>"b","b"=>['c','d']);
-        charset = TreeCharSet('+','\\','|',"--"))
+julia> print_tree(stdout, '0'=>'1'=>'2'=>'3', 2)
+'0'
+└─ '1'
+    └─ '2'
+        ⋮
+
+julia> print_tree(stdout, Dict("a"=>"b","b"=>['c','d']);
+        charset = TreeCharSet('+','\\','|',"--","⋮"))
 Dict{String,Any}("b"=>['c','d'],"a"=>"b")
 +-- b
 |   +-- c
