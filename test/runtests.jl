@@ -139,6 +139,13 @@ mktemp() do filename, io
 end
 end  # @testset "Examples"
 
+struct Num{I} end
+Num(I::Int) = Num{I}()
+Base.show(io::IO, ::Num{I}) where {I} = print(io, I)
+AbstractTrees.children(x::Num{I}) where {I} = (Num(I+1), Num(I+1))
+
+struct SingleChildInfiniteDepth end
+AbstractTrees.children(::SingleChildInfiniteDepth) = (SingleChildInfiniteDepth(),)
 
 @testset "Test print_tree truncation" begin
 
@@ -160,11 +167,7 @@ end  # @testset "Examples"
 #       ├─ 3
 #       └─ 3
 #
-struct Num{I}
-end
-Num(I::Int) = Num{I}()
-Base.show(io::IO, ::Num{I}) where {I} = print(io, I)
-AbstractTrees.children(::Num{I}) where {I} = (Num(I+1),Num(I+1))
+
 for maxdepth in [3,5,8]
     buffer = IOBuffer()
     print_tree(buffer, Num(0), maxdepth)
@@ -197,9 +200,6 @@ for i in 1:length(lines)
 end
 
 # test correct number of lines printed 1
-struct SingleChildInfiniteDepth
-end
-AbstractTrees.children(::SingleChildInfiniteDepth) = (SingleChildInfiniteDepth(),)
 buffer = IOBuffer()
 print_tree(buffer, SingleChildInfiniteDepth())
 ptxt = String(take!(buffer))
