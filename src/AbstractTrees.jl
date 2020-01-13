@@ -188,7 +188,6 @@ turned off by providing `indicate_truncation=false` as a kwarg. The charset to u
 printing can be customized using the `charset` keyword argument.
 You can control the printing of individual nodes by passing a function `f(io, node)`;
 the default is [`AbstractTrees.printnode`](@ref).
-You can control whether charset.trunc
 
 # Examples
 ```julia
