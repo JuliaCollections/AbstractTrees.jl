@@ -142,28 +142,24 @@ end  # @testset "Examples"
 
 @testset "Test print_tree truncation" begin
 
-"""
-    test that `print_tree(headnode, maxdepth)` truncates the output at right depth
-
-    julia > print_tree(Num(0), 3)
-    0
-    ├─ 1
-    │  ├─ 2
-    │  │  ├─ 3
-    │  │  └─ 3
-    │  └─ 2
-    │     ├─ 3
-    │     └─ 3
-    └─ 1
-       ├─ 2
-       │  ├─ 3
-       │  └─ 3
-       └─ 2
-          ├─ 3
-          └─ 3
-
-
-"""
+# test that `print_tree(headnode, maxdepth)` truncates the output at right depth
+# julia > print_tree(Num(0), 3)
+# 0
+# ├─ 1
+# │  ├─ 2
+# │  │  ├─ 3
+# │  │  └─ 3
+# │  └─ 2
+# │     ├─ 3
+# │     └─ 3
+# └─ 1
+#    ├─ 2
+#    │  ├─ 3
+#    │  └─ 3
+#    └─ 2
+#       ├─ 3
+#       └─ 3
+#
 struct Num{I} end
 Num(I::Int) = Num{I}()
 Base.show(io::IO, ::Num{I}) where {I} = print(io, I)
@@ -180,10 +176,8 @@ for maxdepth in [3,5,8]
     @test n3==0
 end
 
-"""
-    test that `print_tree(headnode)` prints truncation characters under each
-    node at the default maxdepth level = 5
-"""
+# test that `print_tree(headnode)` prints truncation characters under each
+# node at the default maxdepth level = 5
 truncation_char = AbstractTrees.TreeCharSet().trunc
 buffer = IOBuffer()
 print_tree(buffer, Num(0))
@@ -201,9 +195,7 @@ for i in 1:length(lines)
     end
 end
 
-"""
-    test correct number of lines printed
-"""
+# test correct number of lines printed 1
 struct SingleChildInfiniteDepth end
 AbstractTrees.children(::SingleChildInfiniteDepth) = (SingleChildInfiniteDepth(),)
 buffer = IOBuffer()
@@ -211,6 +203,8 @@ print_tree(buffer, SingleChildInfiniteDepth())
 ptxt = String(take!(buffer))
 numlines = sum([1 for c in split(ptxt, '\n') if ~isempty(strip(c))])
 @test numlines == 7 # 1 (head node) + 5 (default depth) + 1 (truncation char)
+
+# test correct number of lines printed 2
 buffer = IOBuffer()
 print_tree(buffer, SingleChildInfiniteDepth(), 3)
 ptxt = String(take!(buffer))
