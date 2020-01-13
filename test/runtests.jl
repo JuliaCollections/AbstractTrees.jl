@@ -2,17 +2,16 @@ using AbstractTrees
 using Test
 import Base: ==
 
-if !isdefined(@__MODULE__, :isfirstrun)
-    const isfirstrun = Ref(true)
-end
-if isfirstrun[] && VERSION >= v"1.1.0-DEV.838" # requires https://github.com/JuliaLang/julia/pull/30291
-    @test isempty(detect_ambiguities(AbstractTrees, Base, Core))
-    isfirstrun[] = false
+if VERSION >= v"1.1.0-DEV.838" # requires https://github.com/JuliaLang/julia/pull/30291
+    @testset "Ambiguities" begin
+        @test isempty(detect_ambiguities(AbstractTrees, Base, Core))
+    end
 end
 
 AbstractTrees.children(x::Array) = x
 tree = Any[1,Any[2,3]]
 
+@testset "Array" begin
 io = IOBuffer()
 print_tree(io, tree)
 @test String(take!(io)) == "Array{Any,1}\n├─ 1\n└─ Array{Any,1}\n   ├─ 2\n   └─ 3\n"
@@ -23,6 +22,7 @@ print_tree(io, tree)
 
 tree2 = Any[Any[1,2],Any[3,4]]
 @test collect(PreOrderDFS(tree2)) == Any[tree2,Any[1,2],1,2,Any[3,4],3,4]
+end
 
 """
     A tree in which every node has 0 or 1 children
@@ -44,12 +44,16 @@ Base.eltype(::Type{<:TreeIterator{OneTree}}) = Int
 Base.IteratorEltype(::Type{<:TreeIterator{OneTree}}) = Base.HasEltype()
 
 ot = OneTree([2,3,4,0])
+
+@testset "OneTree" begin
+io = IOBuffer()
 print_tree(io, ot)
 @test String(take!(io)) == "2\n└─ 3\n   └─ 4\n      └─ 0\n"
 @test @inferred(collect(Leaves(ot))) == [0]
 @test eltype(collect(Leaves(ot))) === Int
 @test collect(PreOrderDFS(ot)) == [2,3,4,0]
 @test collect(PostOrderDFS(ot)) == [0,4,3,2]
+end
 
 """
     Stores an explicit parent for some other kind of tree
@@ -72,6 +76,8 @@ AbstractTrees.printnode(io::IO, t::ParentTree) =
     AbstractTrees.printnode(io::IO, t[AbstractTrees.rootstate(t)])
 
 pt = ParentTree(ot,[0,1,2,3])
+@testset "ParentTree" begin
+io = IOBuffer()
 print_tree(io, pt)
 @test String(take!(io)) == "2\n└─ 3\n   └─ 4\n      └─ 0\n"
 @test collect(Leaves(pt)) == [0]
@@ -88,7 +94,8 @@ b = treemap!(PreOrderDFS(a)) do node
     empty!(node)
     ret
 end
-@assert b == Any[0,1,Any[0,2,[0,3]]]
+@test b == Any[0,1,Any[0,2,[0,3]]]
+end
 
 struct IntTree
     num::Int
@@ -102,10 +109,12 @@ Base.eltype(::Type{<:TreeIterator{IntTree}}) = IntTree
 Base.IteratorEltype(::Type{<:TreeIterator{IntTree}}) = Base.HasEltype()
 AbstractTrees.nodetype(::IntTree) = IntTree
 iter = Leaves(itree)
+@testset "IntTree" begin
 @test @inferred(first(iter)) == IntTree(2, IntTree[])
 val, state = iterate(iter)
 @test Base.return_types(iterate, Tuple{typeof(iter), typeof(state)}) ==
     [Union{Nothing, Tuple{IntTree,typeof(state)}}]
+end
 
 #=
 @test treemap(PostOrderDFS(tree)) do ind, x, children
@@ -116,34 +125,49 @@ end == IntTree(6,[IntTree(1,IntTree[]),IntTree(5,[IntTree(2,IntTree[]),IntTree(3
 
 @test collect(PostOrderDFS([])) == Any[[]]
 
+@testset "Examples" begin
+# Ensure the examples run
+exampledir = joinpath(dirname(@__DIR__), "examples")
+examples = readdir(exampledir)
+mktemp() do filename, io
+    redirect_stdout(io) do
+        for ex in examples
+            haskey(ENV, "CI") && Sys.isapple() && ex == "fstree.jl" && continue
+            include(joinpath(exampledir, ex))
+        end
+    end
+end
+end  # @testset "Examples"
+
+
+@testset "Test print_tree truncation" begin
 
 """
     test that `print_tree(headnode, maxdepth)` truncates the output at right depth
+
+    julia > print_tree(Num(0), 3)
+    0
+    ├─ 1
+    │  ├─ 2
+    │  │  ├─ 3
+    │  │  └─ 3
+    │  └─ 2
+    │     ├─ 3
+    │     └─ 3
+    └─ 1
+       ├─ 2
+       │  ├─ 3
+       │  └─ 3
+       └─ 2
+          ├─ 3
+          └─ 3
+
+
 """
 struct Num{I} end
 Num(I::Int) = Num{I}()
 Base.show(io::IO, ::Num{I}) where {I} = print(io, I)
 AbstractTrees.children(::Num{I}) where {I} = (Num(I+1),Num(I+1))
-"""
-julia > print_tree(Num(0), 3)
-0
-├─ 1
-│  ├─ 2
-│  │  ├─ 3
-│  │  └─ 3
-│  └─ 2
-│     ├─ 3
-│     └─ 3
-└─ 1
-   ├─ 2
-   │  ├─ 3
-   │  └─ 3
-   └─ 2
-      ├─ 3
-      └─ 3
-
-"""
-
 for maxdepth in [3,5,8]
     buffer = IOBuffer()
     print_tree(buffer, Num(0), maxdepth)
@@ -156,12 +180,10 @@ for maxdepth in [3,5,8]
     @test n3==0
 end
 
-
 """
     test that `print_tree(headnode)` prints truncation characters under each
     node at the default maxdepth level = 5
 """
-
 truncation_char = AbstractTrees.TreeCharSet().trunc
 buffer = IOBuffer()
 print_tree(buffer, Num(0))
@@ -184,15 +206,14 @@ end
 """
 struct SingleChildInfiniteDepth end
 AbstractTrees.children(::SingleChildInfiniteDepth) = (SingleChildInfiniteDepth(),)
-
 buffer = IOBuffer()
 print_tree(buffer, SingleChildInfiniteDepth())
 ptxt = String(take!(buffer))
 numlines = sum([1 for c in split(ptxt, '\n') if ~isempty(strip(c))])
 @test numlines == 7 # 1 (head node) + 5 (default depth) + 1 (truncation char)
-
 buffer = IOBuffer()
 print_tree(buffer, SingleChildInfiniteDepth(), 3)
 ptxt = String(take!(buffer))
 numlines = sum([1 for c in split(ptxt, '\n') if ~isempty(strip(c))])
 @test numlines == 4 # 1 (head node) + 3 (depth)
+end

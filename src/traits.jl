@@ -26,6 +26,17 @@ struct ImplicitSiblings <: SiblingLinks; end
 siblinglinks(::Type) = ImplicitSiblings()
 siblinglinks(tree) = siblinglinks(typeof(tree))
 
+struct ImplicitRootState
+end
+
+"""
+    state = rootstate(tree)
+
+Trees must override with method if the state of the root is not the same as the
+tree itself (e.g. IndexedTrees should always override this method).
+"""
+rootstate(x) = ImplicitRootState()
+
 
 abstract type TreeKind end
 struct RegularTree <: TreeKind; end
@@ -34,11 +45,9 @@ struct IndexedTree <: TreeKind; end
 treekind(tree::Type) = RegularTree()
 treekind(tree) = treekind(typeof(tree))
 children(tree, node, ::RegularTree) = children(node)
+children(tree, ::ImplicitRootState, ::RegularTree) = children(tree)
 children(tree, node, ::IndexedTree) = (tree[y] for y in childindices(tree, node))
 children(tree, node) = children(tree, node, treekind(tree))
-
-function rootstate()
-end
 
 childindices(tree, node) =
   tree == node ? childindices(tree, rootstate(tree)) :
