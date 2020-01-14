@@ -98,10 +98,13 @@ struct TreeCharSet
     terminator
     skip
     dash
+    trunc
 end
 
 # Default charset
-TreeCharSet() = TreeCharSet('├','└','│','─')
+TreeCharSet() = TreeCharSet('├','└','│','─','⋮')
+TreeCharSet(mid, term, skip, dash) = TreeCharSet(mid, term, skip, dash, '⋮')
+
 
 function print_prefix(io, depth, charset, active_levels)
     for current_depth in 0:(depth-1)
@@ -113,8 +116,9 @@ function print_prefix(io, depth, charset, active_levels)
     end
 end
 
-function _print_tree(printnode::Function, io::IO, tree, maxdepth = 5; depth = 0, active_levels = Int[],
-                     charset = TreeCharSet(), withinds = false, inds = [], from = nothing, to = nothing, roottree = tree)
+function _print_tree(printnode::Function, io::IO, tree, maxdepth = 5; indicate_truncation = true,
+                     depth = 0, active_levels = Int[], charset = TreeCharSet(), withinds = false,
+                     inds = [], from = nothing, to = nothing, roottree = tree)
     nodebuf = IOBuffer()
     isa(io, IOContext) && (nodebuf = IOContext(nodebuf, io))
     if withinds
@@ -132,23 +136,31 @@ function _print_tree(printnode::Function, io::IO, tree, maxdepth = 5; depth = 0,
     c = isa(treekind(roottree), IndexedTree) ?
         childindices(roottree, tree) : children(roottree, tree)
     if c !== ()
-        s = Iterators.Stateful(from === nothing ? pairs(c) : Iterators.Rest(pairs(c), from))
-        while !isempty(s)
-            ind, child = popfirst!(s)
-            ind === to && break
-            active = false
-            child_active_levels = active_levels
-            print_prefix(io, depth, charset, active_levels)
-            if isempty(s)
-                print(io, charset.terminator)
-            else
-                print(io, charset.mid)
-                child_active_levels = push!(copy(active_levels), depth)
+        if depth < maxdepth
+            s = Iterators.Stateful(from === nothing ? pairs(c) : Iterators.Rest(pairs(c), from))
+            while !isempty(s)
+                ind, child = popfirst!(s)
+                ind === to && break
+                active = false
+                child_active_levels = active_levels
+                print_prefix(io, depth, charset, active_levels)
+                if isempty(s)
+                    print(io, charset.terminator)
+                else
+                    print(io, charset.mid)
+                    child_active_levels = push!(copy(active_levels), depth)
+                end
+                print(io, charset.dash, ' ')
+                print_tree(printnode, io, child, maxdepth;
+                indicate_truncation=indicate_truncation, depth = depth + 1,
+                active_levels = child_active_levels, charset = charset, withinds=withinds,
+                inds = withinds ? [inds; ind] : [], roottree = roottree)
             end
-            print(io, charset.dash, ' ')
-            print_tree(printnode, io, child; depth = depth + 1,
-              active_levels = child_active_levels, charset = charset, withinds=withinds,
-              inds = withinds ? [inds; ind] : [], roottree = roottree)
+        elseif indicate_truncation
+            print_prefix(io, depth, charset, active_levels)
+            println(io, charset.trunc)
+            print_prefix(io, depth, charset, active_levels)
+            println(io)
         end
     end
 end
@@ -164,14 +176,16 @@ print_tree(tree, args...; kwargs...) = print_tree(stdout::IO, tree, args...; kwa
 # Usage
 Prints an ASCII formatted representation of the `tree` to the given `io` object.
 By default all children will be printed up to a maximum level of 5, though this
-value can be overriden by the `maxdepth` parameter. The charset to use in
+value can be overriden by the `maxdepth` parameter. Nodes that are truncated are
+indicated by a vertical ellipsis below the truncated node, this indication can be
+turned off by providing `indicate_truncation=false` as a kwarg. The charset to use in
 printing can be customized using the `charset` keyword argument.
 You can control the printing of individual nodes by passing a function `f(io, node)`;
 the default is [`AbstractTrees.printnode`](@ref).
 
 # Examples
 ```julia
-julia> print_tree(STDOUT,Dict("a"=>"b","b"=>['c','d']))
+julia> print_tree(stdout, Dict("a"=>"b","b"=>['c','d']))
 Dict{String,Any}("b"=>['c','d'],"a"=>"b")
 ├─ b
 │  ├─ c
@@ -179,8 +193,14 @@ Dict{String,Any}("b"=>['c','d'],"a"=>"b")
 └─ a
    └─ b
 
-julia> print_tree(STDOUT,Dict("a"=>"b","b"=>['c','d']);
-        charset = TreeCharSet('+','\\','|',"--"))
+julia> print_tree(stdout, '0'=>'1'=>'2'=>'3', 2)
+'0'
+└─ '1'
+    └─ '2'
+        ⋮
+
+julia> print_tree(stdout, Dict("a"=>"b","b"=>['c','d']);
+        charset = TreeCharSet('+','\\','|',"--","⋮"))
 Dict{String,Any}("b"=>['c','d'],"a"=>"b")
 +-- b
 |   +-- c
