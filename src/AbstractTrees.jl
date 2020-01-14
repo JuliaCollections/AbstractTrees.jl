@@ -116,15 +116,9 @@ function print_prefix(io, depth, charset, active_levels)
     end
 end
 
-function _print_tree(printnode::Function, io::IO, tree, maxdepth = nothing; indicate_truncation = true,
+function _print_tree(printnode::Function, io::IO, tree, maxdepth = 5; indicate_truncation = true,
                      depth = 0, active_levels = Int[], charset = TreeCharSet(), withinds = false,
                      inds = [], from = nothing, to = nothing, roottree = tree)
-    if maxdepth === nothing
-        maxdepth = 5
-        indicate_truncation = true
-    end
-
-
     nodebuf = IOBuffer()
     isa(io, IOContext) && (nodebuf = IOContext(nodebuf, io))
     if withinds
