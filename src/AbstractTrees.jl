@@ -67,11 +67,10 @@ printnode(io::IO, node) = show(IOContext(io, :compact => true), node)
 ## Special cases
 
 # Types which are iterable but shouldn't be considered tree-iterable
-children(x::Integer) = ()
+children(x::Number) = ()
 children(x::Char) = ()
 children(x::Task) = ()
 children(x::AbstractString) = ()
-children(x::Real) = ()
 
 # Define this here, there isn't really a good canonical package to define this
 # elsewhere
