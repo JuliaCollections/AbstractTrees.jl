@@ -87,8 +87,6 @@ children(kv::Pair{K,V}) where {K,V} = (kv[2],)
 printnode(io::IO, d::Dict{K,V}) where {K,V} = print(io, Dict{K,V})
 printnode(io::IO, d::Vector{T}) where {T} = print(io, Vector{T})
 
-# Node equality predicate
-nodeequal(a, b) = a === b
 
 # Utilities
 
