@@ -311,13 +311,15 @@ IteratorEltype(::Type{<:TreeIterator}) = EltypeUnknown()
 """
 Iterator to visit the leaves of a tree, e.g. for the tree
 
+```
 Any[1,Any[2,3]]
 ├─ 1
 └─ Any[2,3]
    ├─ 2
    └─ 3
+```
 
-we will get [1,2,3]
+we will get `[1,2,3]`.
 """
 struct Leaves{T} <: TreeIterator{T}
     tree::T
@@ -330,13 +332,15 @@ will be visited before their parents.
 
 e.g. for the tree
 
+```
 Any[1,Any[2,3]]
 ├─ 1
 └─ Any[2,3]
    ├─ 2
    └─ 3
+```
 
-we will get [1,2,3,Any[2,3],Any[1,Any[2,3]]]
+we will get `[1, 2, 3, [2, 3], [1, [2, 3]]]`.
 """
 struct PostOrderDFS{T} <: TreeIterator{T}
     tree::T
@@ -354,6 +358,7 @@ consider that node a leaf.
 
 e.g. for the tree
 
+```
 Any[Any[1,2],Any[3,4]]
 ├─ Any[1,2]
 |  ├─ 1
@@ -361,8 +366,9 @@ Any[Any[1,2],Any[3,4]]
 └─ Any[3,4]
    ├─ 3
    └─ 4
+```
 
-we will get [Any[Any[1,2],Any[3,4]],Any[1,2],1,2,Any[3,4],3,4]
+we will get `[[[1, 2], [3, 4]], [1, 2], 1, 2, [3, 4], 3, 4]`.
 
 # Invalidation
 Modifying the underlying tree while iterating over it, is allowed, however,
@@ -563,15 +569,17 @@ before their children
 
 e.g. for the tree
 
+```
 Any[1,Any[2,3]]
 ├─ 1
 └─ Any[2,3]
    ├─ 2
    └─ 3
+```
 
-we will get [Any[1,Any[2,3]],1,Any[2,3],2,3]
+we will get `[[1, [2,3]], 1, [2, 3], 2, 3]`.
 
-WARNING: This is O(n^2), only use this if you know you need it, as opposed to
+WARNING: This is \$O(n^2)\$, only use this if you know you need it, as opposed to
 a more standard statefull approach.
 """
 struct StatelessBFS <: TreeIterator{Any}
