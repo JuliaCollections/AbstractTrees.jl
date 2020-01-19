@@ -27,6 +27,10 @@ Return the immediate children of node `x`. You should specialize this method
 for custom tree structures. It should return an iterable object for which an
 appropriate implementation of `Base.pairs` is available.
 
+The default behavior is to assume that if an object is iterable, iterating over
+it gives its children. If an object is not iterable, assume it does not have
+children.
+
 # Example
 
 ```
@@ -37,16 +41,8 @@ end
 AbstractTrees.children(node::MyNode) = node.children
 ```
 """
-function children(x)
-    # By default assume that if an object is iterable, its iteration gives the
-    # children. If an object is not iterable, assume it does not have children by
-    # default.
-    if Base.isiterable(typeof(x)) && !isa(x, Integer) && !isa(x, Char) && !isa(x, Task)
-        return x
-    else
-        return ()
-    end
-end
+children(x) = Base.isiterable(typeof(x)) ? x : ()
+
 has_children(x) = children(x) !== ()
 
 """
@@ -70,7 +66,10 @@ printnode(io::IO, node) = show(IOContext(io, :compact => true), node)
 
 ## Special cases
 
-# Don't consider strings or reals tree-iterable in general
+# Types which are iterable but shouldn't be considered tree-iterable
+children(x::Integer) = ()
+children(x::Char) = ()
+children(x::Task) = ()
 children(x::AbstractString) = ()
 children(x::Real) = ()
 
