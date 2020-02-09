@@ -1,3 +1,9 @@
+"""
+This package is intended to provide an abstract interface for working
+with tree structures.
+Though the package itself is not particularly sophisticated, it defines
+the interface that can be used by other packages to talk about trees.
+"""
 module AbstractTrees
 
 export print_tree, TreeCharSet, TreeIterator, Leaves, PostOrderDFS, Tree,
@@ -14,17 +20,16 @@ abstract type AbstractShadowTree end
 include("traits.jl")
 include("implicitstacks.jl")
 
-# This package is intended to provide an abstract interface for working
-# with tree structures.
-# Though the package itself is not particularly sophisticated, it defines
-# the interface that can be used by other packages to talk about trees.
-
 """
     children(x)
 
 Return the immediate children of node `x`. You should specialize this method
 for custom tree structures. It should return an iterable object for which an
 appropriate implementation of `Base.pairs` is available.
+
+The default behavior is to assume that if an object is iterable, iterating over
+it gives its children. If an object is not iterable, assume it does not have
+children.
 
 # Example
 
@@ -36,16 +41,8 @@ end
 AbstractTrees.children(node::MyNode) = node.children
 ```
 """
-function children(x)
-    # By default assume that if an object is iterable, its iteration gives the
-    # children. If an object is not iterable, assume it does not have children by
-    # default.
-    if Base.isiterable(typeof(x)) && !isa(x, Integer) && !isa(x, Char) && !isa(x, Task)
-        return x
-    else
-        return ()
-    end
-end
+children(x) = Base.isiterable(typeof(x)) ? x : ()
+
 has_children(x) = children(x) !== ()
 
 """
@@ -69,9 +66,11 @@ printnode(io::IO, node) = show(IOContext(io, :compact => true), node)
 
 ## Special cases
 
-# Don't consider strings or reals tree-iterable in general
+# Types which are iterable but shouldn't be considered tree-iterable
+children(x::Number) = ()
+children(x::Char) = ()
+children(x::Task) = ()
 children(x::AbstractString) = ()
-children(x::Real) = ()
 
 # Define this here, there isn't really a good canonical package to define this
 # elsewhere
@@ -87,8 +86,6 @@ children(kv::Pair{K,V}) where {K,V} = (kv[2],)
 printnode(io::IO, d::Dict{K,V}) where {K,V} = print(io, Dict{K,V})
 printnode(io::IO, d::Vector{T}) where {T} = print(io, Vector{T})
 
-# Node equality predicate
-nodeequal(a, b) = a === b
 
 # Utilities
 
