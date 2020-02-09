@@ -25,3 +25,7 @@ compatible with this package).
 
 * [`AbstractTrees.nodetype(tree)`](@ref) can be defined to make iteration inferable.
 * [`AbstractTrees.ParentLinks`](@ref) can be defined to return [`AbstractTrees.StoredParents()`](@ref) if a tree type stores explicit links to a parent; [`AbstractTrees.SiblingLinks`](@ref), when set to [`AbstractTrees.StoredSiblings()`](@ref), serves the same role for siblings. See their docstrings for more information.
+
+## Examples
+
+The [examples folder](https://github.com/JuliaCollections/AbstractTrees.jl/tree/master/examples) contains a number of usage examples of varying complexity.  
