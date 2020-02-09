@@ -66,7 +66,7 @@ The default is `Any`. When applicable, define this trait to make iteration infer
 
 # Example
 
-```jldoctest
+```
 struct IntTree
     num::Int
     children::Vector{IntTree}

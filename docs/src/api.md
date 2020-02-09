@@ -21,6 +21,7 @@ children
 AbstractTrees.nodetype
 AbstractTrees.parentlinks
 print_tree
+AbstractTrees.printnode
 AbstractTrees.siblinglinks
 treemap
 treemap!

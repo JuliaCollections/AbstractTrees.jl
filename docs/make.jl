@@ -1,6 +1,5 @@
 using Documenter, AbstractTrees
 
-
 makedocs(
     modules = [AbstractTrees],
     sitename = "AbstractTrees.jl",
