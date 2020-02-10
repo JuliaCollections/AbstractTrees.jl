@@ -10,8 +10,6 @@ if VERSION >= v"1.1.0-DEV.838" # requires https://github.com/JuliaLang/julia/pul
 end
 
 
-AbstractTrees.children(x::Array) = x
-
 @testset "Array" begin
     tree = Any[1,Any[2,3]]
     io = IOBuffer()
