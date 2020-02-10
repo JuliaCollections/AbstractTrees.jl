@@ -15,13 +15,8 @@ import Base: getindex, setindex!, iterate, nextind, print, show,
 using Base: SizeUnknown, EltypeUnknown
 using Markdown
 
-abstract type AbstractShadowTree end
 
-include("traits.jl")
-include("implicitstacks.jl")
-include("printing.jl")
-include("indexing.jl")
-include("iteration.jl")
+abstract type AbstractShadowTree end
 
 
 """
@@ -48,6 +43,13 @@ AbstractTrees.children(node::MyNode) = node.children
 children(x) = Base.isiterable(typeof(x)) ? x : ()
 
 has_children(x) = children(x) !== ()
+
+
+include("traits.jl")
+include("implicitstacks.jl")
+include("printing.jl")
+include("indexing.jl")
+include("iteration.jl")
 
 
 ## Special cases
