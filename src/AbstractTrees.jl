@@ -71,8 +71,7 @@ children(kv::Pair{K,V}) where {K,V} = (kv[2],)
 
 # For potentially-large containers, just show the type
 
-printnode(io::IO, d::Dict{K,V}) where {K,V} = print(io, Dict{K,V})
-printnode(io::IO, d::Vector{T}) where {T} = print(io, Vector{T})
+printnode(io::IO, ::T) where T <: Union{AbstractArray, AbstractDict, Tuple, NamedTuple} = print(io, T)
 
 
 end # module
