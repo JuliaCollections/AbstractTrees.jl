@@ -42,8 +42,6 @@ AbstractTrees.children(node::MyNode) = node.children
 """
 children(x) = Base.isiterable(typeof(x)) ? x : ()
 
-has_children(x) = children(x) !== ()
-
 
 include("traits.jl")
 include("implicitstacks.jl")
