@@ -50,28 +50,7 @@ include("implicitstacks.jl")
 include("printing.jl")
 include("indexing.jl")
 include("iteration.jl")
-
-
-## Special cases
-
-# Types which are iterable but shouldn't be considered tree-iterable
-children(x::Number) = ()
-children(x::Char) = ()
-children(x::Task) = ()
-children(x::AbstractString) = ()
-
-# Define this here, there isn't really a good canonical package to define this
-# elsewhere
-children(x::Expr) = x.args
-
-# For AbstractDicts
-
-printnode(io::IO, kv::Pair{K,V}) where {K,V} = printnode(io,kv[1])
-children(kv::Pair{K,V}) where {K,V} = (kv[2],)
-
-# For potentially-large containers, just show the type
-
-printnode(io::IO, ::T) where T <: Union{AbstractArray, AbstractDict} = print(io, T)
+include("builtins.jl")
 
 
 end # module
