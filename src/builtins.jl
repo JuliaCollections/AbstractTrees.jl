@@ -11,6 +11,12 @@ children(x::AbstractString) = ()
 # Expr
 children(x::Expr) = x.args
 
+function printnode(io::IO, x::Expr)
+	print(io, "Expr(")
+	show(io, x.head)
+	print(io, ")")
+end
+
 
 # AbstractDict
 printnode(io::IO, kv::Pair{K,V}) where {K,V} = printnode(io,kv[1])
