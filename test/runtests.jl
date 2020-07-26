@@ -1,4 +1,5 @@
 using AbstractTrees
+using AbstractTrees: repr_tree
 using Test
 import Base: ==
 

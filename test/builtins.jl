@@ -3,9 +3,9 @@
 
 @testset "Array" begin
     tree = Any[1,Any[2,3]]
-    io = IOBuffer()
-    print_tree(io, tree)
-    @test String(take!(io)) == "Array{Any,1}\n├─ 1\n└─ Array{Any,1}\n   ├─ 2\n   └─ 3\n"
+
+    @test repr_tree(tree) == "Array{Any,1}\n├─ 1\n└─ Array{Any,1}\n   ├─ 2\n   └─ 3\n"
+
     @test collect(Leaves(tree)) == [1,2,3]
     @test collect(Leaves(tree)) isa Vector{Int}
     @test collect(PostOrderDFS(tree)) == Any[1,2,3,Any[2,3],Any[1,Any[2,3]]]

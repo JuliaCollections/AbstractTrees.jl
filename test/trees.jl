@@ -19,9 +19,7 @@ Base.IteratorEltype(::Type{<:TreeIterator{OneTree}}) = Base.HasEltype()
 
 @testset "OneTree" begin
     ot = OneTree([2,3,4,0])
-    io = IOBuffer()
-    print_tree(io, ot)
-    @test String(take!(io)) == "2\n└─ 3\n   └─ 4\n      └─ 0\n"
+    @test repr_tree(ot) == "2\n└─ 3\n   └─ 4\n      └─ 0\n"
     @test @inferred(collect(Leaves(ot))) == [0]
     @test eltype(collect(Leaves(ot))) === Int
     @test collect(PreOrderDFS(ot)) == [2,3,4,0]
@@ -52,9 +50,8 @@ AbstractTrees.printnode(io::IO, t::ParentTree) =
 @testset "ParentTree" begin
     ot = OneTree([2,3,4,0])
     pt = ParentTree(ot,[0,1,2,3])
-    io = IOBuffer()
-    print_tree(io, pt)
-    @test String(take!(io)) == "2\n└─ 3\n   └─ 4\n      └─ 0\n"
+
+    @test repr_tree(pt) == "2\n└─ 3\n   └─ 4\n      └─ 0\n"
     @test collect(Leaves(pt)) == [0]
     @test collect(PreOrderDFS(pt)) == [2,3,4,0]
     @test collect(PostOrderDFS(pt)) == [0,4,3,2]

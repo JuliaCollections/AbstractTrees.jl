@@ -137,3 +137,17 @@ end
 print_tree(f::Function, io::IO, tree, args...; kwargs...) = _print_tree(f, io, tree, args...; kwargs...)
 print_tree(io::IO, tree, args...; kwargs...) = print_tree(printnode, io, tree, args...; kwargs...)
 print_tree(tree, args...; kwargs...) = print_tree(stdout::IO, tree, args...; kwargs...)
+
+
+
+"""
+Get the string result of calling [`print_tree`](@ref) with the supplied arguments.
+
+The `context` argument works as it does in `Base.repr`.
+"""
+function repr_tree(tree, args...; context=nothing, kw...)
+    buf = IOBuffer()
+    io = context === nothing ? buf : IOContext(buf, context)
+    print_tree(io, tree, args...; kw...)
+    return String(take!(buf))
+end
