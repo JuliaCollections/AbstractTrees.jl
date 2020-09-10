@@ -4,7 +4,8 @@
 @testset "Array" begin
     tree = Any[1,Any[2,3]]
 
-    @test repr_tree(tree) == "Array{Any,1}\n├─ 1\n└─ Array{Any,1}\n   ├─ 2\n   └─ 3\n"
+    T = Vector{Any}  # This is printed as "Array{Any,1}" in older versions of Julia
+    @test repr_tree(tree) == "$T\n├─ 1\n└─ $T\n   ├─ 2\n   └─ 3\n"
 
     @test collect(Leaves(tree)) == [1,2,3]
     @test collect(Leaves(tree)) isa Vector{Int}
