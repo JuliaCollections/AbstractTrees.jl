@@ -30,7 +30,7 @@ julia> print_tree(stdout, '0'=>'1'=>'2'=>'3', 2)
         ⋮
 
 julia> print_tree(stdout, Dict("a"=>"b","b"=>['c','d']);
-        charset = TreeCharSet('+','\\','|',"--","⋮"))
+        charset = TreeCharSet('+','\\\\','|',"--","⋮"))
 Dict{String,Any}("b"=>['c','d'],"a"=>"b")
 +-- b
 |   +-- c
