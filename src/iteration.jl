@@ -68,7 +68,7 @@ we will get `[[[1, 2], [3, 4]], [1, 2], 1, 2, [3, 4], 3, 4]`.
 
 # Invalidation
 Modifying the underlying tree while iterating over it, is allowed, however,
-if parents and sibling links are not explicitly stored, the identify of any
+if parents and sibling links are not explicitly stored, the identity of any
 parent of the last obtained node does not change (i.e. mutation is allowed,
 replacing nodes is not).
 
