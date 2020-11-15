@@ -4,7 +4,6 @@ version = "0.3.3"
 authors = ["Keno Fischer <keno@alumni.harvard.edu>"]
 
 [deps]
-Markdown = "d6f4376e-aef5-505a-96c1-9c027394607a"
 
 [compat]
 julia = "0.7, 1"

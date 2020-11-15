@@ -13,7 +13,6 @@ export print_tree, TreeCharSet, TreeIterator, Leaves, PostOrderDFS, Tree,
 import Base: getindex, setindex!, iterate, nextind, print, show,
     eltype, IteratorSize, IteratorEltype, length, push!, pop!
 using Base: SizeUnknown, EltypeUnknown
-using Markdown
 
 
 abstract type AbstractShadowTree end
