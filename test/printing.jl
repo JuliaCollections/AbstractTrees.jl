@@ -52,7 +52,7 @@ AbstractTrees.children(::SingleChildInfiniteDepth) = (SingleChildInfiniteDepth()
     #       └─ 3
     #
 
-    truncation_char = AbstractTrees.TreeCharSet().trunc
+    truncation_char = AbstractTrees.DEFAULT_CHARSET.trunc
 
     for maxdepth in [3,5,8]
         ptxt = repr_tree(Num(0), maxdepth=maxdepth)

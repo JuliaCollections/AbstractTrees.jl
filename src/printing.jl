@@ -96,9 +96,15 @@ struct TreeCharSet
     trunc
 end
 
-# Default charset
-TreeCharSet() = TreeCharSet('├','└','│','─','⋮')
-TreeCharSet(mid, term, skip, dash) = TreeCharSet(mid, term, skip, dash, '⋮')
+"""Default `charset` argument used by [`print_tree`](@ref)."""
+const DEFAULT_CHARSET = TreeCharSet('├', '└', '│', '─', '⋮')
+"""Charset using only ASCII characters."""
+const ASCII_CHARSET = TreeCharSet("+", "\\", "|", "--", "...")
+
+function TreeCharSet()
+    Base.depwarn("The 0-argument constructor of TreeCharSet is deprecated, use AbstractTrees.DEFAULT_CHARSET instead.", :TreeCharSet)
+    return DEFAULT_CHARSET
+end
 
 
 """
@@ -116,7 +122,7 @@ function print_prefix(io::IO, depth::Int, charset::TreeCharSet, active_levels)
 end
 
 function _print_tree(printnode::Function, io::IO, tree; maxdepth = 5, indicate_truncation = true,
-                     depth = 0, active_levels = Int[], charset = TreeCharSet(), withinds = false,
+                     depth = 0, active_levels = Int[], charset = DEFAULT_CHARSET, withinds = false,
                      inds = [], from = nothing, to = nothing, roottree = tree)
     nodebuf = IOBuffer()
     isa(io, IOContext) && (nodebuf = IOContext(nodebuf, io))
