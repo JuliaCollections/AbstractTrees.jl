@@ -66,6 +66,23 @@ printnode(io::IO, node) = show(IOContext(io, :compact => true), node)
 
 
 """
+    repr_node(node; context=nothing)
+
+Get the string representation of a node using [`printnode`](@ref). This works
+analagously to `Base.repr`.
+
+`context` is an `IO` or `IOContext` object whose attributes are used for the
+I/O stream passed to `printnode`.
+"""
+function repr_node(node; context=nothing)
+    buf = IOBuffer()
+    io = context === nothing ? buf : IOContext(buf, context)
+    printnode(io, node)
+    return String(take!(buf))
+end
+
+
+"""
     TreeCharSet
 
 Set of characters (or strings) used to pretty-print tree branches in
