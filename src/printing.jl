@@ -3,17 +3,19 @@
     print_tree(io::IO, tree; kwargs...)
     print_tree(f::Function, io::IO, tree; kwargs...)
 
-# Usage
-Prints an ASCII formatted representation of the `tree` to the given `io` object.
-By default all children will be printed up to a maximum level of 5, though this
-value can be overriden by the `maxdepth` parameter. Nodes that are truncated are
-indicated by a vertical ellipsis below the truncated node, this indication can be
-turned off by providing `indicate_truncation=false` as a kwarg. The charset to use in
-printing can be customized using the `charset` keyword argument.
-You can control the printing of individual nodes by passing a function `f(io, node)`;
-the default is [`AbstractTrees.printnode`](@ref).
+Print a text representation of `tree` to the given `io` object.
+
+# Arguments
+
+* `f::Function` - custom implementation of [`printnode`](@ref) to use. Should have the
+  signature `f(io::IO, node)`.
+* `maxdepth::Integer = 5` - truncate printing of subtrees at this depth.
+* `indicate_truncation::Bool = true` - print a vertical ellipsis character beneath
+  truncated nodes.
+* `charset::TreeCharSet` - [`TreeCharSet`](@ref) to use to print branches.
 
 # Examples
+
 ```julia
 julia> print_tree(stdout, Dict("a"=>"b","b"=>['c','d']))
 Dict{String,Any}("b"=>['c','d'],"a"=>"b")
@@ -50,7 +52,7 @@ Print a single node. The default is to show a compact representation of `node`.
 Override this if you want nodes printed in a custom way in [`print_tree`](@ref),
 or if you want your print function to print part of the tree by default.
 
-# Example
+# Examples
 
 ```
 struct MyNode{T}
@@ -63,6 +65,12 @@ AbstractTrees.printnode(io::IO, node::MyNode) = print(io, "MyNode(\$(node.data))
 printnode(io::IO, node) = show(IOContext(io, :compact => true), node)
 
 
+"""
+    TreeCharSet
+
+Set of characters (or strings) used to pretty-print tree branches in
+[`print_tree`](@ref).
+"""
 struct TreeCharSet
     mid
     terminator
@@ -76,7 +84,11 @@ TreeCharSet() = TreeCharSet('├','└','│','─','⋮')
 TreeCharSet(mid, term, skip, dash) = TreeCharSet(mid, term, skip, dash, '⋮')
 
 
-function print_prefix(io, depth, charset, active_levels)
+"""
+Print tree branches in the initial part of a [`print_tree`](@ref) line, before
+the node itself is printed.
+"""
+function print_prefix(io::IO, depth::Int, charset::TreeCharSet, active_levels)
     for current_depth in 0:(depth-1)
         if current_depth in active_levels
             print(io,charset.skip," "^(textwidth(charset.dash)+1))
@@ -148,6 +160,8 @@ print_tree(tree, args...; kwargs...) = print_tree(stdout::IO, tree, args...; kwa
 
 
 """
+    repr_tree(tree; context=nothing, kw...)
+
 Get the string result of calling [`print_tree`](@ref) with the supplied arguments.
 
 The `context` argument works as it does in `Base.repr`.
