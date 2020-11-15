@@ -32,7 +32,7 @@ AbstractTrees.children(::SingleChildInfiniteDepth) = (SingleChildInfiniteDepth()
     #
 
     for maxdepth in [3,5,8]
-        ptxt = repr_tree(Num(0), maxdepth)
+        ptxt = repr_tree(Num(0), maxdepth=maxdepth)
 
         n1  = sum([1 for c in ptxt if c=="$(maxdepth-1)"[1]])
         n2  = sum([1 for c in ptxt if c=="$maxdepth"[1]])
@@ -68,12 +68,30 @@ AbstractTrees.children(::SingleChildInfiniteDepth) = (SingleChildInfiniteDepth()
     @test numlines == 7 # 1 (head node) + 5 (default depth) + 1 (truncation char)
 
     # test correct number of lines printed 2
-    ptxt = repr_tree(SingleChildInfiniteDepth(), 3)
+    ptxt = repr_tree(SingleChildInfiniteDepth(), maxdepth=3)
     numlines = sum([1 for c in split(ptxt, '\n') if ~isempty(strip(c))])
     @test numlines == 5 # 1 (head node) + 3 (depth) + 1 (truncation char)
 
     # test correct number of lines printed 3
-    ptxt = repr_tree(SingleChildInfiniteDepth(), 3, indicate_truncation=false)
+    ptxt = repr_tree(SingleChildInfiniteDepth(), maxdepth=3, indicate_truncation=false)
     numlines = sum([1 for c in split(ptxt, '\n') if ~isempty(strip(c))])
     @test numlines == 4 # 1 (head node) + 3 (depth)
+end
+
+
+@testset "print_tree maxdepth as positional argument" begin
+    tree = Num(0)
+
+    @test_deprecated print_tree(devnull, tree, 3)
+    @test_deprecated print_tree(AbstractTrees.printnode, devnull, tree, 3)
+
+    buf = IOBuffer()
+
+    for maxdepth in [3, 5, 8]
+        print_tree(buf, tree, maxdepth)
+        str = String(take!(buf))
+        truncate(buf, 0)
+
+        @test str == repr_tree(tree, maxdepth=maxdepth)
+    end
 end
