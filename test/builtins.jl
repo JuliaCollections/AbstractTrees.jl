@@ -15,3 +15,14 @@
     tree2 = Any[Any[1,2],Any[3,4]]
     @test collect(PreOrderDFS(tree2)) == Any[tree2,Any[1,2],1,2,Any[3,4],3,4]
 end
+
+
+@testset "Expr" begin
+    expr = :(foo(x^2 + 3))
+
+    @test children(expr) == expr.args
+
+    @test repr_tree(expr) == "Expr(:call)\n├─ :foo\n└─ Expr(:call)\n   ├─ :+\n   ├─ Expr(:call)\n   │  ├─ :^\n   │  ├─ :x\n   │  └─ 2\n   └─ 3\n"
+
+    @test collect(Leaves(expr)) == [:foo, :+, :^, :x, 2, 3]
+end
