@@ -1,10 +1,31 @@
 # Test print_tree()
 
 
-struct Num{I} end
-Num(I::Int) = Num{I}()
-Base.show(io::IO, ::Num{I}) where {I} = print(io, I)
-AbstractTrees.children(x::Num{I}) where {I} = (Num(I+1), Num(I+1))
+# count(pattern::String, string::String) and equivalent findall() method not
+# present in Julia 0.7
+function count_matches(pattern::AbstractString, string::AbstractString)
+    c = 0
+    next = 1
+
+    while true
+        match = findnext(pattern, string, next)
+        if match === nothing
+            return c
+        else
+            c += 1
+            next = match.stop + 1
+        end
+    end
+end
+
+
+# Node type that wraps an integer value `n` and has two children with value `n + 1`.
+# Resulting tree has infinite height.
+struct Num
+    n::Int
+end
+Base.show(io::IO, x::Num) = print(io, x.n)
+AbstractTrees.children(x::Num) = (Num(x.n+1), Num(x.n+1))
 
 struct SingleChildInfiniteDepth end
 AbstractTrees.children(::SingleChildInfiniteDepth) = (SingleChildInfiniteDepth(),)
@@ -31,34 +52,23 @@ AbstractTrees.children(::SingleChildInfiniteDepth) = (SingleChildInfiniteDepth()
     #       └─ 3
     #
 
+    truncation_char = AbstractTrees.TreeCharSet().trunc
+
     for maxdepth in [3,5,8]
         ptxt = repr_tree(Num(0), maxdepth=maxdepth)
 
-        n1  = sum([1 for c in ptxt if c=="$(maxdepth-1)"[1]])
-        n2  = sum([1 for c in ptxt if c=="$maxdepth"[1]])
-        n3  = sum([1 for c in ptxt if c=="$(maxdepth+1)"[1]])
+        # Check that we see depth #s the expected number of times
+        @test count_matches(string(maxdepth-1), ptxt) == 2^(maxdepth-1)
+        @test count_matches(string(maxdepth), ptxt) == 2^maxdepth
+        @test count_matches(string(maxdepth+1), ptxt) == 0
 
-        @test n1==2^(maxdepth-1)
-        @test n2==2^maxdepth
-        @test n3==0
-    end
-
-    # test that `print_tree(headnode)` prints truncation characters under each
-    # node at the default maxdepth level = 5
-    truncation_char = AbstractTrees.TreeCharSet().trunc
-    ptxt = repr_tree(Num(0))
-
-    n1  = sum([1 for c in ptxt if c=='5'])
-    n2  = sum([1 for c in ptxt if c=='6'])
-    n3  = sum([1 for c in ptxt if c==truncation_char])
-    @test n1==2^5
-    @test n2==0
-    @test n3==2^5
-
-    lines = split(ptxt, '\n')
-    for i in 1:length(lines)
-        if ~isempty(lines[i]) && lines[i][end] == '5'
-            @test lines[i+1][end] == truncation_char
+        # test that `print_tree(headnode)` prints truncation characters under each
+        # node at the maximum depth
+        lines = split(ptxt, '\n')
+        for i in 1:length(lines)
+            if occursin(string(maxdepth), lines[i])
+                @test lines[i+1][end] == truncation_char
+            end
         end
     end
 
