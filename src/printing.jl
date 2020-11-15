@@ -62,7 +62,7 @@ end
 AbstractTrees.printnode(io::IO, node::MyNode) = print(io, "MyNode(\$(node.data))")
 ```
 """
-printnode(io::IO, node) = show(IOContext(io, :compact => true), node)
+printnode(io::IO, node) = show(IOContext(io, :compact => true, :limit => true), node)
 
 
 """
