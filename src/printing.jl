@@ -1,7 +1,7 @@
 """
-    print_tree(tree, maxdepth=5; kwargs...)
-    print_tree(io, tree, maxdepth=5; kwargs...)
-    print_tree(f::Function, io, tree, maxdepth=5; kwargs...)
+    print_tree(tree; kwargs...)
+    print_tree(io::IO, tree; kwargs...)
+    print_tree(f::Function, io::IO, tree; kwargs...)
 
 # Usage
 Prints an ASCII formatted representation of the `tree` to the given `io` object.
@@ -86,7 +86,7 @@ function print_prefix(io, depth, charset, active_levels)
     end
 end
 
-function _print_tree(printnode::Function, io::IO, tree, maxdepth = 5; indicate_truncation = true,
+function _print_tree(printnode::Function, io::IO, tree; maxdepth = 5, indicate_truncation = true,
                      depth = 0, active_levels = Int[], charset = TreeCharSet(), withinds = false,
                      inds = [], from = nothing, to = nothing, roottree = tree)
     nodebuf = IOBuffer()
@@ -121,7 +121,7 @@ function _print_tree(printnode::Function, io::IO, tree, maxdepth = 5; indicate_t
                     child_active_levels = push!(copy(active_levels), depth)
                 end
                 print(io, charset.dash, ' ')
-                print_tree(printnode, io, child, maxdepth;
+                print_tree(printnode, io, child; maxdepth=maxdepth,
                 indicate_truncation=indicate_truncation, depth = depth + 1,
                 active_levels = child_active_levels, charset = charset, withinds=withinds,
                 inds = withinds ? [inds; ind] : [], roottree = roottree)
@@ -134,7 +134,14 @@ function _print_tree(printnode::Function, io::IO, tree, maxdepth = 5; indicate_t
         end
     end
 end
-print_tree(f::Function, io::IO, tree, args...; kwargs...) = _print_tree(f, io, tree, args...; kwargs...)
+
+print_tree(f::Function, io::IO, tree; kwargs...) = _print_tree(f, io, tree; kwargs...)
+
+function print_tree(f::Function, io::IO, tree, maxdepth; kwargs...)
+    Base.depwarn("Passing maxdepth as a positional argument is deprecated, use as a keyword argument instead.", :print_tree)
+    print_tree(f, io, tree; maxdepth=maxdepth, kwargs...)
+end
+
 print_tree(io::IO, tree, args...; kwargs...) = print_tree(printnode, io, tree, args...; kwargs...)
 print_tree(tree, args...; kwargs...) = print_tree(stdout::IO, tree, args...; kwargs...)
 
