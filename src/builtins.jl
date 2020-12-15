@@ -25,3 +25,9 @@ children(kv::Pair{K,V}) where {K,V} = (kv[2],)
 
 # For potentially-large containers, just show the type
 printnode(io::IO, ::T) where T <: Union{AbstractArray, AbstractDict} = print(io, T)
+
+if isdefined(Core.Compiler, :Timings)
+	children(t::Core.Compiler.Timings.Timing) = t.children
+	printnode(io::IO, t::Core.Compiler.Timings.Timing) = print(io, t.time/10^6, "ms: ", t.mi_info)
+	nodetype(t::Core.Compiler.Timings.Timing) = Core.Compiler.Timings.Timing
+end
