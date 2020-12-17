@@ -25,4 +25,6 @@ AbstractTrees.printnode
 AbstractTrees.siblinglinks
 treemap
 treemap!
+AbstractTrees.DEFAULT_CHARSET
+AbstractTrees.ASCII_CHARSET
 ```

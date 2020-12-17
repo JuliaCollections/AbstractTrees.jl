@@ -3,17 +3,19 @@
     print_tree(io::IO, tree; kwargs...)
     print_tree(f::Function, io::IO, tree; kwargs...)
 
-# Usage
-Prints an ASCII formatted representation of the `tree` to the given `io` object.
-By default all children will be printed up to a maximum level of 5, though this
-value can be overriden by the `maxdepth` parameter. Nodes that are truncated are
-indicated by a vertical ellipsis below the truncated node, this indication can be
-turned off by providing `indicate_truncation=false` as a kwarg. The charset to use in
-printing can be customized using the `charset` keyword argument.
-You can control the printing of individual nodes by passing a function `f(io, node)`;
-the default is [`AbstractTrees.printnode`](@ref).
+Print a text representation of `tree` to the given `io` object.
+
+# Arguments
+
+* `f::Function` - custom implementation of [`printnode`](@ref) to use. Should have the
+  signature `f(io::IO, node)`.
+* `maxdepth::Integer = 5` - truncate printing of subtrees at this depth.
+* `indicate_truncation::Bool = true` - print a vertical ellipsis character beneath
+  truncated nodes.
+* `charset::TreeCharSet` - [`TreeCharSet`](@ref) to use to print branches.
 
 # Examples
+
 ```julia
 julia> print_tree(stdout, Dict("a"=>"b","b"=>['c','d']))
 Dict{String,Any}("b"=>['c','d'],"a"=>"b")
@@ -50,7 +52,7 @@ Print a single node. The default is to show a compact representation of `node`.
 Override this if you want nodes printed in a custom way in [`print_tree`](@ref),
 or if you want your print function to print part of the tree by default.
 
-# Example
+# Examples
 
 ```
 struct MyNode{T}
@@ -60,9 +62,32 @@ end
 AbstractTrees.printnode(io::IO, node::MyNode) = print(io, "MyNode(\$(node.data))")
 ```
 """
-printnode(io::IO, node) = show(IOContext(io, :compact => true), node)
+printnode(io::IO, node) = show(IOContext(io, :compact => true, :limit => true), node)
 
 
+"""
+    repr_node(node; context=nothing)
+
+Get the string representation of a node using [`printnode`](@ref). This works
+analagously to `Base.repr`.
+
+`context` is an `IO` or `IOContext` object whose attributes are used for the
+I/O stream passed to `printnode`.
+"""
+function repr_node(node; context=nothing)
+    buf = IOBuffer()
+    io = context === nothing ? buf : IOContext(buf, context)
+    printnode(io, node)
+    return String(take!(buf))
+end
+
+
+"""
+    TreeCharSet
+
+Set of characters (or strings) used to pretty-print tree branches in
+[`print_tree`](@ref).
+"""
 struct TreeCharSet
     mid
     terminator
@@ -71,12 +96,22 @@ struct TreeCharSet
     trunc
 end
 
-# Default charset
-TreeCharSet() = TreeCharSet('├','└','│','─','⋮')
-TreeCharSet(mid, term, skip, dash) = TreeCharSet(mid, term, skip, dash, '⋮')
+"""Default `charset` argument used by [`print_tree`](@ref)."""
+const DEFAULT_CHARSET = TreeCharSet('├', '└', '│', '─', '⋮')
+"""Charset using only ASCII characters."""
+const ASCII_CHARSET = TreeCharSet("+", "\\", "|", "--", "...")
+
+function TreeCharSet()
+    Base.depwarn("The 0-argument constructor of TreeCharSet is deprecated, use AbstractTrees.DEFAULT_CHARSET instead.", :TreeCharSet)
+    return DEFAULT_CHARSET
+end
 
 
-function print_prefix(io, depth, charset, active_levels)
+"""
+Print tree branches in the initial part of a [`print_tree`](@ref) line, before
+the node itself is printed.
+"""
+function print_prefix(io::IO, depth::Int, charset::TreeCharSet, active_levels)
     for current_depth in 0:(depth-1)
         if current_depth in active_levels
             print(io,charset.skip," "^(textwidth(charset.dash)+1))
@@ -87,7 +122,7 @@ function print_prefix(io, depth, charset, active_levels)
 end
 
 function _print_tree(printnode::Function, io::IO, tree; maxdepth = 5, indicate_truncation = true,
-                     depth = 0, active_levels = Int[], charset = TreeCharSet(), withinds = false,
+                     depth = 0, active_levels = Int[], charset = DEFAULT_CHARSET, withinds = false,
                      inds = [], from = nothing, to = nothing, roottree = tree)
     nodebuf = IOBuffer()
     isa(io, IOContext) && (nodebuf = IOContext(nodebuf, io))
@@ -148,6 +183,8 @@ print_tree(tree, args...; kwargs...) = print_tree(stdout::IO, tree, args...; kwa
 
 
 """
+    repr_tree(tree; context=nothing, kw...)
+
 Get the string result of calling [`print_tree`](@ref) with the supplied arguments.
 
 The `context` argument works as it does in `Base.repr`.
