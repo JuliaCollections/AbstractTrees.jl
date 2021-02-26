@@ -75,7 +75,7 @@ if Base.VERSION >= v"1.6.0-DEV.1594"
             matches(Regex("├─ $(rexf)ms: InferenceFrameInfo for $(thismod)\\.AbstractTreesTestInferenceTiming\\.i2\\(::Integer\\)"), str)
         end
         @test any(strs) do str
-            matches(Regex("└─ $(rexf)ms: InferenceFrameInfo for $(thismod)\\.AbstractTreesTestInferenceTiming\\.i\\(::Integer\\)"), str)
+            matches(Regex("[└├]─ $(rexf)ms: InferenceFrameInfo for $(thismod)\\.AbstractTreesTestInferenceTiming\\.i\\(::Integer\\)"), str)
         end
         # These two do not have the pipe characters because we aren't sure which will be last
         @test any(strs) do str
