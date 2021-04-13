@@ -31,8 +31,6 @@ it gives its children. Non-iterable types are treated as leaf nodes.
 """
 children(x) = Base.isiterable(typeof(x)) ? x : ()
 
-has_children(x) = children(x) !== ()
-
 
 include("traits.jl")
 include("implicitstacks.jl")
