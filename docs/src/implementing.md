@@ -63,6 +63,36 @@ tree = MyNode(1, [
 ```
 
 
+## Optional functions
+
+These functions have default implementations that depend only on the output of `children`, but may
+have suboptimal performance that can be improved by adding a custom method for your type.
+
+
+### children-related functions
+
+If the `children` method for your type involves a non-trivial amount of computation (e.g. if the
+returned child objects need to be created with each call instead of being explicitly stored in the
+parent as in the example above) providing your own implementation of these functions may
+significantly reduce overhead:
+
+* [`childcount`](@ref)
+* [`isleaf`](@ref)
+* [`ischild`](@ref)
+
+
+### Subtree-related
+
+The following functions recurse through a node's entire subtree by default, which should be avoided
+if possible:
+
+* [`intree`](@ref)
+* [`isdescendant`](@ref)
+* [`treebreadth`](@ref)
+* [`treesize`](@ref)
+* [`treeheight`](@ref)
+
+
 ## Type traits
 
 * [`AbstractTrees.nodetype(tree)`](@ref) can be defined to make iteration inferable.

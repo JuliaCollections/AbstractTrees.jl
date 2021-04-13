@@ -10,12 +10,20 @@ AbstractTrees.ParentLinks
 AbstractTrees.SiblingLinks
 AbstractTrees.StoredParents
 AbstractTrees.StoredSiblings
+childcount
 children
+intree
+ischild
+isdescendant
+isleaf
 AbstractTrees.nodetype
 AbstractTrees.parentlinks
 AbstractTrees.siblinglinks
+treebreadth
+treeheight
 treemap
 treemap!
+treesize
 ```
 
 

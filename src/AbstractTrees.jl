@@ -6,9 +6,10 @@ the interface that can be used by other packages to talk about trees.
 """
 module AbstractTrees
 
-export print_tree, TreeCharSet, TreeIterator, Leaves, PostOrderDFS, Tree,
-    AnnotationNode, StatelessBFS, treemap, treemap!, PreOrderDFS,
-    ShadowTree, children
+export children, childcount, isleaf, ischild, intree, isdescendant, treesize, treebreadth, treeheight
+export print_tree, TreeCharSet
+export TreeIterator, Leaves, PostOrderDFS, PreOrderDFS, StatelessBFS
+export Tree, ShadowTree, AnnotationNode, treemap, treemap!
 
 import Base: getindex, setindex!, iterate, nextind, print, show,
     eltype, IteratorSize, IteratorEltype, length, push!, pop!
