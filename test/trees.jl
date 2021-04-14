@@ -1,3 +1,124 @@
+struct IDTreeNode
+    id::Int
+    children::Vector{IDTreeNode}
+
+    IDTreeNode(id::Integer, children::Vector{IDTreeNode}=IDTreeNode[]) = new(id, children)
+end
+
+AbstractTrees.children(node::IDTreeNode) = node.children
+AbstractTrees.printnode(io::IO, node::IDTreeNode) = print(io, "#", node.id)
+
+"""
+Basic tree type used for testing.
+
+Each node has a unique ID, making them easy to reference. Node children are ordered.
+
+Node type only implements `children`, so serves to test default implementations of most functions.
+"""
+struct IDTree
+    nodes::Dict{Int, IDTreeNode}
+    root::IDTreeNode
+end
+
+_make_idtreenode(id::Integer) = IDTreeNode(id)
+_make_idtreenode((id, children)::Pair{<:Integer, <:Any}) = IDTreeNode(id, _make_idtreenode.(children))
+
+"""
+Create from nested `id => children` pairs. Leaf nodes may be represented by ID only.
+"""
+function IDTree(x)
+    root = _make_idtreenode(x)
+    nodes = Dict{Int, IDTreeNode}()
+
+    for node in PreOrderDFS(root)
+        haskey(nodes, node.id) && error("Duplicate node ID $(node.id)")
+        nodes[node.id] = node
+    end
+
+    return IDTree(nodes, root)
+end
+
+@testset "IDTree" begin
+    tree = IDTree(1 => [
+        2 => [
+            3,
+            4 => [5],
+        ],
+        6,
+        7 => [
+            8 => [
+                9,
+                10,
+                11 => 12:14,
+                15,
+            ],
+        ],
+        16,
+    ])
+
+    nodes = [tree.nodes[id] for id in 1:16]
+
+    # Node/subtree properties
+    #                              1   2  3  4  5  6  7  8  9 10 11 12 13 14 15 16
+    @test childcount.(nodes)  == [ 4, 2, 0, 1, 0, 0, 1, 4, 0, 0, 3, 0, 0, 0, 0, 0]
+    @test isleaf.(nodes)      == [ 0, 0, 1, 0, 1, 1, 0, 0, 1, 1, 0, 1, 1, 1, 1, 1]
+    @test treesize.(nodes)    == [16, 4, 1, 2, 1, 1, 9, 8, 1, 1, 4, 1, 1, 1, 1, 1]
+    @test treebreadth.(nodes) == [10, 2, 1, 1, 1, 1, 6, 6, 1, 1, 3, 1, 1, 1, 1, 1]
+    @test treeheight.(nodes)  == [ 4, 2, 0, 1, 0, 0, 3, 2, 0, 0, 1, 0, 0, 0, 0, 0]
+
+    # Child/descendant checking
+    @test ischild(nodes[2], nodes[1])
+    @test ischild(nodes[3], nodes[2])
+    @test !ischild(nodes[3], nodes[1])
+    @test !ischild(nodes[1], nodes[2])
+    @test !ischild("foo", nodes[1])
+    @test !ischild(nodes[1], "foo")
+
+    @test isdescendant(nodes[2], nodes[1])
+    @test isdescendant(nodes[9], nodes[1])
+    @test isdescendant(nodes[12], nodes[7])
+    @test !isdescendant(nodes[1], nodes[2])
+    @test !isdescendant(nodes[4], nodes[8])
+    @test !isdescendant(nodes[1], nodes[1])
+    @test !isdescendant("foo", nodes[1])
+    @test !isdescendant(nodes[1], "foo")
+
+    @test intree(nodes[2], nodes[1])
+    @test intree(nodes[9], nodes[1])
+    @test intree(nodes[12], nodes[7])
+    @test !intree(nodes[1], nodes[2])
+    @test !intree(nodes[4], nodes[8])
+    @test intree(nodes[1], nodes[1])
+    @test !intree("foo", nodes[1])
+    @test !intree(nodes[1], "foo")
+
+    # Traversal
+    @test [n.id for n in PreOrderDFS(tree.root)] == 1:16
+    @test [n.id for n in PostOrderDFS(tree.root)] == [3, 5, 4, 2, 6, 9, 10, 12, 13, 14, 11, 15, 8, 7, 16, 1]
+    @test [n.id for n in Leaves(tree.root)] == [3, 5, 6, 9, 10, 12, 13, 14, 15, 16]
+
+    # printing
+    @test AbstractTrees.repr_tree(tree.root) == """
+    #1
+    ├─ #2
+    │  ├─ #3
+    │  └─ #4
+    │     └─ #5
+    ├─ #6
+    ├─ #7
+    │  └─ #8
+    │     ├─ #9
+    │     ├─ #10
+    │     ├─ #11
+    │     │  ├─ #12
+    │     │  ├─ #13
+    │     │  └─ #14
+    │     └─ #15
+    └─ #16
+    """
+end
+
+
 """
     A tree in which every node has 0 or 1 children
 """
