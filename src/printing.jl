@@ -72,19 +72,7 @@ print_tree
 """
     printnode(io::IO, node)
 
-Print a single node. The default is to show a compact representation of `node`.
-Override this if you want nodes printed in a custom way in [`print_tree`](@ref),
-or if you want your print function to print part of the tree by default.
-
-# Examples
-
-```
-struct MyNode{T}
-    data::T
-    children::Vector{MyNode{T}}
-end
-AbstractTrees.printnode(io::IO, node::MyNode) = print(io, "MyNode(\$(node.data))")
-```
+Print a compact representation of a single node.
 """
 printnode(io::IO, node) = show(IOContext(io, :compact => true, :limit => true), node)
 

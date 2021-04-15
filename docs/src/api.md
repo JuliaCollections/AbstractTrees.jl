@@ -1,30 +1,52 @@
 # API
 
 
+## Base
+
 ```@docs
-AnnotationNode
 AbstractTrees.ImplicitParents
 AbstractTrees.ImplicitSiblings
-Leaves
 AbstractTrees.ParentLinks
-PostOrderDFS
-PreOrderDFS
-ShadowTree
 AbstractTrees.SiblingLinks
-StatelessBFS
 AbstractTrees.StoredParents
 AbstractTrees.StoredSiblings
-Tree
-TreeCharSet
-TreeIterator
 children
 AbstractTrees.nodetype
 AbstractTrees.parentlinks
-print_tree
-AbstractTrees.printnode
 AbstractTrees.siblinglinks
 treemap
 treemap!
+```
+
+
+## Printing
+
+```@docs
 AbstractTrees.DEFAULT_CHARSET
 AbstractTrees.ASCII_CHARSET
+AbstractTrees.TreeCharSet
+print_tree
+AbstractTrees.printnode
+AbstractTrees.repr_node
+AbstractTrees.repr_tree
+```
+
+
+## Iteration
+
+```@docs
+Leaves
+PostOrderDFS
+PreOrderDFS
+StatelessBFS
+TreeIterator
+```
+
+
+## Other
+
+```@docs
+AnnotationNode
+ShadowTree
+Tree
 ```
