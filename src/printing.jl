@@ -154,10 +154,20 @@ function _print_tree(printnode::Function, io::IO, tree; maxdepth = 5, indicate_t
         childindices(roottree, tree) : children(roottree, tree)
     if c !== ()
         if depth < maxdepth
-            s = Iterators.Stateful(from === nothing ? pairs(c) : Iterators.Rest(pairs(c), from))
+            it = c
+            if withinds
+                it = from === nothing ? pairs(c) : Iterators.Rest(pairs(c), from)
+            else
+                @assert from === nothing
+            end
+            s = Iterators.Stateful(it)
             while !isempty(s)
-                ind, child = popfirst!(s)
-                ind === to && break
+                if withinds
+                    ind, child = popfirst!(s)
+                    ind === to && break
+                else
+                    child = popfirst!(s)
+                end
                 active = false
                 child_active_levels = active_levels
                 print_prefix(io, depth, charset, active_levels)

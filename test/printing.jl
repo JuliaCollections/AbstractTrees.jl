@@ -21,10 +21,11 @@ end
 
 # Node type that wraps an integer value `n` and has two children with value `n + 1`.
 # Resulting tree has infinite height.
-struct Num
+abstract type AbstractNumTree; end
+struct Num <: AbstractNumTree
     n::Int
 end
-Base.show(io::IO, x::Num) = print(io, x.n)
+Base.show(io::IO, x::AbstractNumTree) = print(io, x.n)
 AbstractTrees.children(x::Num) = (Num(x.n+1), Num(x.n+1))
 
 struct SingleChildInfiniteDepth end
@@ -98,10 +99,30 @@ end
     buf = IOBuffer()
 
     for maxdepth in [3, 5, 8]
-        print_tree(buf, tree, maxdepth)
+        @test_deprecated print_tree(buf, tree, maxdepth)
         str = String(take!(buf))
         truncate(buf, 0)
 
         @test str == repr_tree(tree, maxdepth=maxdepth)
     end
+end
+
+# Tree of numbers `n` that has two children of value `n-1`, terminating at 0.
+# Defined both with an explicit tuple as the childrens struct and with implicit
+# iterable children, which are not indexable and do not define pairs.
+struct NumDescend <: AbstractNumTree
+    n::Int
+end
+AbstractTrees.children(n::NumDescend) = n.n == 0 ? () : (NumDescend(n.n-1), NumDescend(n.n-1))
+
+struct NumDescendIterate <: AbstractNumTree
+    n::Int
+end
+function Base.iterate(n::NumDescendIterate, ndone=0)
+    (n.n == 0 || ndone == 2) && return nothing
+    return (NumDescendIterate(n.n-1), ndone+1)
+end
+
+@testset "print_tree with non-indexable children" begin
+    @test repr_tree(NumDescend(4)) == repr_tree(NumDescendIterate(4))
 end
