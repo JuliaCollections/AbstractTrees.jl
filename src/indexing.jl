@@ -55,8 +55,6 @@ function getindex(tree::Tree, indices)
     end
     node
 end
-getindex(tree::Tree, indices::T) where {T<:ImplicitNodeStack} =
-    getindex(tree, indices.idx_stack.stack)
 
 
 function getindexhighest(tree::Tree, indices)
@@ -71,11 +69,10 @@ function getindexhighest(tree::Tree, indices)
     (indices, node)
 end
 
-function setindex!(tree::Tree, val, indices)
-    setindex!(children(getindex(tree,indices[1:end-1])),val,indices[end])
+function setindex!(tree::Tree, val, cursor::LinkedTreeCursor)
+    p = getnode(parent(cursor))
+    setindex!(children(p), val, cursor.nodepos.index)
 end
-setindex!(tree::Tree, val, indices::T) where {T<:ImplicitNodeStack} =
-    setindex!(tree, val, indices.idx_stack.stack)
 
 function getindex(tree::AbstractShadowTree, indices)
     typeof(tree)(Tree(first_tree(tree))[indices],Tree(second_tree(tree))[indices])
