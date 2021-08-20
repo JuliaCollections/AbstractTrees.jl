@@ -8,7 +8,7 @@ module AbstractTrees
 
 export print_tree, TreeCharSet, TreeIterator, Leaves, PostOrderDFS, Tree,
     AnnotationNode, StatelessBFS, treemap, treemap!, PreOrderDFS,
-    ShadowTree, children
+    ShadowTree, children, Indexed
 
 import Base: getindex, setindex!, iterate, nextind, print, show,
     eltype, IteratorSize, IteratorEltype, length, push!, pop!
@@ -16,12 +16,17 @@ using Base: SizeUnknown, EltypeUnknown
 
 
 abstract type AbstractShadowTree end
+struct ImplicitRootIndex; end
 
+struct Indexed{T}; tree::T; end
+Base.getindex(tree::Indexed, ind) = tree.tree[ind]
+Base.getindex(tree::Indexed, ::ImplicitRootIndex) = tree
+rootindex(tree) = ImplicitRootIndex()
 
 """
-    children(x)
+    children([tree,] x)
 
-Get the immediate children of node `x`.
+Get the immediate children of node `x` (optionally in the context of tree `tree`).
 
 This is the primary function that needs to be implemented for custom tree types. It should return an
 iterable object for which an appropriate implementation of `Base.pairs` is available.
@@ -30,16 +35,35 @@ The default behavior is to assume that if an object is iterable, iterating over
 it gives its children. Non-iterable types are treated as leaf nodes.
 """
 children(x) = Base.isiterable(typeof(x)) ? x : ()
+children(tree, node) = children(node)
+
+function children(i::Indexed, ind)
+    Base.depwarn("No children overload for tree declared as indexed. Overloading childindices(...) is deprecated. Use children(::Indexed{MyTree}, index).", :childindices)
+    return childindices(i.tree, ind)
+end
+
+"""
+    parent([tree,] x)
+
+Get the immediate parent of a node `x`
+
+This function should be implemented for trees that have stored parents.
+"""
+parent(tree, x) = parent(x)
+
+isroot(tree, x) = parent(tree, x) === nothing
+isroot(x) = parent(x) === nothing
 
 has_children(x) = children(x) !== ()
 
 
 include("traits.jl")
-include("implicitstacks.jl")
+include("cursors.jl")
 include("printing.jl")
 include("indexing.jl")
 include("iteration.jl")
 include("builtins.jl")
+include("wrappers.jl")
 
 
 end # module

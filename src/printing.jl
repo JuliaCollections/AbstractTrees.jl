@@ -136,12 +136,17 @@ end
 function _print_tree(printnode::Function, io::IO, tree; maxdepth = 5, indicate_truncation = true,
                      depth = 0, active_levels = Int[], charset = DEFAULT_CHARSET, withinds = false,
                      inds = [], from = nothing, to = nothing, roottree = tree)
+    if roottree === tree && depth == 0 && isa(treekind(tree), IndexedTree)
+        roottree = Indexed(roottree)
+        tree = rootindex(roottree.tree)
+    end
+
     nodebuf = IOBuffer()
     isa(io, IOContext) && (nodebuf = IOContext(nodebuf, io))
     if withinds
         printnode(nodebuf, tree, inds)
     else
-        tree != roottree && isa(treekind(roottree), IndexedTree) ?
+        tree != roottree && isa(roottree, Indexed) ?
             printnode(nodebuf, roottree[tree]) :
             printnode(nodebuf, tree)
     end
@@ -150,8 +155,7 @@ function _print_tree(printnode::Function, io::IO, tree; maxdepth = 5, indicate_t
         i != 1 && print_prefix(io, depth, charset, active_levels)
         println(io, line)
     end
-    c = isa(treekind(roottree), IndexedTree) ?
-        childindices(roottree, tree) : children(roottree, tree)
+    c = children(roottree, tree)
     if c !== ()
         if depth < maxdepth
             it = c
