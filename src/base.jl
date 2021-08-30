@@ -17,29 +17,14 @@ children(node) = Base.isiterable(typeof(node)) ? node : ()
 
 
 """
-    isleaf(node)
-
-Check if `node` is a leaf node - i.e. has no children.
-"""
-isleaf(node) = childcount(node) == 0
-
-
-"""
     ischild(node1, node2)
 
 Check if `node2` is the parent of `node1`.
 """
 ischild(node1, node2) = any(node -> node === node1, children(node2))
 
-
-"""
-    childcount(node)
-
-Get the count of a node's children.
-
 This is equivalent to `length(children(node))` but may be more effecient for certain types.
 """
-childcount(node) = length(children(node))
 
 
 #
@@ -79,7 +64,7 @@ Get the size of the tree rooted at `node`.
 By default this recurses through all nodes in the tree and so may be slow if a more specialized
 method has not been implemented for the given type.
 """
-treesize(node) = isleaf(node) ? 1 : 1 + mapreduce(treesize, +, children(node))
+treesize(node) = 1 + mapreduce(treesize, +, children(node), init=0)
 
 
 """
@@ -90,7 +75,7 @@ Get the number of leaves in the tree rooted at `node`. Leaf nodes have a breadth
 By default this recurses through all nodes in the tree and so may be slow if a more specialized
 method has not been implemented for the given type.
 """
-treebreadth(node) = isleaf(node) ? 1 : mapreduce(treebreadth, +, children(node))
+treebreadth(node) = isempty(children(node)) ? 1 : mapreduce(treebreadth, +, children(node))
 
 
 """
@@ -101,4 +86,4 @@ Get the maximum depth from `node` to any of its descendants. Leaf nodes have a h
 By default this recurses through all nodes in the tree and so may be slow if a more specialized
 method has not been implemented for the given type.
 """
-treeheight(node) = isleaf(node) ? 0 : 1 + mapreduce(treeheight, max, children(node))
+treeheight(node) = isempty(children(node)) ? 0 : 1 + mapreduce(treeheight, max, children(node))

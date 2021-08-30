@@ -76,8 +76,6 @@ returned child objects need to be created with each call instead of being explic
 parent as in the example above) providing your own implementation of these functions may
 significantly reduce overhead:
 
-* [`childcount`](@ref)
-* [`isleaf`](@ref)
 * [`ischild`](@ref)
 
 

@@ -14,8 +14,6 @@ using Test
     @test collect(PostOrderDFS(tree)) == Any[1,2,3,Any[2,3],Any[1,Any[2,3]]]
     @test collect(StatelessBFS(tree)) == Any[Any[1,Any[2,3]],1,Any[2,3],2,3]
 
-    @test childcount(tree) == 2
-    @test !isleaf(tree)
     @test treesize(tree) == 5
     @test treebreadth(tree) == 3
     @test treeheight(tree) == 2
@@ -43,8 +41,6 @@ using Test
     tree2 = Any[Any[1,2],Any[3,4]]
     @test collect(PreOrderDFS(tree2)) == Any[tree2,Any[1,2],1,2,Any[3,4],3,4]
 
-    @test childcount(tree2) == 2
-    @test !isleaf(tree2)
     @test treesize(tree2) == 7
     @test treebreadth(tree2) == 4
     @test treeheight(tree2) == 2
@@ -55,8 +51,6 @@ using Test
         @test collect(itr(tree3)) == [tree3]
     end
 
-    @test childcount(tree3) == 0
-    @test isleaf(tree3)
     @test treesize(tree3) == 1
     @test treebreadth(tree3) == 1
     @test treeheight(tree3) == 0
