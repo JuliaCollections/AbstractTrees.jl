@@ -135,7 +135,7 @@ end
 
 function _print_tree(printnode::Function, io::IO, tree; maxdepth = 5, indicate_truncation = true,
                      depth = 0, active_levels = Int[], charset = DEFAULT_CHARSET, withinds = false,
-                     inds = [], from = nothing, to = nothing, roottree = tree)
+                     inds = [], roottree = tree)
 
     # Print node representation
 
@@ -179,24 +179,16 @@ function _print_tree(printnode::Function, io::IO, tree; maxdepth = 5, indicate_t
     end
 
     # Children or key => child pairs to print
-    it = c
-    if withinds
-        it = from === nothing ? pairs(c) : Iterators.Rest(pairs(c), from)
-    else
-        @assert from === nothing
-    end
+    it = withinds ? pairs(c) : c
     s = Iterators.Stateful(it)
 
     # Print children
     while !isempty(s)
         if withinds
             ind, child = popfirst!(s)
-            ind === to && break
         else
             child = popfirst!(s)
         end
-
-        active = false
 
         print_prefix(io, depth, charset, active_levels)
 
