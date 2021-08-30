@@ -136,59 +136,85 @@ end
 function _print_tree(printnode::Function, io::IO, tree; maxdepth = 5, indicate_truncation = true,
                      depth = 0, active_levels = Int[], charset = DEFAULT_CHARSET, withinds = false,
                      inds = [], from = nothing, to = nothing, roottree = tree)
+
+    # Print node representation
+
+    # Temporary buffer to write to
     nodebuf = IOBuffer()
+    # Copy IOContext to buffer
     isa(io, IOContext) && (nodebuf = IOContext(nodebuf, io))
+
+    # Print node representation into buffer
     if withinds
         printnode(nodebuf, tree, inds)
+    elseif tree != roottree && isa(treekind(roottree), IndexedTree)
+        printnode(nodebuf, roottree[tree])
     else
-        tree != roottree && isa(treekind(roottree), IndexedTree) ?
-            printnode(nodebuf, roottree[tree]) :
-            printnode(nodebuf, tree)
+        printnode(nodebuf, tree)
     end
     str = String(take!(isa(nodebuf, IOContext) ? nodebuf.io : nodebuf))
-    for (i,line) in enumerate(split(str, '\n'))
+
+    # Copy buffer to output, prepending prefix to each line
+    for (i, line) in enumerate(split(str, '\n'))
         i != 1 && print_prefix(io, depth, charset, active_levels)
         println(io, line)
     end
-    c = isa(treekind(roottree), IndexedTree) ?
-        childindices(roottree, tree) : children(roottree, tree)
-    if c !== ()
-        if depth < maxdepth
-            it = c
-            if withinds
-                it = from === nothing ? pairs(c) : Iterators.Rest(pairs(c), from)
-            else
-                @assert from === nothing
-            end
-            s = Iterators.Stateful(it)
-            while !isempty(s)
-                if withinds
-                    ind, child = popfirst!(s)
-                    ind === to && break
-                else
-                    child = popfirst!(s)
-                end
-                active = false
-                child_active_levels = active_levels
-                print_prefix(io, depth, charset, active_levels)
-                if isempty(s)
-                    print(io, charset.terminator)
-                else
-                    print(io, charset.mid)
-                    child_active_levels = push!(copy(active_levels), depth)
-                end
-                print(io, charset.dash, ' ')
-                print_tree(printnode, io, child; maxdepth=maxdepth,
-                indicate_truncation=indicate_truncation, depth = depth + 1,
-                active_levels = child_active_levels, charset = charset, withinds=withinds,
-                inds = withinds ? [inds; ind] : [], roottree = roottree)
-            end
-        elseif indicate_truncation
+
+    c = isa(treekind(roottree), IndexedTree) ? childindices(roottree, tree) : children(roottree, tree)
+
+    # No children
+    c === () && return
+
+    # Reached max depth
+    if depth >= maxdepth
+        # Print truncation char(s)
+        if indicate_truncation
             print_prefix(io, depth, charset, active_levels)
             println(io, charset.trunc)
             print_prefix(io, depth, charset, active_levels)
             println(io)
         end
+
+        return
+    end
+
+    # Children or key => child pairs to print
+    it = c
+    if withinds
+        it = from === nothing ? pairs(c) : Iterators.Rest(pairs(c), from)
+    else
+        @assert from === nothing
+    end
+    s = Iterators.Stateful(it)
+
+    # Print children
+    while !isempty(s)
+        if withinds
+            ind, child = popfirst!(s)
+            ind === to && break
+        else
+            child = popfirst!(s)
+        end
+
+        active = false
+
+        print_prefix(io, depth, charset, active_levels)
+
+        # Last child?
+        if isempty(s)
+            print(io, charset.terminator)
+            child_active_levels = active_levels
+        else
+            print(io, charset.mid)
+            child_active_levels = vcat(active_levels, depth)
+        end
+
+        print(io, charset.dash, ' ')
+
+        _print_tree(printnode, io, child; maxdepth=maxdepth,
+            indicate_truncation=indicate_truncation, depth=depth + 1,
+            active_levels=child_active_levels, charset=charset, withinds=withinds,
+            inds=withinds ? [inds; ind] : [], roottree=roottree)
     end
 end
 
