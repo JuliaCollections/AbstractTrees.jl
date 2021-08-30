@@ -19,8 +19,34 @@ end
 
 
 # AbstractDict
-printnode(io::IO, kv::Pair{K,V}) where {K,V} = printnode(io,kv[1])
-children(kv::Pair{K,V}) where {K,V} = (kv[2],)
+children(d::AbstractDict) = DictChildren(d)
+
+"""
+    DictChildren(dict)
+
+A `Dict`-like indexable collection of child nodes. `dict` is an `AbstractDict` or any other
+collection type which supports `pairs()`.
+
+Behaves as a collection of the dictionary's *values* as opposed to a collection of pairs as the
+dictionary itself does, but still supports indexing with keys. The `pairs()` function gives the same
+result as the original dict.
+"""
+struct DictChildren{K, V, D}
+    dict::D
+
+    DictChildren(dict) = new{keytype(dict), valtype(dict), typeof(dict)}(dict)
+end
+
+Base.eltype(::Type{DictChildren{K, V, D}}) where {K, V, D} = V
+Base.keytype(::Type{DictChildren{K, V, D}}) where {K, V, D} = K
+Base.valtype(::Type{DictChildren{K, V, D}}) where {K, V, D} = V
+
+Base.length(c::DictChildren) = length(c.dict)
+Base.keys(c::DictChildren) = keys(c.dict)
+Base.values(c::DictChildren) = values(c.dict)
+Base.pairs(c::DictChildren) = pairs(c.dict)
+Base.iterate(c::DictChildren, args...) = iterate(values(c.dict), args...)
+Base.getindex(c::DictChildren, key) = c.dict[key]
 
 
 # For potentially-large containers, just show the type
