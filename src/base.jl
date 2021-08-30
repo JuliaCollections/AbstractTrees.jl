@@ -19,12 +19,12 @@ children(node) = Base.isiterable(typeof(node)) ? node : ()
 """
     ischild(node1, node2)
 
-Check if `node2` is the parent of `node1`.
+Check if `node1` is a child of `node2`.
+
+By default this iterates through ``children(node2)``, so performance may be improved by adding a
+specialized method for given node type.
 """
 ischild(node1, node2) = any(node -> node === node1, children(node2))
-
-This is equivalent to `length(children(node))` but may be more effecient for certain types.
-"""
 
 
 #
