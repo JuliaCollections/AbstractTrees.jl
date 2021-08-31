@@ -9,6 +9,8 @@ Print a text representation of `tree` to the given `io` object.
 
 * `f::Function` - custom implementation of [`printnode`](@ref) to use. Should have the
   signature `f(io::IO, node)`.
+* `io::IO` - IO stream to write to.
+* `tree` - tree to print.
 * `maxdepth::Integer = 5` - truncate printing of subtrees at this depth.
 * `indicate_truncation::Bool = true` - print a vertical ellipsis character beneath
   truncated nodes.
@@ -138,9 +140,18 @@ function print_prefix(io::IO, depth::Int, charset::TreeCharSet, active_levels)
     end
 end
 
-function _print_tree(printnode::Function, io::IO, tree; maxdepth = 5, indicate_truncation = true,
-                     depth = 0, active_levels = Int[], charset = DEFAULT_CHARSET, withinds = false,
-                     inds = [], roottree = tree)
+function _print_tree(printnode::Function,
+                     io::IO,
+                     tree;
+                     maxdepth::Int,
+                     indicate_truncation::Bool,
+                     charset::TreeCharSet,
+                     withinds::Bool,
+                     depth::Int = 0,
+                     active_levels::Vector{Int} = Int[],
+                     inds = [],
+                     roottree = tree,
+                     )
 
     # Print node representation
 
@@ -215,7 +226,17 @@ function _print_tree(printnode::Function, io::IO, tree; maxdepth = 5, indicate_t
     end
 end
 
-print_tree(f::Function, io::IO, tree; kwargs...) = _print_tree(f, io, tree; kwargs...)
+function print_tree(f::Function,
+                    io::IO,
+                    tree;
+                    maxdepth::Int = 5,
+                    indicate_truncation::Bool = true,
+                    charset::TreeCharSet = DEFAULT_CHARSET,
+                    withinds::Bool = false,
+                    )
+    _print_tree(f, io, tree; maxdepth=maxdepth, indicate_truncation=indicate_truncation,
+                charset=charset, withinds=withinds)
+end
 
 function print_tree(f::Function, io::IO, tree, maxdepth; kwargs...)
     Base.depwarn("Passing maxdepth as a positional argument is deprecated, use as a keyword argument instead.", :print_tree)
