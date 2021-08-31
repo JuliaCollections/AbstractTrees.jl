@@ -94,22 +94,27 @@ function repr_node(node; context=nothing)
 end
 
 
+const _CharArg = Union{AbstractString, Char}
+
 """
     TreeCharSet
 
-Set of characters (or strings) used to pretty-print tree branches in
-[`print_tree`](@ref).
+Set of characters (or strings) used to pretty-print tree branches in [`print_tree`](@ref).
 """
 struct TreeCharSet
-    mid
-    terminator
-    skip
-    dash
-    trunc
+    mid::String
+    terminator::String
+    skip::String
+    dash::String
+    trunc::String
+
+    function TreeCharSet(mid::_CharArg, terminator::_CharArg, skip::_CharArg, dash::_CharArg, trunc::_CharArg)
+        return new(String(mid), String(terminator), String(skip), String(dash), String(trunc))
+    end
 end
 
 """Default `charset` argument used by [`print_tree`](@ref)."""
-const DEFAULT_CHARSET = TreeCharSet('├', '└', '│', '─', '⋮')
+const DEFAULT_CHARSET = TreeCharSet("├", "└", "│", "─", "⋮")
 """Charset using only ASCII characters."""
 const ASCII_CHARSET = TreeCharSet("+", "\\", "|", "--", "...")
 

@@ -53,7 +53,7 @@ AbstractTrees.children(::SingleChildInfiniteDepth) = (SingleChildInfiniteDepth()
     #       └─ 3
     #
 
-    truncation_char = AbstractTrees.DEFAULT_CHARSET.trunc
+    truncation_str = AbstractTrees.DEFAULT_CHARSET.trunc
 
     for maxdepth in [3,5,8]
         ptxt = repr_tree(Num(0), maxdepth=maxdepth)
@@ -68,7 +68,7 @@ AbstractTrees.children(::SingleChildInfiniteDepth) = (SingleChildInfiniteDepth()
         lines = split(ptxt, '\n')
         for i in 1:length(lines)
             if occursin(string(maxdepth), lines[i])
-                @test lines[i+1][end] == truncation_char
+                @test endswith(lines[i+1], truncation_str)
             end
         end
     end
