@@ -134,3 +134,36 @@ end
     tree = Num(0)
     @test repr_tree(UnindexableChildren(tree), maxdepth=4) == repr_tree(tree, maxdepth=4)
 end
+
+
+# Prints node as cool message box
+struct BoxNode
+    s::String
+    children::Vector
+end
+
+AbstractTrees.children(n::BoxNode) = n.children
+function AbstractTrees.printnode(io::IO, n::BoxNode)
+    println(io, "┌", "─" ^ textwidth(n.s), "┐")
+    println(io, "│", n.s, "│")
+    print(io, "└", "─" ^ textwidth(n.s), "┘")
+end
+
+@testset "printnode multiline" begin
+    tree = ["foo", BoxNode("bar", [1, 2:4, 5]), "baz"]
+
+    @test repr_tree(tree) == """
+        $(typeof(tree))
+        ├─ "foo"
+        ├─ ┌───┐
+        │  │bar│
+        │  └───┘
+        │  ├─ 1
+        │  ├─ UnitRange{Int64}
+        │  │  ├─ 2
+        │  │  ├─ 3
+        │  │  └─ 4
+        │  └─ 5
+        └─ "baz"
+        """
+end
