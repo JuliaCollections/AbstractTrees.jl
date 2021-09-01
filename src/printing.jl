@@ -126,29 +126,15 @@ function TreeCharSet()
 end
 
 
-"""
-Print tree branches in the initial part of a [`print_tree`](@ref) line, before
-the node itself is printed.
-"""
-function print_prefix(io::IO, depth::Int, charset::TreeCharSet, active_levels)
-    for current_depth in 0:(depth-1)
-        if current_depth in active_levels
-            print(io,charset.skip," "^(textwidth(charset.dash)+1))
-        else
-            print(io," "^(textwidth(charset.skip)+textwidth(charset.dash)+1))
-        end
-    end
-end
-
 function _print_tree(printnode::Function,
                      io::IO,
                      tree;
                      maxdepth::Int,
                      indicate_truncation::Bool,
                      charset::TreeCharSet,
-                     depth::Int = 0,
-                     active_levels::Vector{Int} = Int[],
                      roottree = tree,
+                     depth::Int = 0,
+                     prefix::String = "",
                      )
 
     # Print node representation
@@ -159,7 +145,7 @@ function _print_tree(printnode::Function,
 
     # Copy buffer to output, prepending prefix to each line
     for (i, line) in enumerate(split(str, '\n'))
-        i != 1 && print_prefix(io, depth, charset, active_levels)
+        i != 1 && print(io, prefix)
         println(io, line)
     end
 
@@ -172,10 +158,8 @@ function _print_tree(printnode::Function,
     if depth >= maxdepth
         # Print truncation char(s)
         if indicate_truncation
-            print_prefix(io, depth, charset, active_levels)
-            println(io, charset.trunc)
-            print_prefix(io, depth, charset, active_levels)
-            println(io)
+            println(io, prefix, charset.trunc)
+            println(io, prefix)
         end
 
         return
@@ -186,23 +170,24 @@ function _print_tree(printnode::Function,
 
     while !isempty(s)
         child = popfirst!(s)
+        child_prefix = prefix
 
-        print_prefix(io, depth, charset, active_levels)
+        print(io, prefix)
 
         # Last child?
         if isempty(s)
             print(io, charset.terminator)
-            child_active_levels = active_levels
+            child_prefix *= " " ^ (textwidth(charset.skip) + textwidth(charset.dash) + 1)
         else
             print(io, charset.mid)
-            child_active_levels = vcat(active_levels, depth)
+            child_prefix *= charset.skip * " " ^ (textwidth(charset.dash) + 1)
         end
 
         print(io, charset.dash, ' ')
 
-        _print_tree(printnode, io, child; maxdepth=maxdepth,
-            indicate_truncation=indicate_truncation, depth=depth + 1,
-            active_levels=child_active_levels, charset=charset, roottree=roottree)
+        _print_tree(printnode, io, child;
+            maxdepth=maxdepth, indicate_truncation=indicate_truncation, charset=charset,
+            roottree=roottree, depth=depth + 1, prefix=child_prefix)
     end
 end
 
