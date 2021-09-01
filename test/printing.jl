@@ -28,8 +28,30 @@ end
 Base.show(io::IO, x::AbstractNumTree) = print(io, x.n)
 AbstractTrees.children(x::Num) = (Num(x.n+1), Num(x.n+1))
 
+
 struct SingleChildInfiniteDepth end
 AbstractTrees.children(::SingleChildInfiniteDepth) = (SingleChildInfiniteDepth(),)
+
+
+# Wrapper around a collection which does not define getindex() or keys()
+struct Unindexable{C}
+    col::C
+
+    Unindexable(col) = new{typeof(col)}(col)
+end
+
+Base.eltype(::Type{Unindexable{C}}) where C = eltype(C)
+Base.length(u::Unindexable) = length(u.col)
+Base.iterate(u::Unindexable, args...) = iterate(u.col, args...)
+
+
+# Wrapper around a node which wraps children in UnIndexable
+struct UnindexableChildren{N}
+    node::N
+end
+
+AbstractTrees.children(u::UnindexableChildren) = Unindexable(children(u.node))
+AbstractTrees.printnode(io::IO, u::UnindexableChildren) = AbstractTrees.printnode(io, u.node)
 
 
 @testset "Truncation" begin
@@ -107,22 +129,8 @@ end
     end
 end
 
-# Tree of numbers `n` that has two children of value `n-1`, terminating at 0.
-# Defined both with an explicit tuple as the childrens struct and with implicit
-# iterable children, which are not indexable and do not define pairs.
-struct NumDescend <: AbstractNumTree
-    n::Int
-end
-AbstractTrees.children(n::NumDescend) = n.n == 0 ? () : (NumDescend(n.n-1), NumDescend(n.n-1))
-
-struct NumDescendIterate <: AbstractNumTree
-    n::Int
-end
-function Base.iterate(n::NumDescendIterate, ndone=0)
-    (n.n == 0 || ndone == 2) && return nothing
-    return (NumDescendIterate(n.n-1), ndone+1)
-end
 
 @testset "print_tree with non-indexable children" begin
-    @test repr_tree(NumDescend(4)) == repr_tree(NumDescendIterate(4))
+    tree = Num(0)
+    @test repr_tree(UnindexableChildren(tree), maxdepth=4) == repr_tree(tree, maxdepth=4)
 end
