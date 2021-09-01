@@ -146,29 +146,16 @@ function _print_tree(printnode::Function,
                      maxdepth::Int,
                      indicate_truncation::Bool,
                      charset::TreeCharSet,
-                     withinds::Bool,
                      depth::Int = 0,
                      active_levels::Vector{Int} = Int[],
-                     inds = [],
                      roottree = tree,
                      )
 
     # Print node representation
 
-    # Temporary buffer to write to
-    nodebuf = IOBuffer()
-    # Copy IOContext to buffer
-    isa(io, IOContext) && (nodebuf = IOContext(nodebuf, io))
-
-    # Print node representation into buffer
-    if withinds
-        printnode(nodebuf, tree, inds)
-    elseif tree != roottree && isa(treekind(roottree), IndexedTree)
-        printnode(nodebuf, roottree[tree])
-    else
-        printnode(nodebuf, tree)
-    end
-    str = String(take!(isa(nodebuf, IOContext) ? nodebuf.io : nodebuf))
+    # Get node representation as string
+    toprint = tree != roottree && isa(treekind(roottree), IndexedTree) ? roottree[tree] : tree
+    str = repr_node(toprint, context=io)
 
     # Copy buffer to output, prepending prefix to each line
     for (i, line) in enumerate(split(str, '\n'))
@@ -194,17 +181,11 @@ function _print_tree(printnode::Function,
         return
     end
 
-    # Children or key => child pairs to print
-    it = withinds ? pairs(c) : c
-    s = Iterators.Stateful(it)
-
     # Print children
+    s = Iterators.Stateful(c)
+
     while !isempty(s)
-        if withinds
-            ind, child = popfirst!(s)
-        else
-            child = popfirst!(s)
-        end
+        child = popfirst!(s)
 
         print_prefix(io, depth, charset, active_levels)
 
@@ -221,8 +202,7 @@ function _print_tree(printnode::Function,
 
         _print_tree(printnode, io, child; maxdepth=maxdepth,
             indicate_truncation=indicate_truncation, depth=depth + 1,
-            active_levels=child_active_levels, charset=charset, withinds=withinds,
-            inds=withinds ? [inds; ind] : [], roottree=roottree)
+            active_levels=child_active_levels, charset=charset, roottree=roottree)
     end
 end
 
@@ -232,10 +212,8 @@ function print_tree(f::Function,
                     maxdepth::Int = 5,
                     indicate_truncation::Bool = true,
                     charset::TreeCharSet = DEFAULT_CHARSET,
-                    withinds::Bool = false,
                     )
-    _print_tree(f, io, tree; maxdepth=maxdepth, indicate_truncation=indicate_truncation,
-                charset=charset, withinds=withinds)
+    _print_tree(f, io, tree; maxdepth=maxdepth, indicate_truncation=indicate_truncation, charset=charset)
 end
 
 function print_tree(f::Function, io::IO, tree, maxdepth; kwargs...)
@@ -245,7 +223,6 @@ end
 
 print_tree(io::IO, tree, args...; kwargs...) = print_tree(printnode, io, tree, args...; kwargs...)
 print_tree(tree, args...; kwargs...) = print_tree(stdout::IO, tree, args...; kwargs...)
-
 
 
 """
