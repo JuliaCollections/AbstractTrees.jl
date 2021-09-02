@@ -99,9 +99,17 @@ end
 const _CharArg = Union{AbstractString, Char}
 
 """
-    TreeCharSet
+    TreeCharSet(mid, terminator, skip, dash, trunc, pair)
 
 Set of characters (or strings) used to pretty-print tree branches in [`print_tree`](@ref).
+
+# Fields
+
+* `mid::String` - "Forked" branch segment connecting to middle children.
+* `terminator::String` - Final branch segment connecting to last child.
+* `skip::String` - Vertical branch segment.
+* `dash::String` - Horizontal branch segmentt printed to the right of `mid` and `terminator`.
+* `trunc::String` - Used to indicate the subtree has been truncated at the maximum depth.
 """
 struct TreeCharSet
     mid::String
