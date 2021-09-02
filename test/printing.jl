@@ -167,3 +167,11 @@ end
         └─ "baz"
         """
 end
+
+
+@testset "TreeCharSet constructor" begin
+    base = AbstractTrees.DEFAULT_CHARSET
+
+    @test TreeCharSet(base) == base
+    @test TreeCharSet(base, terminator="...") == TreeCharSet(base.mid, "...", base.skip, base.dash, base.trunc)
+end

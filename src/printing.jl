@@ -123,6 +123,21 @@ struct TreeCharSet
     end
 end
 
+"""
+    TreeCharSet(base::TreeCharSet; fields...)
+
+Create a new `TreeCharSet` by modifying select fields of an existing instance.
+"""
+function TreeCharSet(base::TreeCharSet;
+                     mid = base.mid,
+                     terminator = base.terminator,
+                     skip = base.skip,
+                     dash = base.dash,
+                     trunc = base.trunc,
+                     )
+    return TreeCharSet(mid, terminator, skip, dash, trunc)
+end
+
 """Default `charset` argument used by [`print_tree`](@ref)."""
 const DEFAULT_CHARSET = TreeCharSet("├", "└", "│", "─", "⋮")
 """Charset using only ASCII characters."""
