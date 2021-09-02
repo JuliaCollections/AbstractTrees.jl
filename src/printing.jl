@@ -165,8 +165,8 @@ function _print_tree(printnode::Function,
 
     c = isa(treekind(roottree), IndexedTree) ? childindices(roottree, tree) : children(roottree, tree)
 
-    # No children
-    c === () && return
+    # No children?
+    isempty(c) && return
 
     # Reached max depth
     if depth >= maxdepth
