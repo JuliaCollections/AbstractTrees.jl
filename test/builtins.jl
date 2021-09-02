@@ -7,7 +7,13 @@ using Test
     tree = Any[1,Any[2,3]]
 
     T = Vector{Any}  # This is printed as "Array{Any,1}" in older versions of Julia
-    @test repr_tree(tree) == "$T\n├─ 1\n└─ $T\n   ├─ 2\n   └─ 3\n"
+    @test repr_tree(tree) == """
+        $T
+        ├─ 1
+        └─ $T
+           ├─ 2
+           └─ 3
+        """
 
     @test collect(Leaves(tree)) == [1,2,3]
     @test collect(Leaves(tree)) isa Vector{Int}
@@ -62,7 +68,17 @@ end
 
     @test children(expr) == expr.args
 
-    @test repr_tree(expr) == "Expr(:call)\n├─ :foo\n└─ Expr(:call)\n   ├─ :+\n   ├─ Expr(:call)\n   │  ├─ :^\n   │  ├─ :x\n   │  └─ 2\n   └─ 3\n"
+    @test repr_tree(expr) == """
+        Expr(:call)
+        ├─ :foo
+        └─ Expr(:call)
+           ├─ :+
+           ├─ Expr(:call)
+           │  ├─ :^
+           │  ├─ :x
+           │  └─ 2
+           └─ 3
+        """
 
     @test collect(Leaves(expr)) == [:foo, :+, :^, :x, 2, 3]
 end

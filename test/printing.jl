@@ -28,8 +28,30 @@ end
 Base.show(io::IO, x::AbstractNumTree) = print(io, x.n)
 AbstractTrees.children(x::Num) = (Num(x.n+1), Num(x.n+1))
 
+
 struct SingleChildInfiniteDepth end
 AbstractTrees.children(::SingleChildInfiniteDepth) = (SingleChildInfiniteDepth(),)
+
+
+# Wrapper around a collection which does not define getindex() or keys()
+struct Unindexable{C}
+    col::C
+
+    Unindexable(col) = new{typeof(col)}(col)
+end
+
+Base.eltype(::Type{Unindexable{C}}) where C = eltype(C)
+Base.length(u::Unindexable) = length(u.col)
+Base.iterate(u::Unindexable, args...) = iterate(u.col, args...)
+
+
+# Wrapper around a node which wraps children in UnIndexable
+struct UnindexableChildren{N}
+    node::N
+end
+
+AbstractTrees.children(u::UnindexableChildren) = Unindexable(children(u.node))
+AbstractTrees.printnode(io::IO, u::UnindexableChildren) = AbstractTrees.printnode(io, u.node)
 
 
 @testset "Truncation" begin
@@ -53,7 +75,7 @@ AbstractTrees.children(::SingleChildInfiniteDepth) = (SingleChildInfiniteDepth()
     #       └─ 3
     #
 
-    truncation_char = AbstractTrees.DEFAULT_CHARSET.trunc
+    truncation_str = AbstractTrees.DEFAULT_CHARSET.trunc
 
     for maxdepth in [3,5,8]
         ptxt = repr_tree(Num(0), maxdepth=maxdepth)
@@ -68,7 +90,7 @@ AbstractTrees.children(::SingleChildInfiniteDepth) = (SingleChildInfiniteDepth()
         lines = split(ptxt, '\n')
         for i in 1:length(lines)
             if occursin(string(maxdepth), lines[i])
-                @test lines[i+1][end] == truncation_char
+                @test endswith(lines[i+1], truncation_str)
             end
         end
     end
@@ -90,6 +112,69 @@ AbstractTrees.children(::SingleChildInfiniteDepth) = (SingleChildInfiniteDepth()
 end
 
 
+@testset "Child keys" begin
+    @testset "AbstractVector" begin
+        tree = 1:2
+
+        @test repr_tree(tree) == """
+            UnitRange{Int64}
+            ├─ 1
+            └─ 2
+            """
+
+        @test repr_tree(tree, printkeys=true) == """
+            UnitRange{Int64}
+            ├─ 1 => 1
+            └─ 2 => 2
+            """
+    end
+
+    @testset "Tuple" begin
+        tree = (1, 2)
+
+        @test repr_tree(tree) == """
+            (1, 2)
+            ├─ 1
+            └─ 2
+            """
+
+        @test repr_tree(tree, printkeys=true) == """
+            (1, 2)
+            ├─ 1 => 1
+            └─ 2 => 2
+            """
+    end
+
+    @testset "Matrix" begin
+        tree = [1 2; 3 4]
+        T = typeof(tree)  # Prints as Array{Int64, 2} on older versions of Julia
+
+        @test repr_tree(tree) == """
+            $T
+            ├─ (1, 1) => 1
+            ├─ (2, 1) => 3
+            ├─ (1, 2) => 2
+            └─ (2, 2) => 4
+            """
+
+        @test repr_tree(tree, printkeys=false) == """
+            $T
+            ├─ 1
+            ├─ 3
+            ├─ 2
+            └─ 4
+            """
+    end
+
+    @testset "No keys" begin
+        tree = UnindexableChildren(1:2)  # Has no method for Base.keys()
+
+        @test repr_tree(tree) == repr_tree(tree.node)
+        @test repr_tree(tree, printkeys=true) == repr_tree(tree.node)
+    end
+end
+
+
 @testset "print_tree maxdepth as positional argument" begin
     tree = Num(0)
 
@@ -107,22 +192,49 @@ end
     end
 end
 
-# Tree of numbers `n` that has two children of value `n-1`, terminating at 0.
-# Defined both with an explicit tuple as the childrens struct and with implicit
-# iterable children, which are not indexable and do not define pairs.
-struct NumDescend <: AbstractNumTree
-    n::Int
-end
-AbstractTrees.children(n::NumDescend) = n.n == 0 ? () : (NumDescend(n.n-1), NumDescend(n.n-1))
-
-struct NumDescendIterate <: AbstractNumTree
-    n::Int
-end
-function Base.iterate(n::NumDescendIterate, ndone=0)
-    (n.n == 0 || ndone == 2) && return nothing
-    return (NumDescendIterate(n.n-1), ndone+1)
-end
 
 @testset "print_tree with non-indexable children" begin
-    @test repr_tree(NumDescend(4)) == repr_tree(NumDescendIterate(4))
+    tree = Num(0)
+    @test repr_tree(UnindexableChildren(tree), maxdepth=4) == repr_tree(tree, maxdepth=4)
+end
+
+
+# Prints node as cool message box
+struct BoxNode
+    s::String
+    children::Vector
+end
+
+AbstractTrees.children(n::BoxNode) = n.children
+function AbstractTrees.printnode(io::IO, n::BoxNode)
+    println(io, "┌", "─" ^ textwidth(n.s), "┐")
+    println(io, "│", n.s, "│")
+    print(io, "└", "─" ^ textwidth(n.s), "┘")
+end
+
+@testset "printnode multiline" begin
+    tree = ["foo", BoxNode("bar", [1, 2:4, 5]), "baz"]
+
+    @test repr_tree(tree) == """
+        $(typeof(tree))
+        ├─ "foo"
+        ├─ ┌───┐
+        │  │bar│
+        │  └───┘
+        │  ├─ 1
+        │  ├─ UnitRange{Int64}
+        │  │  ├─ 2
+        │  │  ├─ 3
+        │  │  └─ 4
+        │  └─ 5
+        └─ "baz"
+        """
+end
+
+
+@testset "TreeCharSet constructor" begin
+    base = AbstractTrees.DEFAULT_CHARSET
+
+    @test TreeCharSet(base) == base
+    @test TreeCharSet(base, terminator="...") == TreeCharSet(base.mid, "...", base.skip, base.dash, base.trunc, base.pair)
 end
