@@ -11,11 +11,17 @@ AbstractTrees.SiblingLinks
 AbstractTrees.StoredParents
 AbstractTrees.StoredSiblings
 children
+intree
+ischild
+isdescendant
 AbstractTrees.nodetype
 AbstractTrees.parentlinks
 AbstractTrees.siblinglinks
+treebreadth
+treeheight
 treemap
 treemap!
+treesize
 ```
 
 
