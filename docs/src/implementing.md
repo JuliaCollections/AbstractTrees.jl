@@ -99,9 +99,9 @@ if possible:
 
 ## Printing
 
-[`print_tree`](@ref) calls the [`printnode`](@ref) function to display the representation of each
-node in the tree. The default implementation uses the output of `Base.show` (with an appropriate
-`IOContext`). You may override this to customize how your tree is printed:
+[`print_tree`](@ref) calls the [`AbstractTrees.printnode`](@ref) function to display the
+representation of each node in the tree. The default implementation uses the output of `Base.show`
+(with an appropriate `IOContext`). You may override this to customize how your tree is printed:
 
 ```jldoctest mynode
 AbstractTrees.printnode(io::IO, node::MyNode) = print(io, "MyNode($(node.data))")
