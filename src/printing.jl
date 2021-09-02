@@ -15,6 +15,9 @@ Print a text representation of `tree` to the given `io` object.
 * `indicate_truncation::Bool = true` - print a vertical ellipsis character beneath
   truncated nodes.
 * `charset::TreeCharSet` - [`TreeCharSet`](@ref) to use to print branches.
+* `printkeys::Union{Bool, Nothing}` - Whether to print keys of child nodes (using
+  `pairs(children(node))`). A value of `nothing` uses [`printkeys_default`](@ref) do decide the
+  behavior on a node-by-node basis.
 
 # Examples
 
@@ -110,6 +113,7 @@ Set of characters (or strings) used to pretty-print tree branches in [`print_tre
 * `skip::String` - Vertical branch segment.
 * `dash::String` - Horizontal branch segmentt printed to the right of `mid` and `terminator`.
 * `trunc::String` - Used to indicate the subtree has been truncated at the maximum depth.
+* `pair::String` - Printed between a child node and its key.
 """
 struct TreeCharSet
     mid::String
@@ -117,9 +121,10 @@ struct TreeCharSet
     skip::String
     dash::String
     trunc::String
+    pair::String
 
-    function TreeCharSet(mid::_CharArg, terminator::_CharArg, skip::_CharArg, dash::_CharArg, trunc::_CharArg)
-        return new(String(mid), String(terminator), String(skip), String(dash), String(trunc))
+    function TreeCharSet(mid::_CharArg, terminator::_CharArg, skip::_CharArg, dash::_CharArg, trunc::_CharArg, pair::_CharArg)
+        return new(String(mid), String(terminator), String(skip), String(dash), String(trunc), String(pair))
     end
 end
 
@@ -134,19 +139,42 @@ function TreeCharSet(base::TreeCharSet;
                      skip = base.skip,
                      dash = base.dash,
                      trunc = base.trunc,
+                     pair = base.pair,
                      )
-    return TreeCharSet(mid, terminator, skip, dash, trunc)
+    return TreeCharSet(mid, terminator, skip, dash, trunc, pair)
 end
 
 """Default `charset` argument used by [`print_tree`](@ref)."""
-const DEFAULT_CHARSET = TreeCharSet("├", "└", "│", "─", "⋮")
+const DEFAULT_CHARSET = TreeCharSet("├", "└", "│", "─", "⋮", " => ")
 """Charset using only ASCII characters."""
-const ASCII_CHARSET = TreeCharSet("+", "\\", "|", "--", "...")
+const ASCII_CHARSET = TreeCharSet("+", "\\", "|", "--", "...", " => ")
 
 function TreeCharSet()
     Base.depwarn("The 0-argument constructor of TreeCharSet is deprecated, use AbstractTrees.DEFAULT_CHARSET instead.", :TreeCharSet)
     return DEFAULT_CHARSET
 end
+
+
+"""
+    printkeys_default(children)::Bool
+
+Whether a collection of children should be printed with its keys by default.
+
+The base behavior is to print keys for all collections for which `keys()` is defined, with the
+exception of `AbstractVector`s and tuples.
+"""
+printkeys_default(children) = applicable(keys, children)
+printkeys_default(children::AbstractVector) = false
+printkeys_default(children::Tuple) = false
+
+
+"""
+    print_child_key(io::IO, key)
+
+Print the key for a child node.
+"""
+print_child_key(io::IO, key) = show(io, key)
+print_child_key(io::IO, key::CartesianIndex) = show(io, Tuple(key))
 
 
 function _print_tree(printnode::Function,
@@ -155,6 +183,7 @@ function _print_tree(printnode::Function,
                      maxdepth::Int,
                      indicate_truncation::Bool,
                      charset::TreeCharSet,
+                     printkeys::Union{Bool, Nothing},
                      roottree = tree,
                      depth::Int = 0,
                      prefix::String = "",
@@ -172,12 +201,13 @@ function _print_tree(printnode::Function,
         println(io, line)
     end
 
+    # Node children
     c = isa(treekind(roottree), IndexedTree) ? childindices(roottree, tree) : children(roottree, tree)
 
     # No children?
     isempty(c) && return
 
-    # Reached max depth
+    # Reached max depth?
     if depth >= maxdepth
         # Print truncation char(s)
         if indicate_truncation
@@ -188,12 +218,21 @@ function _print_tree(printnode::Function,
         return
     end
 
+    # Print keys?
+    this_printkeys = applicable(keys, c) && (printkeys === nothing ? printkeys_default(c) : printkeys)
+
     # Print children
-    s = Iterators.Stateful(c)
+    s = Iterators.Stateful(this_printkeys ? pairs(c) : c)
 
     while !isempty(s)
-        child = popfirst!(s)
         child_prefix = prefix
+
+        if this_printkeys
+            child_key, child = popfirst!(s)
+        else
+            child = popfirst!(s)
+            child_key = nothing
+        end
 
         print(io, prefix)
 
@@ -208,9 +247,20 @@ function _print_tree(printnode::Function,
 
         print(io, charset.dash, ' ')
 
+        # Print key
+        if this_printkeys
+            buf = IOBuffer()
+            print_child_key(IOContext(buf, io), child_key)
+            key_str = String(take!(buf))
+
+            print(io, key_str, charset.pair)
+
+            child_prefix *= " " ^ (textwidth(key_str) + textwidth(charset.pair))
+        end
+
         _print_tree(printnode, io, child;
             maxdepth=maxdepth, indicate_truncation=indicate_truncation, charset=charset,
-            roottree=roottree, depth=depth + 1, prefix=child_prefix)
+            printkeys=printkeys, roottree=roottree, depth=depth + 1, prefix=child_prefix)
     end
 end
 
@@ -220,8 +270,9 @@ function print_tree(f::Function,
                     maxdepth::Int = 5,
                     indicate_truncation::Bool = true,
                     charset::TreeCharSet = DEFAULT_CHARSET,
+                    printkeys::Union{Bool, Nothing} = nothing,
                     )
-    _print_tree(f, io, tree; maxdepth=maxdepth, indicate_truncation=indicate_truncation, charset=charset)
+    _print_tree(f, io, tree; maxdepth=maxdepth, indicate_truncation=indicate_truncation, charset=charset, printkeys=printkeys)
 end
 
 function print_tree(f::Function, io::IO, tree, maxdepth; kwargs...)

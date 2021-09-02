@@ -112,6 +112,69 @@ AbstractTrees.printnode(io::IO, u::UnindexableChildren) = AbstractTrees.printnod
 end
 
 
+@testset "Child keys" begin
+    @testset "AbstractVector" begin
+        tree = 1:2
+
+        @test repr_tree(tree) == """
+            UnitRange{Int64}
+            ├─ 1
+            └─ 2
+            """
+
+        @test repr_tree(tree, printkeys=true) == """
+            UnitRange{Int64}
+            ├─ 1 => 1
+            └─ 2 => 2
+            """
+    end
+
+    @testset "Tuple" begin
+        tree = (1, 2)
+
+        @test repr_tree(tree) == """
+            (1, 2)
+            ├─ 1
+            └─ 2
+            """
+
+        @test repr_tree(tree, printkeys=true) == """
+            (1, 2)
+            ├─ 1 => 1
+            └─ 2 => 2
+            """
+    end
+
+    @testset "Matrix" begin
+        tree = [1 2; 3 4]
+        T = typeof(tree)  # Prints as Array{Int64, 2} on older versions of Julia
+
+        @test repr_tree(tree) == """
+            $T
+            ├─ (1, 1) => 1
+            ├─ (2, 1) => 3
+            ├─ (1, 2) => 2
+            └─ (2, 2) => 4
+            """
+
+        @test repr_tree(tree, printkeys=false) == """
+            $T
+            ├─ 1
+            ├─ 3
+            ├─ 2
+            └─ 4
+            """
+    end
+
+    @testset "No keys" begin
+        tree = UnindexableChildren(1:2)  # Has no method for Base.keys()
+
+        @test repr_tree(tree) == repr_tree(tree.node)
+        @test repr_tree(tree, printkeys=true) == repr_tree(tree.node)
+    end
+end
+
+
 @testset "print_tree maxdepth as positional argument" begin
     tree = Num(0)
 
@@ -173,5 +236,5 @@ end
     base = AbstractTrees.DEFAULT_CHARSET
 
     @test TreeCharSet(base) == base
-    @test TreeCharSet(base, terminator="...") == TreeCharSet(base.mid, "...", base.skip, base.dash, base.trunc)
+    @test TreeCharSet(base, terminator="...") == TreeCharSet(base.mid, "...", base.skip, base.dash, base.trunc, base.pair)
 end

@@ -32,6 +32,8 @@ AbstractTrees.DEFAULT_CHARSET
 AbstractTrees.ASCII_CHARSET
 AbstractTrees.TreeCharSet
 print_tree
+AbstractTrees.print_child_key
+AbstractTrees.printkeys_default
 AbstractTrees.printnode
 AbstractTrees.repr_node
 AbstractTrees.repr_tree
