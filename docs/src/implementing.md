@@ -52,7 +52,7 @@ tree = MyNode(1, [
 
 # output
 
-7-element Array{Int64,1}:
+7-element Vector{Int64}:
  3
  4
  2
