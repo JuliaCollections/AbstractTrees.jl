@@ -22,7 +22,7 @@ Print a text representation of `tree` to the given `io` object.
 # Examples
 
 ```jldoctest; setup = :(using AbstractTrees)
-julia> tree = [1:3, "foo", [[[4, 5], 6, 7], 8]];
+julia> tree = [1:3, "foo", Dict(:a => [4, 5], :b => 6, :c => 7)];
 
 julia> print_tree(tree)
 Vector{Any}
@@ -31,14 +31,12 @@ Vector{Any}
 │  ├─ 2
 │  └─ 3
 ├─ "foo"
-└─ Vector{Any}
-   ├─ Vector{Any}
-   │  ├─ Vector{Int64}
-   │  │  ├─ 4
-   │  │  └─ 5
-   │  ├─ 6
-   │  └─ 7
-   └─ 8
+└─ Dict{Symbol, Any}
+   ├─ :a => Vector{Int64}
+   │        ├─ 4
+   │        └─ 5
+   ├─ :b => 6
+   └─ :c => 7
 
 julia> print_tree(tree, maxdepth=2)
 Vector{Any}
@@ -47,11 +45,12 @@ Vector{Any}
 │  ├─ 2
 │  └─ 3
 ├─ "foo"
-└─ Vector{Any}
-   ├─ Vector{Any}
-   │  ⋮
+└─ Dict{Symbol, Any}
+   ├─ :a => Vector{Int64}
+   │        ⋮
    │
-   └─ 8
+   ├─ :b => 6
+   └─ :c => 7
 
 julia> print_tree(tree, charset=AbstractTrees.ASCII_CHARSET)
 Vector{Any}
@@ -60,14 +59,12 @@ Vector{Any}
 |   +-- 2
 |   \\-- 3
 +-- "foo"
-\\-- Vector{Any}
-    +-- Vector{Any}
-    |   +-- Vector{Int64}
-    |   |   +-- 4
-    |   |   \\-- 5
-    |   +-- 6
-    |   \\-- 7
-    \\-- 8
+\\-- Dict{Symbol, Any}
+    +-- :a => Vector{Int64}
+    |         +-- 4
+    |         \\-- 5
+    +-- :b => 6
+    \\-- :c => 7
 ```
 
 """
