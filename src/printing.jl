@@ -217,9 +217,9 @@ Get the string result of calling [`print_tree`](@ref) with the supplied argument
 
 The `context` argument works as it does in `Base.repr`.
 """
-function repr_tree(tree, args...; context=nothing, kw...)
+function repr_tree(tree; context=nothing, kw...)
     buf = IOBuffer()
     io = context === nothing ? buf : IOContext(buf, context)
-    print_tree(io, tree, args...; kw...)
+    print_tree(io, tree; kw...)
     return String(take!(buf))
 end
