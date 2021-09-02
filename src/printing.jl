@@ -25,15 +25,15 @@ Print a text representation of `tree` to the given `io` object.
 julia> tree = [1:3, "foo", [[[4, 5], 6, 7], 8]];
 
 julia> print_tree(tree)
-Array{Any,1}
+Vector{Any}
 ├─ UnitRange{Int64}
 │  ├─ 1
 │  ├─ 2
 │  └─ 3
 ├─ "foo"
-└─ Array{Any,1}
-   ├─ Array{Any,1}
-   │  ├─ Array{Int64,1}
+└─ Vector{Any}
+   ├─ Vector{Any}
+   │  ├─ Vector{Int64}
    │  │  ├─ 4
    │  │  └─ 5
    │  ├─ 6
@@ -41,28 +41,28 @@ Array{Any,1}
    └─ 8
 
 julia> print_tree(tree, maxdepth=2)
-Array{Any,1}
+Vector{Any}
 ├─ UnitRange{Int64}
 │  ├─ 1
 │  ├─ 2
 │  └─ 3
 ├─ "foo"
-└─ Array{Any,1}
-   ├─ Array{Any,1}
+└─ Vector{Any}
+   ├─ Vector{Any}
    │  ⋮
    │
    └─ 8
 
 julia> print_tree(tree, charset=AbstractTrees.ASCII_CHARSET)
-Array{Any,1}
+Vector{Any}
 +-- UnitRange{Int64}
 |   +-- 1
 |   +-- 2
 |   \\-- 3
 +-- "foo"
-\\-- Array{Any,1}
-    +-- Array{Any,1}
-    |   +-- Array{Int64,1}
+\\-- Vector{Any}
+    +-- Vector{Any}
+    |   +-- Vector{Int64}
     |   |   +-- 4
     |   |   \\-- 5
     |   +-- 6

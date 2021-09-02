@@ -52,7 +52,7 @@ tree = MyNode(1, [
 
 # output
 
-7-element Array{Int64,1}:
+7-element Vector{Int64}:
  3
  4
  2
@@ -99,9 +99,9 @@ if possible:
 
 ## Printing
 
-[`print_tree`](@ref) calls the [`printnode`](@ref) function to display the representation of each
-node in the tree. The default implementation uses the output of `Base.show` (with an appropriate
-`IOContext`). You may override this to customize how your tree is printed:
+[`print_tree`](@ref) calls the [`AbstractTrees.printnode`](@ref) function to display the
+representation of each node in the tree. The default implementation uses the output of `Base.show`
+(with an appropriate `IOContext`). You may override this to customize how your tree is printed:
 
 ```jldoctest mynode
 AbstractTrees.printnode(io::IO, node::MyNode) = print(io, "MyNode($(node.data))")
