@@ -127,13 +127,23 @@ function nextsibling(cursor::LinkedTreeCursor{ImplicitSiblings()})
     LinkedTreeCursor(cursor.parent, ns, SiblingState(siblings, nextpos))
 end
 
+# We have no base conventions for the relation between the state of the forward
+# iterator and the state of the reverse iterator. This function is like
+# reverse iteration, except forced to use the same state as forward iteration.
+function reverse_iterate(st::SiblingState{<:Tuple})
+    st.index == 2 && return nothing
+    return st.siblings[st.index-2], SiblingState(st.siblings, st.index-1)
+end
+
+function reverse_iterate(st::Tuple)
+    return st[end], SiblingState(st, lastindex(st))
+end
+
 function prevsibling(cursor::LinkedTreeCursor{ImplicitSiblings()})
-    siblings = cursor.nodepos.siblings
-    pos = cursor.nodepos.index
-    r = iterate(Reverse(siblings), pos)
+    r = reverse_iterate(cursor.nodepos)
     r === nothing && return nothing
-    ns, prevpos = r
-    typeof(cursor)(cursor.parent, ns, SiblingIndex(siblings, prevpos))
+    ns, npos = r
+    LinkedTreeCursor(cursor.parent, ns, npos)
 end
 
 function Base.iterate(ltc::LinkedTreeCursor)
@@ -153,9 +163,13 @@ end
 
 function Base.getindex(ltc::LinkedTreeCursor, idx)
     cs = children(ltc.node)
-    LinkedTreeCursor(ltc, cs[idx], SiblingState(cs, idx))
+    # TODO: Very bad - assumes relation between iteration and indexing
+    LinkedTreeCursor(ltc, cs[idx], SiblingState(cs, idx + 1))
 end
-Base.lastindex(ltc) = lastindex(ltc.node)
+Base.lastindex(ltc::LinkedTreeCursor) = lastindex(ltc.node)
+function Base.last(ltc::LinkedTreeCursor)
+    LinkedTreeCursor(ltc, reverse_iterate(children(ltc.node))...)
+end
 
 abstract type TreeIterator{T} end
 IteratorEltype(::Type{<:TreeIterator}) = EltypeUnknown()
@@ -167,6 +181,9 @@ InplaceStackedTreeCursor(tree) = InplaceStackedTreeCursor([tree])
 getnode(istc::InplaceStackedTreeCursor) = istc.stack[end]
 isroot(istc::InplaceStackedTreeCursor) = length(istc.stack) == 1
 children(istc::InplaceStackedTreeCursor) = istc
+
+Base.copy(istc::InplaceStackedTreeCursor{T}) where {T} =
+    InplaceStackedTreeCursor{T}(copy(istc.stack))
 
 Base.isempty(istc::InplaceStackedTreeCursor) = isempty(children(istc.stack[end]))
 function Base.iterate(istc::InplaceStackedTreeCursor)
@@ -214,7 +231,7 @@ function nextsibling(istc::InplaceStackedTreeCursor)
     InplaceStackedTreeCursor(update_stack!(istc.stack, ns))
 end
 
-function prevsibling(cursor::LinkedTreeCursor{ImplicitSiblings()})
+function prevsibling(istc::InplaceStackedTreeCursor)
     ps = prevsibling(istc.stack[end])
     ps === nothing && return nothing
     InplaceStackedTreeCursor(update_stack!(istc.stack, ps))

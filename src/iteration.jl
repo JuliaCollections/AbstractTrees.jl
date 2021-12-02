@@ -88,22 +88,31 @@ function descend_left(cursor)
     return descend_left(first(ccs))
 end
 
+function descend_right(cursor)
+    ccs = children(cursor)
+    isempty(ccs) && return cursor
+    return descend_right(last(ccs))
+end
+
 function Base.iterate(ti::PreOrderDFS)
     cursor = TreeCursor(ti.tree)
-    (getnode(cursor), cursor)
+    unwrap = cursor !== ti.tree
+    (unwrap ? getnode(cursor) : cursor, (cursor, unwrap))
 end
 
 function Base.iterate(ti::Union{PostOrderDFS, Leaves})
-    cursor = descend_left(TreeCursor(ti.tree))
-    (getnode(cursor), cursor)
+    cursor = TreeCursor(ti.tree)
+    unwrap = cursor !== ti.tree
+    cursor = descend_left(cursor)
+    (unwrap ? getnode(cursor) : cursor, (cursor, unwrap))
 end
 
-function Base.iterate(ti::TreeIterator, cursor)
-    if isa(ti, PreOrderDFS) && ti.filter(getnode(cursor))
+function Base.iterate(ti::TreeIterator, (cursor, unwrap))
+    if isa(ti, PreOrderDFS) && ti.filter(unwrap ? getnode(cursor) : cursor)
         ccs = children(cursor)
         if !isempty(ccs)
             cursor = first(ccs)
-            return (getnode(cursor), cursor)
+            return (unwrap ? getnode(cursor) : cursor, (cursor, unwrap))
         end
     end
     while !isroot(cursor)
@@ -112,14 +121,62 @@ function Base.iterate(ti::TreeIterator, cursor)
             if isa(ti, Union{PostOrderDFS, Leaves})
                 nextcursor = descend_left(nextcursor)
             end
-            return (getnode(nextcursor), nextcursor)
+            return (unwrap ? getnode(nextcursor) : nextcursor, (nextcursor, unwrap))
         end
         cursor = parent(cursor)
         if isa(ti, PostOrderDFS)
-            return (getnode(cursor), cursor)
+            return (unwrap ? getnode(cursor) : cursor, (cursor, unwrap))
         end
     end
     return nothing
+end
+
+function Base.iterate(ti::Iterators.Reverse{<:Union{PreOrderDFS, Leaves}})
+    ti = rti.itr
+    cursor = TreeCursor(ti.tree)
+    unwrap = cursor !== ti.tree
+    cursor = descend_right(cursor)
+    (unwrap ? getnode(cursor) : cursor, (cursor, unwrap))
+end
+
+function Base.iterate(ti::Iterators.Reverse{<:PostOrderDFS})
+    ti = rti.itr
+    cursor = TreeCursor(ti.tree)
+    unwrap = cursor !== ti.tree
+    (unwrap ? getnode(cursor) : cursor, (cursor, unwrap))
+end
+
+function Base.iterate(rti::Iterators.Reverse{<:TreeIterator}, (cursor, unwrap))
+    ti = rti.itr
+    if isa(ti, PostOrderDFS) #
+        ccs = children(cursor)
+        if !isempty(ccs)
+            cursor = last(ccs)
+            return (unwrap ? getnode(cursor) : cursor, (cursor, unwrap))
+        end
+    end
+    while !isroot(cursor)
+        nextcursor = prevsibling(cursor)
+        if nextcursor !== nothing
+            if isa(ti, Union{PreOrderDFS, Leaves}) && (!isa(ti, PreOrderDFS) || ti.filter(unwrap ? getnode(nextcursor) : nextcursor))
+                nextcursor = descend_right(nextcursor)
+            end
+            return (unwrap ? getnode(nextcursor) : nextcursor, (nextcursor, unwrap))
+        end
+        cursor = parent(cursor)
+        if isa(ti, PreOrderDFS)
+            return (unwrap ? getnode(cursor) : cursor, (cursor, unwrap))
+        end
+    end
+    return nothing
+end
+
+function Iterators.rest(t::Union{TreeIterator, Iterators.Reverse{<:TreeIterator}}, node)
+    isa(node, Tuple) && return Iterators.Rest(t, node)
+    if !isa(parentlinks(node), StoredParents) || !isa(siblinglinks(node), StoredSiblings)
+        error("Rest iteration requires stored parents and siblings. Use a TreeCursor to adapt a non-stored tree.")
+    end
+    return Iterators.Rest(t, (node, false))
 end
 
 getnode(tree) = tree
