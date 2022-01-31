@@ -4,7 +4,7 @@ using Test
 import Base: ==
 
 
-if VERSION >= v"1.1.0-DEV.838" # requires https://github.com/JuliaLang/julia/pull/30291
+if v"1.1.0" < VERSION < v"1.8-" # requires https://github.com/JuliaLang/julia/pull/30291
     @testset "Ambiguities" begin
         @test isempty(detect_ambiguities(AbstractTrees, Base, Core))
     end
