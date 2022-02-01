@@ -1,5 +1,8 @@
 """
     NodeCompletion
+
+A NodeCompletion is an adaptor for a node of a tree where the nodes are not explicitally part of a tree
+This allows `children` to work without explicitally  calling `children(tree, node)`
 """
 struct NodeCompletion{R, T}
     tree::R
@@ -24,9 +27,9 @@ end
 
 
 """
-    LinkedTreeCursor
+    TreeCursor
 
-A TreeCustor is an adaptor that allows parent/sibling navigation over a tree that
+A TreeCursor is an adaptor that allows parent/sibling navigation over a tree that
 does not otherwise explicitly store these relations.
 """
 abstract type TreeCursor end
