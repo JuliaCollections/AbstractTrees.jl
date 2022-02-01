@@ -4,9 +4,13 @@ using Test
 import Base: ==
 
 
-if v"1.1.0" < VERSION < v"1.8-" # requires https://github.com/JuliaLang/julia/pull/30291
+if v"1.1.0" < VERSION # requires https://github.com/JuliaLang/julia/pull/30291
     @testset "Ambiguities" begin
-        @test isempty(detect_ambiguities(AbstractTrees, Base, Core))
+        if  VERSION < v"1.8-"
+            @test isempty(detect_ambiguities(AbstractTrees, Base, Core))
+        else
+            @test_broken isempty(detect_ambiguities(AbstractTrees, Base, Core))
+        end
     end
 end
 
