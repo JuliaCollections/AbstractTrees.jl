@@ -55,6 +55,7 @@ TreeIterator
 
 ```@docs
 AnnotationNode
+AbstractTrees.DictChildren
 ShadowTree
 Tree
 ```

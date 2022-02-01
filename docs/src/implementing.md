@@ -1,6 +1,9 @@
 # Implementing the AbstractTrees API
 
 
+
+## Children
+
 Consider the following custom node type, which stores a single data value along with an explicit
 list of child nodes:
 
@@ -19,7 +22,7 @@ MyNode
 ```
 
 
-All that is needed to implement the `AbstractTrees` interface for `MyNode` is to define the
+All that is needed to implement the basic `AbstractTrees` interface for `MyNode` is to define the
 appropriate method of [`children`](@ref):
 
 
@@ -61,6 +64,31 @@ tree = MyNode(1, [
  6
  1
 ```
+
+
+### Child collections
+
+The return value of `children()` does not have to be an array, it can be any collection type.
+Collection types which support indexing enable additional features of this package (TODO: which?).
+In this case the type should also have an appropriate implementation of `keys()` (and thus
+`pairs()`).
+
+Be aware that `AbstractDict` instances cannot be used directly as they behave as a collection
+of `Pair`s, which is probably not what you want. Instead wrap the dict in
+[`AbstractTrees.DictChildren`](@ref), it will behave as a collection of the dict's values only but
+still give the same result with regards to indexing and `keys()`.
+
+
+### Leaf nodes
+
+If your type should always be considered a leaf node (cannot have any children), defining
+
+```julia
+AbstractTrees.children(::MyNode) = ()
+```
+
+serves to make this property easily inferrable by the compiler, as an instance of `Tuple{}` is
+known to be empty by its type alone.
 
 
 ## Optional functions

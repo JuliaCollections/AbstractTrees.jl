@@ -3,6 +3,7 @@ using AbstractTrees
 using AbstractTrees: repr_tree
 using Test
 
+
 @testset "Array" begin
     tree = Any[1,Any[2,3]]
 
@@ -63,6 +64,93 @@ using Test
 end
 
 
+@testset "Dict" begin
+    # This is the same structure as in the "Array" test set above
+    D = Dict{Symbol, Any}
+    tree = D(:a => 1, :b => D(:c => 2, :d => 3))
+
+    @testset "Printing" begin
+        @test repr_tree(tree) == """
+            Dict{Symbol, Any}
+            ├─ :a => 1
+            └─ :b => Dict{Symbol, Any}
+                    ├─ :c => 2
+                    └─ :d => 3
+            """
+
+        @test repr_tree(tree, printkeys=false) == """
+            Dict{Symbol, Any}
+            ├─ 1
+            └─ Dict{Symbol, Any}
+            ├─ 2
+            └─ 3
+            """
+    end
+
+    @testset "Traversal" begin
+        @test collect(Leaves(tree)) == [1,2,3]
+        @test collect(PostOrderDFS(tree)) == [1, 2, 3, tree[:b], tree]
+        @test collect(StatelessBFS(tree)) == [tree, 1, tree[:b], 2, 3]
+    end
+
+    @testset "Subtree funcs" begin
+        @test treesize(tree) == 5
+        @test treebreadth(tree) == 3
+        @test treeheight(tree) == 2
+
+        @test ischild(1, tree)
+        @test !ischild(2, tree)
+        @test ischild(tree[:b], tree)
+        @test !ischild(copy(tree[:b]), tree)  # Should work on identity, not equality
+
+        @test isdescendant(1, tree)
+        @test isdescendant(2, tree)
+        @test !isdescendant(4, tree)
+        @test isdescendant(tree[:b], tree)
+        @test !isdescendant(copy(tree[:b]), tree)
+        @test !isdescendant(tree, tree)
+
+        @test intree(1, tree)
+        @test intree(2, tree)
+        @test !intree(4, tree)
+        @test intree(tree[:b], tree)
+        @test !intree(copy(tree[:b]), tree)
+        @test intree(tree, tree)
+    end
+
+    @testset "Empty" begin
+        tree2 = Dict()
+        for itr in [Leaves, PreOrderDFS, PostOrderDFS]
+            @test collect(itr(tree2)) == [tree2]
+        end
+
+        @test treesize(tree2) == 1
+        @test treebreadth(tree2) == 1
+        @test treeheight(tree2) == 0
+    end
+end
+
+
+@testset "DictChildren" begin
+    tree = Dict{Symbol, Int}(:a => 1, :b => 2, :c => 3)
+    c = children(tree)
+
+    @test eltype(typeof(c)) === Int
+    @test keytype(typeof(c)) === Symbol
+    @test valtype(typeof(c)) === Int
+
+    @test length(c) == length(tree)
+    @test issetequal(c, values(tree))
+    @test issetequal(values(c), values(tree))
+    @test issetequal(keys(c), keys(tree))
+    @test issetequal(pairs(c), pairs(tree))
+
+    for k in keys(tree)
+        @test c[k] == tree[k]
+    end
+end
+
+
 @testset "Expr" begin
     expr = :(foo(x^2 + 3))
 
@@ -82,6 +170,7 @@ end
 
     @test collect(Leaves(expr)) == [:foo, :+, :^, :x, 2, 3]
 end
+
 
 if Base.VERSION >= v"1.6.0-DEV.1594"
     # Much of this is taken from julia/test/compiler/inference.jl
