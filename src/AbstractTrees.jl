@@ -59,6 +59,7 @@ has_children(x) = children(x) !== ()
 
 
 include("traits.jl")
+include("base.jl")
 include("cursors.jl")
 include("printing.jl")
 include("indexing.jl")
