@@ -44,8 +44,8 @@ using Test
     @test intree(tree, tree)
 
 
-    tree2 = Any[Any[1,2],Any[3,4]]
-    @test collect(PreOrderDFS(tree2)) == Any[tree2,Any[1,2],1,2,Any[3,4],3,4]
+    tree2 = Any[Any[1,2],Any[3,'4']]
+    @test collect(PreOrderDFS(tree2)) == Any[tree2,Any[1,2],1,2,Any[3,'4'],3,'4']
 
     @test treesize(tree2) == 7
     @test treebreadth(tree2) == 4
@@ -62,6 +62,11 @@ using Test
     @test treeheight(tree3) == 0
 end
 
+
+@testset "Pair" begin
+    tree = 1=>(3=>4)
+    @test collect(PreOrderDFS(tree)) == Any[tree, tree.second, 4]
+end
 
 @testset "Expr" begin
     expr = :(foo(x^2 + 3))
