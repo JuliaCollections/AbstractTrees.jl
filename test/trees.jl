@@ -211,7 +211,7 @@ AbstractTrees.nodetype(::IntTree) = IntTree
 @testset "IntTree" begin
     itree = IntTree(1, [IntTree(2, IntTree[])])
     iter = Leaves(itree)
-    @inferred first(iter)
+    (v"1.6-" < VERSION < v"1.7-") || @inferred first(iter) # 1.6 has a weird inference bug
     @test first(iter) == IntTree(2, IntTree[])
     val, state = iterate(iter)
     @test Base.return_types(iterate, Tuple{typeof(iter), typeof(state)}) ==
