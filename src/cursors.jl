@@ -2,7 +2,7 @@
     NodeCompletion
 
 A NodeCompletion is an adaptor for a node of a tree where the nodes are not explicitally part of a tree
-This allows `children` to work without explicitally  calling `children(tree, node)`
+This allows `children` to work without explicitly calling `children(tree, node)`
 """
 struct NodeCompletion{R, T}
     tree::R
