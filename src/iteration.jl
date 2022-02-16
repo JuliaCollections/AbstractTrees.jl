@@ -146,7 +146,7 @@ function Base.iterate(ti::Iterators.Reverse{<:PostOrderDFS})
     (unwrap ? getnode(cursor) : cursor, (cursor, unwrap))
 end
 
-function Base.iterate(rti::Iterators.Reverse{<:TreeIterator}, (cursor, unwrap))
+function Base.iterate(rti::Iterators.Reverse{<:TreeIterator}, (cursor, unwrap)::Tuple)
     ti = rti.itr
     if isa(ti, PostOrderDFS) #
         ccs = children(cursor)

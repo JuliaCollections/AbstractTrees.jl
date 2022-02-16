@@ -201,7 +201,7 @@ function Base.iterate(istc::InplaceStackedTreeCursor)
         stack = convert(Vector{JT}, istc.stack)
         push!(stack, ns)
     end
-    InplaceStackedTreeCursor(stack), (cs, state)
+    InplaceStackedTreeCursor(stack), (cs, state, stack)
 end
 
 function update_stack!(stack, ns)
@@ -215,14 +215,14 @@ function update_stack!(stack, ns)
     stack
 end
 
-function Base.iterate(istc::InplaceStackedTreeCursor, (cs, state))
+function Base.iterate(istc::InplaceStackedTreeCursor, (cs, state, stack))
     r = iterate(cs, state)
     if r === nothing
-        pop!(istc.stack)
+        pop!(stack)
         return nothing
     end
     ns, state = r
-    InplaceStackedTreeCursor(update_stack!(istc.stack, ns)), (cs, state)
+    InplaceStackedTreeCursor(update_stack!(stack, ns)), (cs, state, stack)
 end
 
 function nextsibling(istc::InplaceStackedTreeCursor)
@@ -281,4 +281,10 @@ function TreeCursor(tree)
         return InplaceStackedTreeCursor(tree)
     end
     return LinkedTreeCursor(tree)
+end
+
+function Base.show(io::IO, tc::TreeCursor)
+    print(io, typeof(tc).name.name)
+    print(io, " at ")
+    print(io, getnode(tc))
 end
