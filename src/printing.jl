@@ -192,7 +192,7 @@ function _print_tree(printnode::Function,
     # Print node representation
 
     # Get node representation as string
-    toprint = tree != roottree && isa(treekind(roottree), IndexedTree) ? roottree[tree] : tree
+    toprint = tree !== roottree && isa(treekind(roottree), IndexedTree) ? roottree[tree] : tree
     str = repr_node(toprint, context=io)
 
     # Copy buffer to output, prepending prefix to each line
