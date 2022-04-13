@@ -1,19 +1,24 @@
-#
-# children() and related functions
-#
 
 """
-    children(node)
+    children([tree,] x)
 
-Get the immediate children of `node`.
+Get the immediate children of node `x` (optionally in the context of tree `tree`).
 
-This is the primary function that needs to be implemented for custom tree types. It should return an
+By default, this returns 
+
+**REQUIRED**: This is the primary function that needs to be implemented for custom tree types. It should return an
 iterable object for which an appropriate implementation of `Base.pairs` is available.
-
-The default behavior is to assume that if an object is iterable, iterating over
-it gives its children. Non-iterable types are treated as leaf nodes.
 """
-children(node) = Base.isiterable(typeof(node)) ? node : ()
+children(node) = ()
+children(tree, node) = children(node)
+
+"""
+    has_children(x)
+
+Whether `x` has children as returned by [`children`](@ref), i.e. whether `x` is the root of some tree.
+"""
+has_children(x) = !isempty(children(x))
+
 
 
 """
@@ -25,6 +30,28 @@ By default this iterates through ``children(node2)``, so performance may be impr
 specialized method for given node type.
 """
 ischild(node1, node2) = any(node -> node === node1, children(node2))
+
+"""
+    parent([tree,] x)
+
+Get the immediate parent of a node `x`
+
+**OPTIONAL**: This function should be implemented for trees that have stored parents.
+"""
+parent(tree, x) = parent(x)
+
+"""
+    isroot(x)
+    isroot(tree, x)
+
+Whether `x` is the absolute root of a tree.  More specifically, this returns `true` if `parent(x) ≡ nothing`,
+or `parent(tree, x) ≡ nothing`.  That is, while any node is the root of some tree, this function only returns
+true for nodes which have parents which cannot be obtained with the `AbstractTrees` interface.
+"""
+isroot(tree, state) = isroot(tree, state, treekind(tree))
+isroot(tree, state, ::RegularTree) = tree == state
+isroot(tree, state, ::IndexedTree) = state == rootindex(tree)
+isroot(x) = parent(x) === nothing
 
 
 #

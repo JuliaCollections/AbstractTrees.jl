@@ -78,10 +78,6 @@ PreOrderDFS(tree::T,filter::Function=(args...)->true) where {T} = PreOrderDFS{T}
 PreOrderDFS(tree::Tree,filter::Function=(args...)->true) = PreOrderDFS(tree.x,filter)
 IteratorSize(::Type{PreOrderDFS{T}}) where {T} = SizeUnknown()
 
-isroot(tree, state, ::RegularTree) = tree == state
-isroot(tree, state, ::IndexedTree) = state == rootindex(tree)
-isroot(tree, state) = isroot(tree, state, treekind(tree))
-
 function descend_left(cursor)
     ccs = children(cursor)
     isempty(ccs) && return cursor

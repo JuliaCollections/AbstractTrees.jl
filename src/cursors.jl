@@ -77,22 +77,22 @@ function mk_sib_state(tree)
     SiblingState(cs, state)
 end
 
-struct LinkedTreeCursor{SiblingLinks, PT, T, SI <: SiblingState} <: TreeCursor
-    parent::Union{Nothing, PT, LinkedTreeCursor{SiblingLinks, PT, T, SI}}
+struct LinkedTreeCursor{SL<:SiblingLinks, PT, T, SI<:SiblingState} <: TreeCursor
+    parent::Union{Nothing, PT, LinkedTreeCursor{SL, PT, T, SI}}
     node::T
     nodepos::Union{SI, Nothing}
 
-    function LinkedTreeCursor(parent::LinkedTreeCursor{SB, PT, S, SI1}, node::T, nodepos) where {SB, PT, T, S, SI1}
+    function LinkedTreeCursor(parent::LinkedTreeCursor{SL, PT, S, SI1}, node::T, nodepos) where {SB, PT, T, S, SI1}
         TN = typejoin(T, S)
         SN = typejoin(SI1, typeof(nodepos))
         SN <: SiblingState || (SN = SiblingState)
-        if typeof(parent) <: LinkedTreeCursor{SB, PT, TN, SN}
+        if typeof(parent) <: LinkedTreeCursor{SL, PT, TN, SN}
             PTN = PT
         else
             PTN = typejoin(PT, typeof(parent))
             PTN <: LinkedTreeCursor || (PTN = LinkedTreeCursor)
         end
-        new{SB, PTN, TN, SN}(parent, node, nodepos)
+        new{SL, PTN, TN, SN}(parent, node, nodepos)
     end
 
     function LinkedTreeCursor(parent::Nothing, node::T, nodepos::Union{SiblingState, Nothing}) where {T}
@@ -109,19 +109,19 @@ end
 isroot(cursor::LinkedTreeCursor) = cursor.parent === nothing
 parent(cursor::LinkedTreeCursor) = cursor.parent::LinkedTreeCursor
 
-function nextsibling(cursor::LinkedTreeCursor{StoredSiblings()})
+function nextsibling(cursor::LinkedTreeCursor{StoredSiblings})
     ns = nextsibling(cursor.node)
     ns === nothing && return ns
     typeof(cursor)(cursor.parent, ns, nothing)
 end
 
-function prevsibling(cursor::LinkedTreeCursor{StoredSiblings()})
+function prevsibling(cursor::LinkedTreeCursor{StoredSiblings})
     ps = prevsibling(cursor.node)
     ps === nothing && return ns
     typeof(cursor)(cursor.parent, ps, nothing)
 end
 
-function nextsibling(cursor::LinkedTreeCursor{ImplicitSiblings()})
+function nextsibling(cursor::LinkedTreeCursor{ImplicitSiblings})
     siblings = cursor.nodepos.siblings
     pos = cursor.nodepos.index
     r = iterate(siblings, pos)
@@ -130,7 +130,7 @@ function nextsibling(cursor::LinkedTreeCursor{ImplicitSiblings()})
     LinkedTreeCursor(cursor.parent, ns, SiblingState(siblings, nextpos))
 end
 
-function prevsibling(cursor::LinkedTreeCursor{ImplicitSiblings()})
+function prevsibling(cursor::LinkedTreeCursor{ImplicitSiblings})
     siblings = cursor.nodepos.siblings
     pos = cursor.nodepos.index
     r = iterate(Reverse(siblings), pos)
