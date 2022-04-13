@@ -188,6 +188,10 @@ function _print_tree(printnode::Function,
                      depth::Int = 0,
                      prefix::String = "",
                      )
+    if roottree === tree && depth == 0 && isa(treekind(tree), IndexedTree)
+        roottree = Indexed(roottree)
+        tree = rootindex(roottree.tree)
+    end
 
     # Print node representation
 
@@ -202,7 +206,7 @@ function _print_tree(printnode::Function,
     end
 
     # Node children
-    c = isa(treekind(roottree), IndexedTree) ? childindices(roottree, tree) : children(roottree, tree)
+    c = children(roottree, tree)
 
     # No children?
     isempty(c) && return

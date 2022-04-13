@@ -1,9 +1,5 @@
 # Utilities for tree traversal and iteration
 
-
-abstract type TreeIterator{T} end
-IteratorEltype(::Type{<:TreeIterator}) = EltypeUnknown()
-
 """
 Iterator to visit the leaves of a tree, e.g. for the tree
 
@@ -82,151 +78,52 @@ PreOrderDFS(tree::T,filter::Function=(args...)->true) where {T} = PreOrderDFS{T}
 PreOrderDFS(tree::Tree,filter::Function=(args...)->true) = PreOrderDFS(tree.x,filter)
 IteratorSize(::Type{PreOrderDFS{T}}) where {T} = SizeUnknown()
 
-# State depends on what kind of tree we have:
-#   - Parents/Siblings are not stored:
-#       - RegularTree: ImplicitNodeStack
-#       - IndexedTree: ImplicitIndexStack
-#   - Parents/Siblings are stored:
-#       - RegularTree: Nodes
-#       - IndexedTree: Indices
-#
-childstates(tree, state, ::IndexedTree) = childindices(tree, state)
-childstates(tree, state, ::RegularTree) = children(tree, state)
-parentstate(tree, state, ::IndexedTree) = parentind(tree, state)
-parentstate(tree, state, ::RegularTree) = parent(tree, state)
-
-parentstate(tree, state) = parentstate(tree, state, treekind(tree))
-
-update_state!(old_state, cs, idx) = next(cs, idx)[1]
-
-
-getindex(x::AbstractArray, ::ImplicitRootState) = x
-
-function firststate(ti::PreOrderDFS{T}) where T
-    if isa(parentlinks(ti.tree), StoredParents) &&
-            isa(siblinglinks(ti.tree), SiblingLinks)
-        rootstate(ti.tree)
-    else
-        state = ImplicitIndexStack(idxtype(ti.tree)[])
-        if !isa(treekind(typeof(ti.tree)), IndexedTree)
-            state = ImplicitNodeStack(nodetype(ti.tree)[], state)
-        end
-        state
-    end
-end
-function firststate(ti::Union{Leaves, PostOrderDFS})
-    state = firststate(PreOrderDFS(ti.tree))
-    while true
-        css = childstates(ti.tree, state)
-        isempty(css) && break
-        state = first(css)
-    end
-    state
-end
-
-nextind(::Base.Generator, idx) = idx + 1
-relative_state(tree, parentstate, childstate::ImplicitIndexStack) =
-    childstate.stack[end]
-relative_state(tree, parentstate, childstate::ImplicitNodeStack) =
-    relative_state(tree, parentstate, childstate.idx_stack)
-
-function nextsibling(tree, state)
-    ps = parentstate(tree, state)
-    cs = childstates(tree, ps)
-    isempty(cs) && return nothing
-    new_state = nextind(cs, relative_state(tree, ps, state))
-    iterate(cs, new_state) === nothing && return nothing
-    update_state!(tree, ps, children(tree, ps), new_state)
-end
-
-function nextsibling(node, ::StoredParents, ::ImplicitSiblings, ::RegularTree)
-    isroot(node) && return nothing
-    p = parent(node)
-    last_was_node = false
-    for c in children(p)
-        last_was_node && return c
-        (c == node) && (last_was_node = true)
-    end
-    last_was_node && return nothing
-    error("Tree inconsistency: node not a child of parent")
-end
-nextsibling(node, ::Any, ::StoredSiblings, ::Any) = error("Trees with explicit siblings must override the `nextsibling` method explicitly")
-nextsibling(node) = nextsibling(node, parentlinks(node), siblinglinks(node), treekind(node))
-
-function prevsibling(node, ::StoredParents, ::ImplicitSiblings, ::RegularTree)
-    isroot(node) && return nothing
-    p = parent(node)
-    last_c = nothing
-    for c in children(p)
-        (c == node) && return last_c
-        last_c = c
-    end
-    @show p
-    @show node
-    error("Tree inconsistency: node not a child of parent")
-end
-prevsibling(node, ::Any, ::StoredSiblings, ::Any) = error("Trees with explicit siblings must override the `prevsibling` method explicitly")
-prevsibling(node) = prevsibling(node, parentlinks(node), siblinglinks(node), treekind(node))
-prevsibling(tree, node) = prevsibling(node)
-
 isroot(tree, state, ::RegularTree) = tree == state
-isroot(tree, state, ::IndexedTree) = state == rootstate(tree)
+isroot(tree, state, ::IndexedTree) = state == rootindex(tree)
 isroot(tree, state) = isroot(tree, state, treekind(tree))
 
-struct Subtree{T,S}
-    tree::T
-    state::S
-end
-children(tree::Subtree) = children(tree.tree, tree.state)
-nodetype(tree::Subtree) = nodetype(tree.tree)
-idxtype(tree::Subtree) = idxtype(tree.tree)
-rootstate(tree::Subtree) = tree.state
-parentlinks(::Type{Subtree{T,S}}) where {T,S} = parentlinks(T)
-
-joinstate(tree, a, b) = b
-
-if isdefined(Base, :UnionAll)
-    Base.@pure function get_primary(T::DataType)
-        T.name.wrapper
-    end
-else
-    Base.@pure function get_primary(T::DataType)
-        T.name.primary
-    end
+function descend_left(cursor)
+    ccs = children(cursor)
+    isempty(ccs) && return cursor
+    return descend_left(first(ccs))
 end
 
-function stepstate(ti::TreeIterator, state)
-    if isa(ti, PreOrderDFS) && ti.filter(getnode(ti.tree, state))
-        ccs = childstates(ti.tree, state)
-        !isempty(ccs) && return first(ccs)
-    end
-    while !isroot(ti.tree, state)
-        nextstate = nextsibling(ti.tree, state)
-        if nextstate !== nothing
-            return joinstate(ti.tree, nextstate, firststate(
-                get_primary(typeof(ti))(Subtree(ti.tree, nextstate))))
+function Base.iterate(ti::PreOrderDFS)
+    cursor = TreeCursor(ti.tree)
+    (getnode(cursor), cursor)
+end
+
+function Base.iterate(ti::Union{PostOrderDFS, Leaves})
+    cursor = descend_left(TreeCursor(ti.tree))
+    (getnode(cursor), cursor)
+end
+
+function Base.iterate(ti::TreeIterator, cursor)
+    if isa(ti, PreOrderDFS) && ti.filter(getnode(cursor))
+        ccs = children(cursor)
+        if !isempty(ccs)
+            cursor = first(ccs)
+            return (getnode(cursor), cursor)
         end
-        state = parentstate(ti.tree, state)
-        isa(ti, PostOrderDFS) && return state
     end
-    nothing
+    while !isroot(cursor)
+        nextcursor = nextsibling(cursor)
+        if nextcursor !== nothing
+            if isa(ti, Union{PostOrderDFS, Leaves})
+                nextcursor = descend_left(nextcursor)
+            end
+            return (getnode(nextcursor), nextcursor)
+        end
+        cursor = parent(cursor)
+        if isa(ti, PostOrderDFS)
+            return (getnode(cursor), cursor)
+        end
+    end
+    return nothing
 end
 
-getnode(tree::AbstractShadowTree, ns::ImplicitNodeStack) = tree[ns.idx_stack.stack]
-getnode(tree, ns) = getnode(tree, ns, treekind(tree))
-getnode(tree, ns, ::IndexedTree) = tree[ns]
-getnode(tree, ns, ::RegularTree) = ns
-getnode(tree, ::ImplicitRootState, ::RegularTree) = tree
-
-function iterate(ti::TreeIterator)
-    state = firststate(ti)
-    (getnode(ti.tree, state), state)
-end
-function iterate(ti::TreeIterator, state)
-    state = stepstate(ti, state)
-    state === nothing && return nothing
-    (getnode(ti.tree, state), state)
-end
+getnode(tree) = tree
+getnode(tree::LinkedTreeCursor) = tree.node
 
 """
     Acends the tree, at each node choosing whether or not to continue.
@@ -257,6 +154,30 @@ function descend(select, tree)
         idx == 0 && return node
         node = children(node)[idx]
     end
+end
+
+"""
+    Base.searchsortedlast(leaves::Leaves, x; by=getnode)
+
+Return the last leaf of `leaves` less than or equal to `x`. Assumes that leaves
+are in sorted order and that non-leaf nodes sort equal to the smallest of their
+children.
+"""
+function Base.searchsortedlast(leaves::Leaves, v; by=getnode)
+    tree = leaves.tree
+    if isless(v, by(tree))
+        return nothing
+    end
+    while true
+        cs = children(tree)
+        isempty(cs) && return tree
+        idx = searchsortedlast(cs, v; by=by)
+        @assert idx !== 0
+        tree = cs[idx]
+    end
+end
+function Base.searchsortedlast(tree::TreeCursor, args...; kwargs...)
+    searchsortedlast(getnode(tree), args...; kwargs...)
 end
 
 """
@@ -374,21 +295,28 @@ function treemap(f::Function, tree::PostOrderDFS)
 end
 
 function treemap!(f::Function, ti::PreOrderDFS)
-    state = firststate(ti)
-    while state !== nothing
-        ind = state
-        node = getnode(ti.tree, ind)
+    tree = ti.tree
+    ti = PreOrderDFS(PairTree(nothing=>tree))
+    r = iterate(ti)
+    while r !== nothing
+        ((idx, node), cursor) = r
         new_node = f(node)
         if new_node !== node
-            if isempty(ind)
-                return treemap!(PreOrderDFS(new_node)) do x
-                    x == new_node && return x
-                    f(x)
-                end
+            if isroot(cursor)
+                # Switch the entire tree
+                tree = new_node
+                ti = PreOrderDFS(PairTree(nothing=>new_node))
+                r = iterate(ti)
+                # But don't visit the root node again
+                r === nothing && break
+                r = iterate(ti, r[2])
+                continue
             end
-            Tree(ti.tree)[ind] = new_node
+            pc = parent(cursor)
+            getnode(pc)[2][idx] = new_node
+            cursor = pc[idx]
         end
-        state = stepstate(ti, ind)
+        r = iterate(ti, cursor)
     end
-    ti.tree
+    tree
 end

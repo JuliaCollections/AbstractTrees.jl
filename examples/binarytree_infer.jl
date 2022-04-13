@@ -32,10 +32,9 @@ AbstractTrees.parentlinks(::Type{BinaryNode{T}}) where T = AbstractTrees.StoredP
 AbstractTrees.siblinglinks(::Type{BinaryNode{T}}) where T = AbstractTrees.StoredSiblings()
 # Use the native iteration for the children
 AbstractTrees.children(node::BinaryNode) = node
+AbstractTrees.parent(node::BinaryNode) = isdefined(node, :parent) ? node.parent : nothing
 
-Base.parent(root::BinaryNode, node::BinaryNode) = isdefined(node, :parent) ? node.parent : nothing
-
-function AbstractTrees.nextsibling(tree::BinaryNode, child::BinaryNode)
+function AbstractTrees.nextsibling(child::BinaryNode)
     isdefined(child, :parent) || return nothing
     p = child.parent
     if isdefined(p, :right)

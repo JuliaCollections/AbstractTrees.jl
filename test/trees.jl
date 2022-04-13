@@ -125,14 +125,13 @@ struct OneTree
 end
 AbstractTrees.treekind(::Type{OneTree}) = AbstractTrees.IndexedTree()
 AbstractTrees.siblinglinks(::Type{OneTree}) = AbstractTrees.StoredSiblings()
-AbstractTrees.relative_state(t::OneTree, _, __::Int) = 1
 Base.getindex(t::OneTree, idx) = t.nodes[idx]
-AbstractTrees.childindices(tree::OneTree, node::Int) =
+AbstractTrees.rootindex(tree::OneTree) = 1
+AbstractTrees.children(tree::Indexed{OneTree}, node::Int) =
     (ret = (node == 0 || tree[node] == 0) ? () : (tree[node],))
-AbstractTrees.children(tree::OneTree) = AbstractTrees.children(tree, tree)
-AbstractTrees.rootstate(tree::OneTree) = 1
+AbstractTrees.children(tree::OneTree) = AbstractTrees.children(Indexed(tree), 1)
 AbstractTrees.printnode(io::IO, t::OneTree) =
-    AbstractTrees.printnode(io::IO, t[AbstractTrees.rootstate(t)])
+    AbstractTrees.printnode(io::IO, AbstractTrees.rootindex(t))
 Base.eltype(::Type{<:TreeIterator{OneTree}}) = Int
 Base.IteratorEltype(::Type{<:TreeIterator{OneTree}}) = Base.HasEltype()
 
@@ -161,15 +160,13 @@ end
 AbstractTrees.treekind(::Type{ParentTree{T}}) where {T} = AbstractTrees.treekind(T)
 AbstractTrees.parentlinks(::Type{ParentTree{T}}) where {T} = AbstractTrees.StoredParents()
 AbstractTrees.siblinglinks(::Type{ParentTree{T}}) where {T} = AbstractTrees.siblinglinks(T)
-AbstractTrees.relative_state(t::ParentTree, x, r::Int) =
-    AbstractTrees.relative_state(t.tree, x, r)
 Base.getindex(t::ParentTree, idx) = t.tree[idx]
-AbstractTrees.childindices(tree::ParentTree, node::Int) = AbstractTrees.childindices(tree.tree, node)
+AbstractTrees.children(tree::Indexed{<:ParentTree}, node::Int) = AbstractTrees.children(Indexed(tree.tree.tree), node)
 AbstractTrees.children(tree::ParentTree) = AbstractTrees.children(tree, tree)
-AbstractTrees.rootstate(tree::ParentTree) = AbstractTrees.rootstate(tree.tree)
-AbstractTrees.parentind(tree::ParentTree, node::Int) = tree.parents[node]
+AbstractTrees.rootindex(tree::ParentTree) = AbstractTrees.rootindex(tree.tree)
+AbstractTrees.parent(tree::Indexed{ParentTree}, node::Int) = tree.parents[node]
 AbstractTrees.printnode(io::IO, t::ParentTree) =
-    AbstractTrees.printnode(io::IO, t[AbstractTrees.rootstate(t)])
+    AbstractTrees.printnode(io::IO, t[AbstractTrees.rootindex(t)])
 
 @testset "ParentTree" begin
     ot = OneTree([2,3,4,0])
@@ -184,7 +181,9 @@ AbstractTrees.printnode(io::IO, t::ParentTree) =
     @test collect(Leaves(pt)) == [0]
     @test collect(PreOrderDFS(pt)) == [2,3,4,0]
     @test collect(PostOrderDFS(pt)) == [0,4,3,2]
+end
 
+@testset "treemap!" begin
     # Test modification while iterating over PreOrderDFS
     a = [1,[2,[3]]]
     b = treemap!(PreOrderDFS(a)) do node
@@ -212,7 +211,8 @@ AbstractTrees.nodetype(::IntTree) = IntTree
 @testset "IntTree" begin
     itree = IntTree(1, [IntTree(2, IntTree[])])
     iter = Leaves(itree)
-    @test @inferred(first(iter)) == IntTree(2, IntTree[])
+    (v"1.6-" < VERSION < v"1.7-") || @inferred first(iter) # 1.6 has a weird inference bug
+    @test first(iter) == IntTree(2, IntTree[])
     val, state = iterate(iter)
     @test Base.return_types(iterate, Tuple{typeof(iter), typeof(state)}) ==
         [Union{Nothing, Tuple{IntTree,typeof(state)}}]
