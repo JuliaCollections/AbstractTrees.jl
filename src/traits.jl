@@ -29,9 +29,12 @@ struct ImplicitParents <: ParentLinks; end
 A trait which indicates whether a tree node stores references to its parents (`StoredParents()`) or
 if the parents must be inferred from the tree structure (`ImplicitParents()`).
 
+Trees for which `parentlinks` returns `StoredParents()` *MUST* implement [`parent`](@ref).
+
 **OPTIONAL**: This should be implemented for a tree if parents of nodes are stored
 ```julia
 AbstractTrees.parentlinks(::Type{<:TreeType}) = AbstractTrees.StoredParents()
+parent(t::TreeType) = get_parent(t)
 ```
 """
 parentlinks(::Type) = ImplicitParents()
@@ -64,18 +67,10 @@ from the tree structure.
 struct ImplicitSiblings <: SiblingLinks; end
 
 """
-    StoredSiblingsWithParent <: SiblingLinks
-
-Indicates that the parent of the tree node stores references to its siblings.
-"""
-struct StoredSiblingsWithParent <: SiblingLinks; end
-
-"""
     siblinglinks(::Type{T})
     siblinglinks(tree)
 
-A trait which indicates whether a tree node stores references to its siblings (`StoredSiblings()`),
-the nodes parents store references to its siblings (`StoredSiblingsWithParent()`) or the siblings
+A trait which indicates whether a tree node stores references to its siblings (`StoredSiblings()`) or
 must be inferred from the tree structure (`ImplicitSiblings()`).
 
 **OPTIONAL**: This should be implemented for a tree if siblings of nodes are stored

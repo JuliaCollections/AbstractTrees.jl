@@ -8,17 +8,11 @@ the interface that can be used by other packages to talk about trees.
 """
 module AbstractTrees
 
-export children, ischild, intree, isdescendant, treesize, treebreadth, treeheight
-export print_tree, TreeCharSet
-export TreeIterator, Leaves, PostOrderDFS, PreOrderDFS, StatelessBFS
-export Tree, ShadowTree, AnnotationNode, treemap, treemap!, Indexed
-
-import Base: getindex, setindex!, iterate, nextind, print, show,
-    eltype, IteratorSize, IteratorEltype, length, push!, pop!
 using Base: SizeUnknown, EltypeUnknown
 
 
 abstract type AbstractShadowTree end
+
 struct ImplicitRootIndex end
 
 """
@@ -42,11 +36,17 @@ end
 include("traits.jl")
 include("base.jl")
 include("cursors.jl")
-include("printing.jl")
 include("indexing.jl")
+include("printing.jl")
 include("iteration.jl")
 include("builtins.jl")
 include("wrappers.jl")
+
+
+export children, haschildren, ischild
+export isroot, intree, isdescendant, treesize, treebreadth, treeheight
+export TreeCursor, LinkedTreeCursor
+export nextsibling, prevsibling
 
 
 end # module

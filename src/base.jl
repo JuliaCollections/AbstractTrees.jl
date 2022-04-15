@@ -1,4 +1,6 @@
 
+#TODO: make sure to explain that you can define just children(tree, x) (assuming I can make that
+#work everywhere)
 """
     children([tree,] x)
 
@@ -13,12 +15,23 @@ children(node) = ()
 children(tree, node) = children(node)
 
 """
-    has_children(x)
+    haschildren(x)
 
 Whether `x` has children as returned by [`children`](@ref), i.e. whether `x` is the root of some tree.
 """
-has_children(x) = !isempty(children(x))
+haschildren(x) = !isempty(children(x))
 
+
+"""
+    siblings(p, n)
+
+Get the siblings (i.e. children of the parent of) the node `n`.
+
+**OPTIONAL**: This function may be overloaded in cases whehre `siblinglinks` returns `StoredSiblings`,
+but in those cases defining `nextsibling` and `prevsibling` is sufficient.
+"""
+siblings(p, n) = children(p)
+siblings(n) = children(parent(n))
 
 
 """
@@ -52,11 +65,6 @@ isroot(tree, state) = isroot(tree, state, treekind(tree))
 isroot(tree, state, ::RegularTree) = tree == state
 isroot(tree, state, ::IndexedTree) = state == rootindex(tree)
 isroot(x) = parent(x) === nothing
-
-
-#
-# Subtree-related functions
-#
 
 """
     intree(node, root)
