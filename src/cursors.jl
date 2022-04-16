@@ -1,278 +1,93 @@
-"""
-    NodeChildren
 
-A wrapper for a tree node that allows iteration over its children in cases where the children are
-not otherwise stored explicitly, i.e. in cases where the children must be obtained from a separate
-tree object.
-
-## Constructors
-```
-NodeChildren(tree, node)
-```
-
-## Arguments
-- `tree`: The tree which can be used to obtain node children via `children(tree, node)`.
-- `node`: The node to wrap.
-"""
-struct NodeChildren{R, T}
-    tree::R
-    node::T
-end
-
-"""
-    getnode(nc::NodeChildren)
-
-Get the node for which `nc` is a wrapper.
-"""
-getnode(nc::NodeChildren) = nc.node
-
-children(nc::NodeChildren) = nc
-
-function Base.iterate(nc::NodeChildren)
-    cs = children(nc.tree, nc.node)
-    r = iterate(cs)
-    r === nothing && return nothing
-    (node, state) = r
-    NodeChildren(nc.tree, node), (cs, state)
-end
-function Base.iterate(nc::NodeChildren, (cs, state))
-    r = iterate(cs, state)
-    r === nothing && return nothing
-    (node, state) = r
-    NodeChildren(nc.tree, node), (cs, state)
-end
-
-#TODO: what about indexing with tree cursors?
-
-"""
-    TreeCursor
-
-An adaptor that allows parent/sibling navigation over a tree that
-does not otherwise explicitly store these relations.
-"""
 abstract type TreeCursor end
 
-parentlinks(::Type{<:TreeCursor}) = StoredParents()
-siblinglinks(::Type{<:TreeCursor}) = StoredSiblings()
+#TODO: these are probably good enough for now, look at the iteration and indexing methods to see
+#what else might be desirable
 
-# all tree cursors are required to be iterators over their children
+#TODO: NodeCompletion was for cases where you can only call children(tree, node) so will need to
+#worry about that
+
+#TODO: what do we want to do about indexing?  there is already a trait do we really want to have a
+#wrapper?
+
+
+# this is a fallback and may not always be the case
+Base.IteratorSize(::Type{<:TreeCursor}) = SizeUnknown()
+
+# all TreeCursor give children on iteration
 children(tc::TreeCursor) = tc
-
-
-"""
-    UnIndex <: TreeCursor
-
-A `TreeCursor` that allows non-indexed iteration over tree nodes.
-"""
-struct UnIndex{T<:TreeCursor} <: TreeCursor
-    tc::T
-end
-
-function nextsibling(ui::UnIndex)
-    ns = nextsibling(ui.tc)
-    ns === nothing && return nothing
-    UnIndex(ns)
-end
-
-function prevsibling(ui::UnIndex)
-    ps = prevsibling(ui.tc)
-    ps === nothing && return nothing
-    UnIndex(ps)
-end
-
-function getnode(ui::UnIndex)
-    nc = getnode(ui.tc)::NodeChildren
-    nc.tree[nc.node]
-end
-
-function parent(ui::UnIndex)
-    return UnIndex(parent(ui.tc))
-end
-
-function iterate(ui::UnIndex, state...)
-    r = iterate(ui.tc, state...)
-    r === nothing && return nothing
-    (node, state) = r
-    UnIndex(node), state
-end
-
-isroot(ui::UnIndex) = isroot(ui.tc)
 
 
 struct InitialState end
 
-Base.iterate(x, ::InitialState) = iterate(x)
 
-
-abstract type LinkedTreeCursor{P,N} <: TreeCursor end
-
-#FIX: what to do about duplicates when we call siblings???
-
-struct LinkedTreeCursorImplicit{P, N, S, SS} <: LinkedTreeCursor{P,N}
-    parent::P
+# this version assumes all we can do is call `children`… if even that is inefficient you're fucked
+struct ImplicitCursor{P,N,SS,PS,PSS} <: TreeCursor
+    parent::Union{Nothing,P}
     node::N
-    siblings::S
     sibling_state::SS
-
-    function LinkedTreeCursorImplicit(p, n, s=siblings(p, n), ss=InitialState())
-        new{typeof(p),typeof(n),typeof(s),typeof(ss)}(p, n, s, ss)
-    end
+    prev_sibling::Union{Nothing,PS}  # must be cursor
+    prev_sibling_state::PSS
 end
 
-LinkedTreeCursorImplicit(n) = LinkedTreeCursorImplicit(nothing, n, ())
+ImplicitCursor(node) = ImplicitCursor(nothing, node, InitialState(), nothing, nothing)
+
+getnode(csr::ImplicitCursor) = csr.node
+
+# parent must always be a properly initliazed ImplicitCursor
+parent(csr::ImplicitCursor) = csr.parent
+
+function Base.iterate(csr::ImplicitCursor, (c, s)=(nothing, InitialState()))
+    cs = (children ∘ getnode)(csr)
+    # do NOT just write an iterate(x, ::InitialState) method, it's an ambiguity nightmare
+    r = s isa InitialState ? iterate(cs) : iterate(cs, s)
+    isnothing(r) && return nothing
+    (n′, s′) = r
+    (ImplicitCursor(csr, n′, s′, c, s), (n′, s′))
+end
+
+function nextsibling(csr::ImplicitCursor)
+    cs = (children ∘ getnode ∘ parent)(csr)
+    # do NOT just write an iterate(x, ::InitialState) method, it's an ambiguity nightmare
+    r = csr.sibling_state isa InitialState ? iterate(cs) : iterate(cs, csr.sibling_state)
+    isnothing(r) && return nothing
+    (n′, s′) = r
+    ImplicitCursor(parent(csr), n′, s′, getnode(csr), csr.sibling_state)
+end
+
+prevsibling(csr::ImplicitCursor) = csr.prev_sibling
 
 
-struct LinkedTreeCursorStored{P, N} <: LinkedTreeCursor{P,N}
-    parent::P
+function SiblingCursor{P,N}
+    parent::Union{Nothing,P}
     node::N
 end
 
-LinkedTreeCursor(n) = LinkedTreeCursor(nothing, n)
+getnode(csr::SiblingCursor) = csr.node
 
+# parent must always be a properly initialized SiblingCursor
+parent(csr::SiblingCursor) = csr.parent
 
-getnode(csr::LinkedTreeCursor) = csr.node
+function Base.iterate(csr::SiblingCursor, (c, s)=(nothing, InitialState()))
+    cs = (children ∘ getnode)(csr)
+    # do NOT just write an iterate(x, ::InitialState) method, it's an ambiguity nightmare
+    r = s isa InitialState ? iterate(cs) : iterate(cs, s)
+    isnothing(r) && return nothing
+    (n′, s′) = r
+    (SiblingCursor(csr, n′), (n′, s′))
+end
 
-parent(csr::LinkedTreeCursor) = csr.parent
-
-isroot(csr::LinkedTreeCursor) = isnothing(parent(csr))
-
-function nextsibling(csr::LinkedTreeCursorStored)
-    ns = nextsibling(getnode(csr))
+function nextsibling(csr::SiblingCursor)
+    ns = (nextsibling ∘ getnode)(csr)
     isnothing(ns) && return nothing
-    LinkedTreeCursorStored(parent(csr), ns)
+    SiblingCursor(parent(csr), ns)
 end
 
-function prevsibling(csr::LinkedTreeCursorStored)
-    ps = prevsibling(cursor.node)
+function prevsibling(csr::SiblingCursor)
+    ps = (prevsibling ∘ getnode)(csr)
     isnothing(ps) && return nothing
-    LinkedTreeCursorStored(parent(csr), ps)
-end
-
-function Base.iterate(csr::LinkedTreeCursorStored, s=InitialState())
-    cs = children(getnode(csr))
-    r = iterate(cs, s)
-    isnothing(r) && return nothing
-    (n, s′) = r
-    (LinkedTreeCursorStored(getnode(csr), n), s′)
-end
-
-function nextsibling(csr::LinkedTreeCursorImplicit)
-    r = iterate(csr.siblings, csr.sibling_state)
-    isnothing(r) && return nothing
-    (ns, s′) = r
-    LinkedTreeCursorImplicit(parent(csr), ns, csr.siblings, s′)
-end
-
-function Base.iterate(csr::LinkedTreeCursorImplicit, s=InitialState())
-    cs = children(getnode(csr))
-    r = iterate(cs, s)
-    isnothing(r) && return nothing
-    (n, s′) = r
-    (LinkedTreeCursorImplicit(getnode(csr), n, cs, s′), s′)
+    SiblingCursor(parent(csr), ps)
 end
 
 
-abstract type TreeIterator{T} end
-
-IteratorEltype(::Type{<:TreeIterator}) = EltypeUnknown()
-
-struct InplaceStackedTreeCursor{T} <: TreeCursor
-    stack::Vector{T}
-end
-InplaceStackedTreeCursor(tree) = InplaceStackedTreeCursor([tree])
-getnode(istc::InplaceStackedTreeCursor) = istc.stack[end]
-isroot(istc::InplaceStackedTreeCursor) = length(istc.stack) == 1
-children(istc::InplaceStackedTreeCursor) = istc
-
-Base.isempty(istc::InplaceStackedTreeCursor) = isempty(children(istc.stack[end]))
-function Base.iterate(istc::InplaceStackedTreeCursor)
-    cs = children(istc.stack[end])
-    r = iterate(cs)
-    r === nothing && return nothing
-    ns, state = r
-    if typeof(ns) <: eltype(istc.stack)
-        # DANGER: This is the inplace version. Hopefully in the future we have
-        # fast immutable arrays that will obviate this.
-        push!(istc.stack, ns)
-        stack = istc.stack
-    else
-        JT = typejoin(eltype(istc.stack), typeof(ns))
-        stack = convert(Vector{JT}, istc.stack)
-        push!(stack, ns)
-    end
-    InplaceStackedTreeCursor(stack), (cs, state)
-end
-
-function update_stack!(stack, ns)
-    if typeof(ns) <: eltype(stack)
-        # DANGER: See above
-    else
-        JT = typejoin(eltype(stack), typeof(ns))
-        stack = convert(Vector{JT}, stack)
-    end
-    stack[end] = ns
-    stack
-end
-
-function Base.iterate(istc::InplaceStackedTreeCursor, (cs, state))
-    r = iterate(cs, state)
-    if r === nothing
-        pop!(istc.stack)
-        return nothing
-    end
-    ns, state = r
-    InplaceStackedTreeCursor(update_stack!(istc.stack, ns)), (cs, state)
-end
-
-function nextsibling(istc::InplaceStackedTreeCursor)
-    ns = nextsibling(istc.stack[end])
-    ns === nothing && return nothing
-    InplaceStackedTreeCursor(update_stack!(istc.stack, ns))
-end
-
-function Base.getindex(istc::InplaceStackedTreeCursor, idx)
-    cs = children(istc.stack[end])
-    # DANGER: This is the inplace version. Hopefully in the future we have
-    # fast immutable arrays that will obviate this
-    ns = cs[idx]
-    if typeof(ns) <: eltype(istc.stack)
-        # DANGER: This is the inplace version. Hopefully in the future we have
-        # fast immutable arrays that will obviate this.
-        push!(istc.stack, ns)
-        stack = istc.stack
-    else
-        JT = typejoin(eltype(istc.stack), typeof(ns))
-        stack = convert(Vector{JT}, istc.stack)
-        push!(stack, ns)
-    end
-    InplaceStackedTreeCursor(stack)
-end
-
-function parent(istc::InplaceStackedTreeCursor)
-    pop!(istc.stack)
-    InplaceStackedTreeCursor(istc.stack)
-end
-
-# Decide what kind of cursor to use for this tree. Trees may override this
-# function to return a different cursor type.
-function TreeCursor(tree)
-    if treekind(tree) === IndexedTree()
-        return UnIndex(TreeCursor(NodeChildren(Indexed(tree), rootindex(tree))))
-    end
-    pl = parentlinks(tree)
-    sl = siblinglinks(tree)
-    if pl === StoredParents() && sl === StoredSiblings()
-        # If both parents and siblings are stored, there is no need for a cursor,
-        # the tree itself supports everything we need.
-        return tree
-    end
-    # Ok, we need some kind of cursor. If the siblings are stored, we will
-    # consider using a stack based cursor, otherwise we will fall back to the
-    # pointer tree one.
-    if sl === StoredSiblings()
-        # TODO: Some kind of consideration of mutability/non-mutability here?
-        return InplaceStackedTreeCursor(tree)
-    end
-    return LinkedTreeCursor(tree)
-end
-TreeCursor(tc::TreeCursor) = tc
+# a parent cursor would only be different in that it doesn't have to start at the root

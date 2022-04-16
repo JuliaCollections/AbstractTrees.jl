@@ -41,7 +41,7 @@ function children(x::AbstractShadowTree)
     map(res->typeof(x)(res[1], res[2]),make_zip(x))
 end
 
-iterate(x::AbstractShadowTree, state...) = iterate(make_zip(x), state...)
+Base.iterate(x::AbstractShadowTree, state...) = iterate(make_zip(x), state...)
 
 function make_annotations(cb, tree, parent, s)
     s = cb(tree, parent, s)

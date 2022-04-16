@@ -45,7 +45,7 @@ include("wrappers.jl")
 
 export children, haschildren, ischild
 export isroot, intree, isdescendant, treesize, treebreadth, treeheight
-export TreeCursor, LinkedTreeCursor
+export TreeCursor, LinkedTreeCursor, LinkedTreeCursorStored, LinkedTreeCursorImplicit
 export nextsibling, prevsibling
 
 

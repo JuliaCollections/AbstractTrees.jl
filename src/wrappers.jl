@@ -24,7 +24,7 @@ children(pt::PairTree) = PairTreeChildren(pairs(children(pt.kv[2])))
 Base.iterate(pt::PairTree, state...) = iterate(pt.kv, state...)
 Base.getindex(pt::PairTree, ind) = getindex(pt.kv, ind)
 
-function iterate(parent::PairTreeChildren, node::PairTree)
+function Base.iterate(parent::PairTreeChildren, node::PairTree)
     parent_v = parent.data.kv[2]
     ni = nextind(parent_v, node.kv[1])
     PairTree(ni=>parent_v)

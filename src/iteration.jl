@@ -124,7 +124,6 @@ function Base.iterate(ti::TreeIterator, cursor::TreeCursor)
 end
 
 getnode(tree) = tree
-getnode(tree::LinkedTreeCursor) = tree.node
 
 function _ascend(getparent, select, node)
     isroot(node) && (select(node); return node)
@@ -252,14 +251,15 @@ function nextind_or_deadend(tree, ind, level)
     return nothing
 end
 
-iterate(ti::StatelessBFS) = (Tree(ti.tree)[[]], [])
+Base.iterate(ti::StatelessBFS) = (Tree(ti.tree)[[]], [])
+
 """
 Stateless level-order bfs iteration. The algorithm is as follows:
 
 Go up. If there is a right neighbor, go right, then left until you reach the
 same level. If you reach the root, go left until you reach the next level.
 """
-function iterate(ti::StatelessBFS, ind)
+function Base.iterate(ti::StatelessBFS, ind)
     org_level = active_level = length(ind)
     newinds = ind
     while true

@@ -47,14 +47,16 @@ Abstract type of the trait that indicates whether siblings of a node are stored.
 """
 abstract type SiblingLinks end
 
+#TODO: do we care if something defines siblings(n)?
+# probably, but I don't know where to use it yet
 """
     StoredSiblings <: SiblingLinks
 
 Indicates that this tree node stores sibling links explicitly, or can compute them
 quickly (e.g. because the tree has a (small) fixed branching ratio, so the
-current index of a node can be determined by quick linear search). The
-implementation is responsible for defining the relative_state function
-to expose this information.
+current index of a node can be determined by quick linear search).
+
+Requires definition of `nextsibling` and `prevsibling` methods on a node.
 """
 struct StoredSiblings <: SiblingLinks; end
 
@@ -116,6 +118,7 @@ AbstractTrees.treekind(::Type{<:TreeType}) = AbstractTrees.IndexedTree()
 """
 treekind(tree::Type) = RegularTree()
 treekind(tree) = treekind(typeof(tree))
+
 
 """
     nodetype(tree)
