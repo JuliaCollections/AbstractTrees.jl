@@ -1,89 +1,36 @@
-# Wrappers which allow for tree-like indexing into objects
 
-
-struct Tree
-    x::Any
-end
-Tree(x::Tree) = x
-Tree(x::AbstractShadowTree) = x
-show(io::IO, tree::Tree) = print_tree(io, tree.x)
-
-mutable struct AnnotationNode{T}
-    val::T
-    children::Vector{AnnotationNode{T}}
-end
-
-children(x::AnnotationNode) = x.children
-printnode(io::IO, x::AnnotationNode) = print(io, x.val)
-
-struct ShadowTree <: AbstractShadowTree
-    tree::Tree
-    shadow::Tree
-    ShadowTree(x::Tree,y::Tree) = new(x,y)
-    ShadowTree(x,y) = ShadowTree(Tree(x),Tree(y))
-end
-first_tree(x::ShadowTree) = x.tree
-second_tree(x::ShadowTree) = x.shadow
-
-function zip_min(c1, c2)
-    n1, n2 = length(c1), length(c2)
-    if n1 < n2
-        c2 = Iterators.take(c2,n1)
-    elseif n2 < n1
-        c1 = Iterators.take(c1,n2)
+function childindex(::IndexedChildren, t, idx)
+    n = t
+    for j ∈ idx
+        n = children(n)[j]
     end
-    zip(c1, c2)
+    n
+end
+childindex(t, idx) = childindex(childindexing(t), t, idx)
+
+
+# obviously this is inefficient so it should only be used if indexing not otherwise available
+# expects children to also be indexed
+struct Indexed{T,C}
+    node::T
+    children::Vector{C}
 end
 
-make_zip(x::AbstractShadowTree) = zip_min(children(x.tree.x), children(x.shadow.x))
+indexed(::IndexedChildren, t) = t
+indexed(::NonIndexedChildren, t) = Indexed(t)
+indexed(t) = indexed(childindexing(t), t)
 
-function children(x::AbstractShadowTree)
-    map(res->typeof(x)(res[1], res[2]),make_zip(x))
+function Indexed(node)
+    ch = map(indexed, children(node))
+    isempty(ch) && return Indexed{typeof(node),Union{}}(node, [])
+    Indexed{typeof(node),eltype(ch)}(node, ch)
 end
 
-Base.iterate(x::AbstractShadowTree, state...) = iterate(make_zip(x), state...)
+getnode(inode::Indexed) = inode.node
 
-function make_annotations(cb, tree, parent, s)
-    s = cb(tree, parent, s)
-    AnnotationNode{Any}(s, AnnotationNode{Any}[make_annotations(cb, child, tree, s) for child in children(tree)])
-end
+childindexing(::Indexed) = IndexedChildren()
 
-function getindex(tree::Tree, indices)
-    node = tree.x
-    for idx in indices
-        node = children(node)[idx]
-    end
-    node
-end
+children(inode::Indexed) = inode.children
 
-
-function getindexhighest(tree::Tree, indices)
-    node = tree.x
-    for (i,idx) in enumerate(indices)
-        cs = children(node)
-        if idx > length(cs)
-            return (indices[1:i-1],node)
-        end
-        node = children(node)[idx]
-    end
-    (indices, node)
-end
-
-function setindex!(tree::Tree, val, cursor::LinkedTreeCursor)
-    p = getnode(parent(cursor))
-    setindex!(children(p), val, cursor.nodepos.index)
-end
-
-function getindex(tree::AbstractShadowTree, indices)
-    typeof(tree)(Tree(first_tree(tree))[indices],Tree(second_tree(tree))[indices])
-end
-
-function setindex!(tree::AbstractShadowTree, val, indices)
-    setindex!(Tree(first_tree(tree)), first_tree(val), indices)
-    setindex!(Tree(second_tree(tree)), second_tree(val), indices)
-end
-
-function setindex!(tree::AbstractShadowTree, val::Tuple, indices)
-    setindex!(Tree(first_tree(tree)), val[1], indices)
-    setindex!(Tree(second_tree(tree)), val[2], indices)
-end
+# this automatically unwraps... not sure how good an idea that is but why not
+Base.getindex(t::Indexed, idx) = getnode(childindex(t, idx))

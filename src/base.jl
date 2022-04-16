@@ -1,6 +1,6 @@
 
-#TODO: make sure to explain that you can define just children(tree, x) (assuming I can make that
-#work everywhere)
+#TODO: will have to look back over this carefully
+
 """
     children([tree,] x)
 
@@ -62,8 +62,8 @@ or `parent(tree, x) ≡ nothing`.  That is, while any node is the root of some t
 true for nodes which have parents which cannot be obtained with the `AbstractTrees` interface.
 """
 isroot(tree, state) = isroot(tree, state, treekind(tree))
-isroot(tree, state, ::RegularTree) = tree == state
-isroot(tree, state, ::IndexedTree) = state == rootindex(tree)
+#isroot(tree, state, ::RegularTree) = tree == state
+#isroot(tree, state, ::IndexedTree) = state == rootindex(tree)
 isroot(x) = parent(x) === nothing
 
 """

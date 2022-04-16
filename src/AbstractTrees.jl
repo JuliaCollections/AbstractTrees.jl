@@ -8,45 +8,44 @@ the interface that can be used by other packages to talk about trees.
 """
 module AbstractTrees
 
-using Base: SizeUnknown, EltypeUnknown
+using Base: HasLength, SizeUnknown, HasEltype, EltypeUnknown
+
+
+# MAJOR ISSUES:
+# - everything assumes that `children` is very cheap, will have to do quite a lot to handle the
+#   cases where it is not (and it will involve a lot of different possibilities)
 
 
 abstract type AbstractShadowTree end
 
 struct ImplicitRootIndex end
 
-"""
-    Indexed{T}
-
-A wrapper around a tree of type `T` for providing `getindex` methods.
-"""
-struct Indexed{T}
-    tree::T
-end
-Base.getindex(tree::Indexed, ind) = tree.tree[ind]
-Base.getindex(tree::Indexed, ::ImplicitRootIndex) = tree
-rootindex(tree) = ImplicitRootIndex()
-
-function children(i::Indexed, ind)
-    Base.depwarn("No children overload for tree declared as indexed. Overloading childindices(...) is deprecated. Use children(::Indexed{MyTree}, index).", :childindices)
-    return childindices(i.tree, ind)
-end
-
-
 include("traits.jl")
 include("base.jl")
-include("cursors.jl")
 include("indexing.jl")
-include("printing.jl")
-include("iteration.jl")
+include("cursors.jl")
+#include("printing.jl")
+#include("iteration.jl")
 include("builtins.jl")
-include("wrappers.jl")
+#include("wrappers.jl")
+
+#TODO: functions to add
+#- getroot
 
 
-export children, haschildren, ischild
-export isroot, intree, isdescendant, treesize, treebreadth, treeheight
-export TreeCursor, LinkedTreeCursor, LinkedTreeCursorStored, LinkedTreeCursorImplicit
+#interface
+export children, parentlinks, siblinglinks, childindexing, childtype
+#extended interface
 export nextsibling, prevsibling
+
+# properties
+export haschildren, ischild, isroot, isroot, intree, isdescendant, treesize, treebreadth, treeheight
+
+# cursors
+export TreeCursor, ImplicitCursor, SiblingCursor
+
+#indexing
+export childindex, indexed
 
 
 end # module
