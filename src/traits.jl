@@ -99,5 +99,9 @@ struct NonIndexedChildren <: ChildIndexing end
 childindexing(::Type) = NonIndexedChildren()
 childindexing(node) = childindexing(typeof(node))
 
-# this is dangerous if children is not efficient
-childtype(node) = eltype(children(node))
+
+childrentype(::Type) = Any
+childrentype(node) = typeof(children(node))
+
+childtype(::Type{T}) where {T} = eltype(childrentype(T))
+childtype(node) = eltype(childrentype(node))
