@@ -25,8 +25,8 @@ include("base.jl")
 include("indexing.jl")
 include("cursors.jl")
 #include("printing.jl")
-#include("iteration.jl")
-include("builtins.jl")
+include("iteration.jl")
+#include("builtins.jl")
 #include("wrappers.jl")
 
 #TODO: functions to add

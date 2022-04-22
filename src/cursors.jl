@@ -4,6 +4,8 @@ abstract type TreeCursor end
 #TODO: NodeCompletion was for cases where you can only call children(tree, node) so will need to
 #worry about that
 
+#FIX: internal cursor constructors must not assume children have same traits!!!
+
 #TODO: *DON'T* do any more work here yet!
 # will need to work on iteration.jl to try to figure out which cases are important to implement
 
@@ -102,6 +104,7 @@ end
 
 function nextsibling(csr::IndexedCursor)
     p = parent(csr)
+    isnothing(p) && return nothing
     idx = csr.index + 1
     idx > length(p) && return nothing
     p[idx]
@@ -120,4 +123,8 @@ There are lots of other cases that we just haven't implemented yet, and they are
     more efficiently.  Need 2 versions for indexing.
 ====================================================================================================#
 
+#TODO: this is FUBAR, just want to be able to experiment with iteration
 
+TreeCursor(::NonIndexedChildren, node) = ImplicitCursor(nothing, node)
+TreeCursor(::IndexedChildren, node) = IndexedCursor(nothing, node)
+TreeCursor(node) = TreeCursor(childindexing(node), node)
