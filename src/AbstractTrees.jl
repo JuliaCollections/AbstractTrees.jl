@@ -10,6 +10,9 @@ module AbstractTrees
 
 using Base: HasLength, SizeUnknown, HasEltype, EltypeUnknown
 
+# this should be removed for commits
+using Infiltrator
+
 
 # MAJOR ISSUES:
 # - everything assumes that `children` is very cheap, will have to do quite a lot to handle the

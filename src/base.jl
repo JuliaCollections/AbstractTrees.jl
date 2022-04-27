@@ -9,8 +9,6 @@ unwrap(x) = x
 
 Get the immediate children of node `x` (optionally in the context of tree `tree`).
 
-By default, this returns 
-
 **REQUIRED**: This is the primary function that needs to be implemented for custom tree types. It should return an
 iterable object for which an appropriate implementation of `Base.pairs` is available.
 """
@@ -125,3 +123,15 @@ By default this recurses through all nodes in the tree and so may be slow if a m
 method has not been implemented for the given type.
 """
 treeheight(node) = isempty(children(node)) ? 0 : 1 + mapreduce(treeheight, max, children(node))
+
+"""
+    descendleft(node)
+
+Descend from the node `node` to the first encountered leaf node by recursively calling
+[`children`](@ref) and taking the first child.
+"""
+function descendleft(node)
+    ch = children(node)
+    isempty(ch) && return node
+    descendleft(first(ch))
+end
