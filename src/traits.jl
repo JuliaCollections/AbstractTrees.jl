@@ -1,7 +1,18 @@
-"""
-    ParentLinks
 
-Abstract type of the trait that indicates whether the parents of a node are stored.
+"""
+    ParentLinks(::Type{T})
+    ParentLinks(tree)
+
+A trait which indicates whether a tree node stores references to its parents (`StoredParents()`) or
+if the parents must be inferred from the tree structure (`ImplicitParents()`).
+
+Trees for which `parentlinks` returns `StoredParents()` *MUST* implement [`parent`](@ref).
+
+**OPTIONAL**: This should be implemented for a tree if parents of nodes are stored
+```julia
+AbstractTrees.parentlinks(::Type{<:TreeType}) = AbstractTrees.StoredParents()
+parent(t::TreeType) = get_parent(t)
+```
 """
 abstract type ParentLinks end
 
@@ -22,33 +33,23 @@ the tree structure and cannot be inferred through a single node.
 """
 struct ImplicitParents <: ParentLinks; end
 
+ParentLinks(::Type) = ImplicitParents()
+ParentLinks(tree) = ParentLinks(typeof(tree))
+
 """
-    parentlinks(::Type{T})
-    parentlinks(tree)
+    SiblingLinks(::Type{T})
+    SiblingLinks(tree)
 
-A trait which indicates whether a tree node stores references to its parents (`StoredParents()`) or
-if the parents must be inferred from the tree structure (`ImplicitParents()`).
+A trait which indicates whether a tree node stores references to its siblings (`StoredSiblings()`) or
+must be inferred from the tree structure (`ImplicitSiblings()`).
 
-Trees for which `parentlinks` returns `StoredParents()` *MUST* implement [`parent`](@ref).
-
-**OPTIONAL**: This should be implemented for a tree if parents of nodes are stored
+**OPTIONAL**: This should be implemented for a tree if siblings of nodes are stored
 ```julia
-AbstractTrees.parentlinks(::Type{<:TreeType}) = AbstractTrees.StoredParents()
-parent(t::TreeType) = get_parent(t)
+AbstractTrees.SiblingLinks(::Type{<:TreeType}) = AbstractTrees.StoredSiblings()
 ```
-"""
-parentlinks(::Type) = ImplicitParents()
-parentlinks(tree) = parentlinks(typeof(tree))
-
-"""
-    SiblingLinks
-
-Abstract type of the trait that indicates whether siblings of a node are stored.
 """
 abstract type SiblingLinks end
 
-#TODO: do we care if something defines siblings(n)?
-# probably, but I don't know where to use it yet
 """
     StoredSiblings <: SiblingLinks
 
@@ -68,40 +69,90 @@ from the tree structure.
 """
 struct ImplicitSiblings <: SiblingLinks; end
 
+SiblingLinks(::Type) = ImplicitSiblings()
+SiblingLinks(tree) = SiblingLinks(typeof(tree))
+
 """
-    siblinglinks(::Type{T})
-    siblinglinks(tree)
+    ChildIndexing(::Type{N})
+    ChildIndexing(n)
 
-A trait which indicates whether a tree node stores references to its siblings (`StoredSiblings()`) or
-must be inferred from the tree structure (`ImplicitSiblings()`).
+A trait indicating whether the tree node `n` has children (as returned by [`children`](@ref)) which can be
+indexed using 1-based indexing.
 
-**OPTIONAL**: This should be implemented for a tree if siblings of nodes are stored
-```julia
-AbstractTrees.siblinglinks(::Type{<:TreeType}) = AbstractTrees.StoredSiblings()
-```
-"""
-siblinglinks(::Type) = ImplicitSiblings()
-siblinglinks(tree) = siblinglinks(typeof(tree))
+Options are either [`NonIndexedChildren`](@ref) (default) or [`IndexedChildren`](@ref).
 
-#TODO: docs!!
-"""
-    ChildIndexing
-
-Abstract type which indicates the access type of the tree.
+**OPTIONAL**
 """
 abstract type ChildIndexing end
 
-# will assume if indexed has `length` because that's just way easier
+"""
+    IndexedChildren <: ChildIndexing
+
+Indicates that the object returned by `children(n)` where `n` is a tree node is indexable (1-based).
+"""
 struct IndexedChildren <: ChildIndexing end
 
+"""
+    NonIndexedChildren <: ChildIndexing
+
+Indicates that the object returned by `children(n)` where `n` is a tree node is not indexable (default).
+"""
 struct NonIndexedChildren <: ChildIndexing end
 
-childindexing(::Type) = NonIndexedChildren()
-childindexing(node) = childindexing(typeof(node))
+ChildIndexing(::Type) = NonIndexedChildren()
+ChildIndexing(node) = ChildIndexing(typeof(node))
 
 
+"""
+    childrentype(::Type{T})
+    childrentype(n)
+
+Indicates the type of the children (the *collection* of children, not individual children) of the tree node `n`
+or its type `T`.  [`children`](@ref) should return an object of this type.
+
+If the `childrentype` can be inferred from the type of the node alone, the type `::Type{T}` definition is preferred
+(the latter will fall back to it).
+
+**OPTIONAL**: In most cases, [`childtype`](@ref) is used instead.  If `childtype` is not defined it will fall back
+to `eltype ∘ childrentype`.
+"""
 childrentype(::Type) = Any
 childrentype(node) = typeof(children(node))
 
+"""
+    childtype(::Type{T})
+    childtype(n)
+
+Indicates the type of children of the tree node `n` or its type `T`.
+
+If `childtype` can be inferred from the type of the node alone, the type `::Type{T}` definition is preferred
+(the latter will fall back to it).
+
+**OPTIONAL**: It is strongly recommended to define this wherever possible, as without it almost no tree algorithms
+can be type-stable.  If `childrentype` is defined and can be known from the node type alone, this function will
+fall back to `eltype(childrentype(T))`.  If this gives a correct result it's not necessary to define `childtype`.
+"""
 childtype(::Type{T}) where {T} = eltype(childrentype(T))
 childtype(node) = eltype(childrentype(node))
+
+"""
+    childstatetype(::Type{T})
+    childstatetype(n)
+
+Indicates the type of the iteration state of the tree node `n` or its type `T`.  This is used by tree traversal
+algorithms which must retain this state.  It therefore is necessary to define this to ensure that most tree
+traversal is type stable.
+
+For nodes with indexed children (as indicated with [`ChildIndexing`](@ref)), this is typically `Int` and it will
+fall back to that in those cases.
+
+**OPTIONAL**: For types with `IndexedChildren` this will default to `Int`, otherwise `Any`.
+If this is the indexing type and it is used in iteration, there is no need to define this function.
+In other cases it might be hard to discover what this should be assigned to in the first place, if in doubt use `Any`.
+"""
+childstatetype(::Type{T}) where {T} = (ChildIndexing(T) ≡ IndexedChildren() ? Int : Any)
+childstatetype(node) = childstatetype(typeof(node))
+
+
+#TODO: do we want a nodetype to guarantee type of all nodes in the tree?
+#not useful for cursors but might be for iteration

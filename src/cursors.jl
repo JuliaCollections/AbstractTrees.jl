@@ -1,51 +1,60 @@
 
-abstract type TreeCursor end
+abstract type TreeCursor{P,N} end
 
-#TODO: NodeCompletion was for cases where you can only call children(tree, node) so will need to
-#worry about that
+#TODO: type stability is mostly impossible but we still have to ensure we can make the cases
+# where the underlying nodes define everything typestable
 
-#FIX: internal cursor constructors must not assume children have same traits!!!
+nodetype(::Type{<:TreeCursor{P,N}}) where {P,N} = N
+nodetype(csr::TreeCursor) = nodetype(typeof(csr))
 
-#TODO: *DON'T* do any more work here yet!
-# will need to work on iteration.jl to try to figure out which cases are important to implement
-
+# note that this is guaranteed to return another of the same type of TreeCursor
+parenttype(::Type{<:TreeCursor{P,N}}) where {P,N} = P
+parenttype(csr::TreeCursor) = parenttype(typeof(csr))
 
 # this is a fallback and may not always be the case
 Base.IteratorSize(::Type{<:TreeCursor}) = SizeUnknown()
 
+Base.IteratorEltype(::Type{<:TreeCursor}) = EltypeUnknown()
+
 # all TreeCursor give children on iteration
 children(tc::TreeCursor) = tc
 
-childindexing(tc::TreeCursor) = childindexing(unwrap(tc))
+ChildIndexing(tc::TreeCursor) = ChildIndexing(unwrap(tc))
 
 
 struct InitialState end
 
 
 # this version assumes all we can do is call `children`… if even that is inefficient you're fucked
-struct ImplicitCursor{P,N,SS,PS,PSS} <: TreeCursor
+struct ImplicitCursor{P,N,S} <: TreeCursor{P,N}
     parent::P
     node::N
-    sibling_state::SS
-    prev_sibling::PS
-    prev_sibling_state::PSS
+    sibling_state::S
+
+    ImplicitCursor(p, n, s=InitialState()) = new{typeof(p),typeof(n),typeof(s)}(p, n, s)
 end
-
-# can't do one argument version because types are underdetermined
-ImplicitCursor(p, n, s=InitialState()) = ImplicitCursor(p, n, s, nothing, nothing)
-
-childrentype(::Type{T}) where {T<:ImplicitCursor} = childrentype(T)
 
 unwrap(csr::ImplicitCursor) = csr.node
 
 # parent must always be a properly initliazed ImplicitCursor
 parent(csr::ImplicitCursor) = csr.parent
 
-Base.IteratorSize(::Type{<:ImplicitCursor{P,N}}) where {P,N} = Base.IteratorSize(childrentype(N))
+Base.IteratorSize(::Type{ImplicitCursor{P,N,S}}) where {P,N,S} = IteratorSize(childtype(N))
 
-# it's too hard to determine type information because of all the tracking of states
-Base.IteratorEltype(::Type{<:ImplicitCursor}) = EltypeUnknown()
-Base.eltype(csr::ImplicitCursor)  = ImplicitCursor
+Base.length(csr::ImplicitCursor) = (length ∘ children ∘ unwrap)(csr)
+
+Base.IteratorEltype(::Type{<:ImplicitCursor}) = HasEltype()
+
+function Base.eltype(::Type{ImplicitCursor{P,N,S}}) where {P,N,S}
+    cst = (childstatetype ∘ nodetype)(P)
+    P′ = ImplicitCursor{P,N,S}
+    ImplicitCursor{P′,childtype(N),cst}
+end
+
+function Base.eltype(csr::ImplicitCursor)
+    cst = (childstatetype ∘ parent ∘ unwrap)(csr)
+    ImplicitCursor{typeof(csr),childtype(unwrap(csr)),cst}
+end
 
 function Base.iterate(csr::ImplicitCursor, (c, s)=(nothing, InitialState()))
     cs = (children ∘ unwrap)(csr)
@@ -53,7 +62,7 @@ function Base.iterate(csr::ImplicitCursor, (c, s)=(nothing, InitialState()))
     r = s isa InitialState ? iterate(cs) : iterate(cs, s)
     isnothing(r) && return nothing
     (n′, s′) = r
-    o = ImplicitCursor(csr, n′, s′, c, s)
+    o = ImplicitCursor(csr, n′, s′)
     (o, (o, s′))
 end
 
@@ -64,18 +73,17 @@ function nextsibling(csr::ImplicitCursor)
     r = csr.sibling_state isa InitialState ? iterate(cs) : iterate(cs, csr.sibling_state)
     isnothing(r) && return nothing
     (n′, s′) = r
-    ImplicitCursor(parent(csr), n′, s′, unwrap(csr), csr.sibling_state)
+    ImplicitCursor(parent(csr), n′, s′)
 end
 
-prevsibling(csr::ImplicitCursor) = csr.prev_sibling
 
-
-struct IndexedCursor{P,N} <: TreeCursor
+# this is still useful because it simplifies what the "user" has to do to specify the types
+struct IndexedCursor{P,N} <: TreeCursor{P,N}
     parent::P
     node::N
     index::Int
 
-    IndexedCursor(p, n, idx=1) = new{typeof(p),typeof(n)}(p, n, idx)
+    IndexedCursor(p, n, idx::Integer=1) = new{typeof(p),typeof(n)}(p, n, idx)
 end
 
 IndexedCursor(::ImplicitParents, n) = IndexedCursor(nothing, n)
@@ -89,15 +97,19 @@ parent(csr::IndexedCursor) = csr.parent
 Base.IteratorSize(::Type{<:IndexedCursor}) = HasLength()
 Base.IteratorEltype(::Type{<:IndexedCursor}) = HasEltype()
 
+function Base.eltype(::Type{IndexedCursor{P,N}}) where {P,N}
+    P′ = IndexedCursor{P,N}
+    IndexedCursor{P′,childtype(N)}
+end
 Base.eltype(csr::IndexedCursor) = IndexedCursor{typeof(csr),childtype(unwrap(csr))}
 Base.length(csr::IndexedCursor) = (length ∘ children ∘ unwrap)(csr)
 
-function Base.getindex(csr::IndexedCursor, idx) 
+function Base.getindex(csr::IndexedCursor, idx)
     cs = (children ∘ unwrap)(csr)
     IndexedCursor(csr, cs[idx], idx)
 end
 
-function Base.iterate(csr::IndexedCursor, idx=1) 
+function Base.iterate(csr::IndexedCursor, idx=1)
     idx > length(csr) && return nothing
     (csr[idx], idx+1)
 end
@@ -118,13 +130,13 @@ end
 
 
 #====================================================================================================
+TODO:
+
 There are lots of other cases that we just haven't implemented yet, and they are probably rare
 - SiblingCursor: a type provides `nextsibling` and `prevsibling` so that siblings can be iterated
     more efficiently.  Need 2 versions for indexing.
 ====================================================================================================#
 
-#TODO: this is FUBAR, just want to be able to experiment with iteration
-
 TreeCursor(::NonIndexedChildren, node) = ImplicitCursor(nothing, node)
 TreeCursor(::IndexedChildren, node) = IndexedCursor(nothing, node)
-TreeCursor(node) = TreeCursor(childindexing(node), node)
+TreeCursor(node) = TreeCursor(ChildIndexing(node), node)
