@@ -135,8 +135,6 @@ function _ascend(getparent, select, node)
     node
 end
 
-#TODO: need to wrap up cursors.jl first
-
 """
     ascend(select, node)
     ascend(select, tree, node)
