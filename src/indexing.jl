@@ -1,24 +1,48 @@
 
-function childindex(::IndexedChildren, t, idx)
-    n = t
+"""
+    childindex(node, idx)
+
+Obtain a node from a tree with [`IndexedChildren()`] by indexing each level of the tree with the elements
+of `idx`.
+
+## Example
+```julia
+v = [1, [2, [3, 4]]]
+
+childindex(v, (2, 2, 1)) == 3
+```
+"""
+function childindex(::IndexedChildren, node, idx)
+    n = node
     for j ∈ idx
         n = children(n)[j]
     end
     n
 end
-childindex(t, idx) = childindex(childindexing(t), t, idx)
+childindex(node, idx) = childindex(ChildIndexing(node), t, idx)
 
+"""
+    Indexed{T,C}
 
-# obviously this is inefficient so it should only be used if indexing not otherwise available
-# expects children to also be indexed
+A wrapper of a tree node of type `T` with children of type `C` which guarantees that children can be indexed.
+Construction involves allocation of an array of the children.
+
+Typically one should use [`indexed`](@ref) to construct this.
+"""
 struct Indexed{T,C}
     node::T
     children::Vector{C}
 end
 
-indexed(::IndexedChildren, t) = t
-indexed(::NonIndexedChildren, t) = Indexed(t)
-indexed(t) = indexed(childindexing(t), t)
+"""
+    indexed(node)
+
+Return a tree node which is guaranteed to have [`IndexedChildren`](@ref).  If `node` already has this, `indexed` is
+the identity, otherwise it will wrap the node in an [`Indexed`](@ref).
+"""
+indexed(::IndexedChildren, node) = node
+indexed(::NonIndexedChildren, node) = Indexed(node)
+indexed(node) = indexed(ChildIndexing(node), node)
 
 function Indexed(node)
     ch = map(indexed, children(node))
@@ -28,9 +52,8 @@ end
 
 unwrap(inode::Indexed) = inode.node
 
-childindexing(::Indexed) = IndexedChildren()
+ChildIndexing(::Indexed) = IndexedChildren()
+
+childrentype(::Type{Indexed{T,C}}) where {T,C} = Vector{C}
 
 children(inode::Indexed) = inode.children
-
-# this automatically unwraps... not sure how good an idea that is but why not
-Base.getindex(t::Indexed, idx) = unwrap(childindex(t, idx))

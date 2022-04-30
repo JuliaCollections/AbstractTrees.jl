@@ -174,8 +174,10 @@ ascend(select, node) = _ascend(parent, select, node)
 
 Descends the tree, at each node choosing the child given by select callback
 or the current node if 0 is returned.
+
+Requires tree nodes to have [`IndexedChildren`](@ref).
 """
-function descend(select, tree)
+function descend(select, ::IndexedChildren, tree)
     idx = select(tree)
     idx == 0 && return tree
     node = children(tree)[idx]
@@ -185,5 +187,7 @@ function descend(select, tree)
         node = children(node)[idx]
     end
 end
+descend(select, node) = descend(select, ChildIndexing(node), node)
 
 
+#TODO: must do StatelessBFS but looks like a nightmare
