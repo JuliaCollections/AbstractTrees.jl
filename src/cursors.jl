@@ -1,4 +1,19 @@
 
+"""
+    TreeCursor{P,N}
+
+Abstract type for tree cursors which when constructed from a node can be used to
+navigate the entire tree descended from that node.
+
+Tree cursors satisfy the abstract tree interface with a few additional guarantees:
+- In addition to [`children`](@ref), [`parent`](@ref), [`nextsibling`](@ref) and
+    optionally [`prevsibling`](@ref) must be defined.
+- The above functions returning tree nodes are guaranteed to also return tree cursors.
+
+Tree nodes which define `children` and have the traits [`StoredParents`](@ref) and
+[`StoredSiblings`](@ref) satisfy the `TreeCursor` interface and can be used as such,
+see [`treecursor`](@ref).
+"""
 abstract type TreeCursor{P,N} end
 
 unwrapedtype(::Type{<:TreeCursor{P,N}}) where {P,N} = N
