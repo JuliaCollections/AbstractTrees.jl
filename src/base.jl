@@ -1,86 +1,109 @@
 
-#TODO: will have to look back over this carefully
+"""
+    unwrap(node)
 
+Unwrap a tree node.  This removes wrappers such as [`Indexed`](@ref) or [`TreeCursor`](@ref)s.
 
-unwrap(x) = x
+By default, this function is the identity.
+"""
+unwrap(node) = node
 
 """
-    children([tree,] x)
+    children([root,] node)
 
-Get the immediate children of node `x` (optionally in the context of tree `tree`).
+Get the immediate children of node `node` (optionally in the context of tree with root `root`).
 
-**REQUIRED**: This is the primary function that needs to be implemented for custom tree types. It should return an
-iterable object for which an appropriate implementation of `Base.pairs` is available.
+**REQUIRED**: The 1-argument version of this function is required for all trees.  The 2-argument version is optional
+and falls back to `children(node)`.
 """
 children(node) = ()
-children(tree, node) = children(node)
+children(root, node) = children(node)
 
 """
-    haschildren(x)
+    siblings(node)
 
-Whether `x` has children as returned by [`children`](@ref), i.e. whether `x` is the root of some tree.
+Get the siblings (i.e. children of the parent of) the node `node`.  The fall-back method for this only works for
+nodes with the trait [`StoredParents`](@ref).
+
+For a general case iterator see [`Siblings`](@ref).
+
+**OPTIONAL**: This function is optional in all cases.
 """
-haschildren(x) = !isempty(children(x))
-
-
-"""
-    siblings(p, n)
-
-Get the siblings (i.e. children of the parent of) the node `n`.
-
-**OPTIONAL**: This function may be overloaded in cases whehre `siblinglinks` returns `StoredSiblings`,
-but in those cases defining `nextsibling` and `prevsibling` is sufficient.
-"""
-siblings(p, n) = children(p)
-siblings(n) = children(parent(n))
-
+siblings(node) = siblings(ParentLinks(node), node)
+siblings(::StoredParents, node) = (children ∘ parent)(node)
 
 """
-    ischild(node1, node2)
+    nextsibling(node)
+
+Get the next sibling (child of the same parent) of the tree node `node`.  The returned node should be the same as
+the node that would be returned after `node` when iterating over `(children ∘ parent)(node)`.
+
+**OPTIONAL**: This function is required for nodes with the [`StoredSiblings`](@ref) trait.  There is no default
+definition.
+"""
+function nextsibling end
+
+"""
+    prevsibling(node)
+
+Get the previous sibling (child of the same parent) of the tree node `node`.  The returned node should be the same
+as the node that would be returned prior to `node` when iterating over `(children ∘ parent)(node)`.
+
+**OPTIONAL**: This function is optional in all cases.  Default AbstractTrees method assume that it is impossible to
+obtain the previous sibling and all iterators act in the "forward" direction.
+"""
+function prevsibling end
+
+"""
+    ischild(node1, node2; equiv=(≡))
 
 Check if `node1` is a child of `node2`.
 
-By default this iterates through ``children(node2)``, so performance may be improved by adding a
+By default this iterates through `children(node2)`, so performance may be improved by adding a
 specialized method for given node type.
+
+Equivalence is established with the `equiv` function.  New methods of this function should include this
+argument or else it will fall back to `≡`.
 """
-ischild(node1, node2) = any(node -> node === node1, children(node2))
+ischild(node1, node2; equiv=(≡)) = any(node -> equiv(node, node1), children(node2))
 
 """
-    parent([tree,] x)
+    parent([root,] x)
 
 Get the immediate parent of a node `x`
 
-**OPTIONAL**: This function should be implemented for trees that have stored parents.
+**OPTIONAL**: The 1-argument version of this function must be implemented for nodes with the [`StoredParents`](@ref)
+trait.  The 2-argument version is always optional.
 """
-parent(tree, x) = parent(x)
+parent(root, x) = parent(x)
 
 """
     isroot(x)
-    isroot(tree, x)
 
 Whether `x` is the absolute root of a tree.  More specifically, this returns `true` if `parent(x) ≡ nothing`,
-or `parent(tree, x) ≡ nothing`.  That is, while any node is the root of some tree, this function only returns
+or `parent(root, x) ≡ nothing`.  That is, while any node is the root of some tree, this function only returns
 true for nodes which have parents which cannot be obtained with the `AbstractTrees` interface.
 """
-isroot(tree, state) = isroot(tree, state, treekind(tree))
-#isroot(tree, state, ::RegularTree) = tree == state
-#isroot(tree, state, ::IndexedTree) = state == rootindex(tree)
-isroot(x) = parent(x) === nothing
+isroot(root, x) = isnothing(parent(root, x))
+isroot(x) = (isnothing ∘ parent)(x)
 
 """
-    intree(node, root)
+    intree(node, root; equiv=(≡))
 
 Check if `node` is a member of the tree rooted at `root`.
 
 By default this traverses through the entire tree in search of `node`, and so may be slow if a
 more specialized method has not been implemented for the given tree type.
 
+Equivalence is established with the `equiv` function.  Note that new methods should also define `equiv` or calls
+may fall back to the default method.
+
 See also: [`isdescendant`](@ref)
 """
-intree(node, root) = any(n -> n === node, PreOrderDFS(root))
+intree(node, root; equiv=(≡)) = any(n -> equiv(n, node), PreOrderDFS(root))
 
 """
-    isdescendant(node1, node2)
+    isdescendant(node1, node2; equiv=(≡))
 
 Check if `node1` is a descendant of `node2`. This isequivalent to checking whether `node1` is a
 member of the subtree rooted at `node2` (see [`intree`](@ref)) except that a node cannot be a
@@ -88,8 +111,11 @@ descendant of itself.
 
 Internally this calls `intree(node1, node2)` and so may be slow if a specialized method of that
 function is not available.
+
+Equivalence is established with the `equiv` function.  Note that new methods should also define `equiv` or calls
+may fall back to the default method.
 """
-isdescendant(node1, node2) = node1 !== node2 && intree(node1, node2)
+isdescendant(node1, node2; equiv=(≡)) = equiv(node1, node2) || intree(node1, node2)
 
 
 """
@@ -134,4 +160,19 @@ function descendleft(node)
     ch = children(node)
     isempty(ch) && return node
     descendleft(first(ch))
+end
+
+"""
+    getroot(node)
+
+Get the root of the tree containing node `node`.  This requires `node` to have the trait [`StoredParents`](@ref).
+"""
+getroot(node) = getroot(ParentLinks(node), node)
+function getroot(::StoredParents, node)
+    p = parent(node)
+    while true
+        isnothing(p) && return node
+        node = p
+        p = parent(p)
+    end
 end

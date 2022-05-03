@@ -14,11 +14,6 @@ using Base: HasLength, SizeUnknown, HasEltype, EltypeUnknown
 using Infiltrator
 
 
-# MAJOR ISSUES:
-# - everything assumes that `children` is very cheap, will have to do quite a lot to handle the
-#   cases where it is not (and it will involve a lot of different possibilities)
-
-
 abstract type AbstractShadowTree end
 
 struct ImplicitRootIndex end
@@ -32,9 +27,6 @@ include("iteration.jl")
 #include("builtins.jl")
 #include("wrappers.jl")
 
-#TODO: functions to add
-#- getroot
-
 
 #interface
 export children, parentlinks, siblinglinks, childindexing, childtype
@@ -42,7 +34,7 @@ export children, parentlinks, siblinglinks, childindexing, childtype
 export nextsibling, prevsibling
 
 # properties
-export haschildren, ischild, isroot, isroot, intree, isdescendant, treesize, treebreadth, treeheight
+export ischild, isroot, isroot, intree, isdescendant, treesize, treebreadth, treeheight, descendleft, getroot
 
 # cursors
 export TreeCursor, ImplicitCursor, SiblingCursor

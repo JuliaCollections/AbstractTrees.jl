@@ -3,7 +3,7 @@
 abstract type IteratorState{T<:TreeCursor} end
 
 # we define this explicitly to avoid run-time dispatch
-function instance(::Type{S}, node; kw...) where {S<:IteratorState} 
+function instance(::Type{S}, node; kw...) where {S<:IteratorState}
     isnothing(node) ? nothing : S(node; kw...)
 end
 
@@ -190,4 +190,53 @@ end
 descend(select, node) = descend(select, ChildIndexing(node), node)
 
 
-#TODO: must do StatelessBFS but looks like a nightmare
+struct StatelessBFS{T} <: TreeIterator{T}
+    root::T
+end
+
+Base.iterate(ti::StatelessBFS) = (ti.root, [])
+
+function _descend_left(inds, next_node, lvl)
+    while length(inds) ≠ lvl
+        ch = children(next_node)
+        isempty(ch) && break
+        push!(inds, 1)
+        next_node = first(ch)
+    end
+    inds
+end
+
+function _nextind_or_deadend(node, ind, lvl)
+    current_lvl = active_lvl = length(ind)
+    active_inds = copy(ind)
+    # go up until there is a sibling to the right
+    while current_lvl > 0
+        active_inds = ind[1:(current_lvl-1)]
+        parent = childindex(node, active_inds)
+        cur_child = ind[current_lvl]
+        ch = children(parent)
+        ni = nextind(ch, cur_child)
+        current_lvl -= 1
+        if !isnothing(iterate(ch, ni))
+            newinds = [active_inds; ni]
+            next_node = ch[ni]
+            return _descend_left(newinds, next_node, lvl)
+        end
+    end
+    nothing
+end
+
+function Base.iterate(ti::StatelessBFS, ind)
+    org_lvl = active_lvl = length(ind)
+    newinds = ind
+    while true
+        newinds = _nextind_or_deadend(ti.root, newinds, active_lvl)
+        if isnothing(newinds)
+            active_lvl += 1
+            active_lvl > org_lvl + 1 && return nothing
+            newinds = _descend_left([], ti.root, active_lvl)
+        end
+        length(newinds) == active_lvl && break
+    end
+    (childindex(ti.root, newinds), newinds)
+end

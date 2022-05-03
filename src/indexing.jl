@@ -19,7 +19,7 @@ function childindex(::IndexedChildren, node, idx)
     end
     n
 end
-childindex(node, idx) = childindex(ChildIndexing(node), t, idx)
+childindex(node, idx) = childindex(ChildIndexing(node), node, idx)
 
 """
     Indexed{T,C}

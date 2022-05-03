@@ -8,6 +8,9 @@ if the parents must be inferred from the tree structure (`ImplicitParents()`).
 
 Trees for which `parentlinks` returns `StoredParents()` *MUST* implement [`parent`](@ref).
 
+If `StoredParents()`, all nodes in the tree must also have `StoredParents()`, otherwise use
+`ImplicitParents()`.
+
 **OPTIONAL**: This should be implemented for a tree if parents of nodes are stored
 ```julia
 AbstractTrees.parentlinks(::Type{<:TreeType}) = AbstractTrees.StoredParents()
@@ -22,6 +25,12 @@ abstract type ParentLinks end
 Indicates that this node stores parent links explicitly. The implementation
 is responsible for defining the parentind function to expose this
 information.
+
+If a node in a tree has this trait, so must all connected nodes.  If this is not the case,
+use [`ImplicitParents`](@ref) instead.
+
+## Required Methods
+- [`parent`](@ref)
 """
 struct StoredParents <: ParentLinks; end
 
@@ -43,6 +52,9 @@ ParentLinks(tree) = ParentLinks(typeof(tree))
 A trait which indicates whether a tree node stores references to its siblings (`StoredSiblings()`) or
 must be inferred from the tree structure (`ImplicitSiblings()`).
 
+If a node has the trait `StoredSiblings()`, so must all connected nodes in the tree.  Otherwise,
+use `ImplicitSiblings()` instead.
+
 **OPTIONAL**: This should be implemented for a tree if siblings of nodes are stored
 ```julia
 AbstractTrees.SiblingLinks(::Type{<:TreeType}) = AbstractTrees.StoredSiblings()
@@ -57,7 +69,10 @@ Indicates that this tree node stores sibling links explicitly, or can compute th
 quickly (e.g. because the tree has a (small) fixed branching ratio, so the
 current index of a node can be determined by quick linear search).
 
-Requires definition of `nextsibling` and `prevsibling` methods on a node.
+If a node has this trait, so must all connected nodes in the tree.  Otherwise, use `ImplicitSiblings()` instead.
+
+## Required Methods
+- [`nextsibling`](@ref)
 """
 struct StoredSiblings <: SiblingLinks; end
 
@@ -74,14 +89,15 @@ SiblingLinks(tree) = SiblingLinks(typeof(tree))
 
 """
     ChildIndexing(::Type{N})
-    ChildIndexing(n)
+    ChildIndexing(node)
 
 A trait indicating whether the tree node `n` has children (as returned by [`children`](@ref)) which can be
 indexed using 1-based indexing.
 
-Options are either [`NonIndexedChildren`](@ref) (default) or [`IndexedChildren`](@ref).
+If a node has the `IndexedChildren()` so must all connected nodes in the tree.  Otherwise, use
+`NonIndexedChildren()` instead.
 
-**OPTIONAL**
+Options are either [`NonIndexedChildren`](@ref) (default) or [`IndexedChildren`](@ref).
 """
 abstract type ChildIndexing end
 
@@ -89,6 +105,11 @@ abstract type ChildIndexing end
     IndexedChildren <: ChildIndexing
 
 Indicates that the object returned by `children(n)` where `n` is a tree node is indexable (1-based).
+
+If a node has this trait so must all connected nodes in the tree.  Otherwise, use `NonIndexedChildren()` instead.
+
+## Required Methods
+- A node `node` with this trait must return an indexable object from `children(node)`.
 """
 struct IndexedChildren <: ChildIndexing end
 
@@ -154,5 +175,4 @@ childstatetype(::Type{T}) where {T} = (ChildIndexing(T) ≡ IndexedChildren() ? 
 childstatetype(node) = childstatetype(typeof(node))
 
 
-#TODO: do we want a nodetype to guarantee type of all nodes in the tree?
-#not useful for cursors but might be for iteration
+#TODO: do a `nodetype` so we can have type stability for iteration of trees with common node type
