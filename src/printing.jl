@@ -99,21 +99,20 @@ function repr_node(node; context=nothing)
 end
 
 
-const _CharArg = Union{AbstractString, Char}
+const CharArg = Union{AbstractString, Char}
 
 """
     TreeCharSet(mid, terminator, skip, dash, trunc, pair)
 
 Set of characters (or strings) used to pretty-print tree branches in [`print_tree`](@ref).
 
-# Fields
-
-* `mid::String` - "Forked" branch segment connecting to middle children.
-* `terminator::String` - Final branch segment connecting to last child.
-* `skip::String` - Vertical branch segment.
-* `dash::String` - Horizontal branch segmentt printed to the right of `mid` and `terminator`.
-* `trunc::String` - Used to indicate the subtree has been truncated at the maximum depth.
-* `pair::String` - Printed between a child node and its key.
+## Fields
+- `mid`: "Forked" branch segment connecting to middle children.
+- `terminator`: Final branch segment connecting to last child.
+- `skip`: Vertical branch segment.
+- `dash`: Horizontal branch segmentt printed to the right of `mid` and `terminator`.
+- `trunc`: Used to indicate the subtree has been truncated at the maximum depth.
+- `pair`: Printed between a child node and its key.
 """
 struct TreeCharSet
     mid::String
@@ -123,7 +122,7 @@ struct TreeCharSet
     trunc::String
     pair::String
 
-    function TreeCharSet(mid::_CharArg, terminator::_CharArg, skip::_CharArg, dash::_CharArg, trunc::_CharArg, pair::_CharArg)
+    function TreeCharSet(mid::CharArg, terminator::CharArg, skip::CharArg, dash::CharArg, trunc::CharArg, pair::CharArg)
         return new(String(mid), String(terminator), String(skip), String(dash), String(trunc), String(pair))
     end
 end
@@ -140,20 +139,24 @@ function TreeCharSet(base::TreeCharSet;
                      dash = base.dash,
                      trunc = base.trunc,
                      pair = base.pair,
-                     )
+                    )
     return TreeCharSet(mid, terminator, skip, dash, trunc, pair)
 end
 
-"""Default `charset` argument used by [`print_tree`](@ref)."""
-const DEFAULT_CHARSET = TreeCharSet("├", "└", "│", "─", "⋮", " => ")
-"""Charset using only ASCII characters."""
-const ASCII_CHARSET = TreeCharSet("+", "\\", "|", "--", "...", " => ")
+"""
+    TreeCharSet(name=:unicode)
 
-function TreeCharSet()
-    Base.depwarn("The 0-argument constructor of TreeCharSet is deprecated, use AbstractTrees.DEFAULT_CHARSET instead.", :TreeCharSet)
-    return DEFAULT_CHARSET
+Generate one of the default tree character sets.  Valid options are `:unicode` (default) and `:ascii`.
+"""
+function TreeCharSet(name::Symbol=:unicode)
+    if name == :unicode
+        TreeCharSet("├", "└", "│", "─", "⋮", " ⇒ ")
+    elseif name == :ascii
+        TreeCharSet("+", "\\", "|", "--", "...", " => ")
+    else
+        throw(ArgumentError("unrecognized dfeault TreeCharSet name: $name"))
+    end
 end
-
 
 """
     printkeys_default(children)::Bool
@@ -177,6 +180,9 @@ print_child_key(io::IO, key) = show(io, key)
 print_child_key(io::IO, key::CartesianIndex) = show(io, Tuple(key))
 
 
+#TODO: nope, going to have to be rewritten
+
+
 function _print_tree(printnode::Function,
                      io::IO,
                      tree;
@@ -184,12 +190,11 @@ function _print_tree(printnode::Function,
                      indicate_truncation::Bool,
                      charset::TreeCharSet,
                      printkeys::Union{Bool, Nothing},
-                     roottree = tree,
+                     roottree=tree,
                      depth::Int = 0,
                      prefix::String = "",
                      )
-    if roottree === tree && depth == 0 && isa(treekind(tree), IndexedTree)
-        roottree = Indexed(roottree)
+    if roottree ≡ tree && depth == 0 && ChildIndexing(tree) ≡ IndexedChildren()
         tree = rootindex(roottree.tree)
     end
 
@@ -271,17 +276,12 @@ end
 function print_tree(f::Function,
                     io::IO,
                     tree;
-                    maxdepth::Int = 5,
-                    indicate_truncation::Bool = true,
-                    charset::TreeCharSet = DEFAULT_CHARSET,
-                    printkeys::Union{Bool, Nothing} = nothing,
-                    )
-    _print_tree(f, io, tree; maxdepth=maxdepth, indicate_truncation=indicate_truncation, charset=charset, printkeys=printkeys)
-end
-
-function print_tree(f::Function, io::IO, tree, maxdepth; kwargs...)
-    Base.depwarn("Passing maxdepth as a positional argument is deprecated, use as a keyword argument instead.", :print_tree)
-    print_tree(f, io, tree; maxdepth=maxdepth, kwargs...)
+                    maxdepth::Int=5,
+                    indicate_truncation::Bool=true,
+                    charset::TreeCharSet=TreeCharSet(),
+                    printkeys::Union{Bool,Nothing}=nothing,
+                   )
+    _print_tree(f, io, tree; maxdepth, indicate_truncation, charset, printkeys)
 end
 
 print_tree(io::IO, tree, args...; kwargs...) = print_tree(printnode, io, tree, args...; kwargs...)

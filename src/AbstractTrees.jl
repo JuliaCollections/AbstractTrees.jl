@@ -22,8 +22,8 @@ include("traits.jl")
 include("base.jl")
 include("indexing.jl")
 include("cursors.jl")
-#include("printing.jl")
 include("iteration.jl")
+include("printing.jl")
 #include("builtins.jl")
 #include("wrappers.jl")
 
@@ -41,6 +41,9 @@ export TreeCursor, ImplicitCursor, SiblingCursor
 
 #indexing
 export childindex, indexed
+
+# printing
+export print_tree
 
 
 end # module
