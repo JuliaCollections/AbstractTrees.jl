@@ -71,7 +71,7 @@ Vector{Any}
 ```
 
 """
-print_tree
+function print_tree end
 
 
 """
@@ -159,16 +159,16 @@ function TreeCharSet(name::Symbol=:unicode)
 end
 
 """
-    printkeys_default(children)::Bool
+    shouldprintkeys(children)::Bool
 
 Whether a collection of children should be printed with its keys by default.
 
 The base behavior is to print keys for all collections for which `keys()` is defined, with the
 exception of `AbstractVector`s and tuples.
 """
-printkeys_default(children) = applicable(keys, children)
-printkeys_default(children::AbstractVector) = false
-printkeys_default(children::Tuple) = false
+shouldprintkeys(ch) = applicable(keys, ch)
+shouldprintkeys(ch::AbstractVector) = false
+shouldprintkeys(ch::Tuple) = false
 
 
 """
@@ -179,56 +179,43 @@ Print the key for a child node.
 print_child_key(io::IO, key) = show(io, key)
 print_child_key(io::IO, key::CartesianIndex) = show(io, Tuple(key))
 
+branchwidth(cs::TreeCharSet) = sum(textwidth.((cs.mid, cs.dash)))
 
-#TODO: nope, going to have to be rewritten
-
-
-function _print_tree(printnode::Function,
-                     io::IO,
-                     tree;
-                     maxdepth::Int,
-                     indicate_truncation::Bool,
-                     charset::TreeCharSet,
-                     printkeys::Union{Bool, Nothing},
-                     roottree=tree,
-                     depth::Int = 0,
-                     prefix::String = "",
-                     )
-    if roottree ≡ tree && depth == 0 && ChildIndexing(tree) ≡ IndexedChildren()
-        tree = rootindex(roottree.tree)
-    end
-
-    # Print node representation
-
+function print_tree(printnode::Function, io::IO, node;
+                    maxdepth::Integer=5,
+                    indicate_truncation::Bool=true,
+                    charset::TreeCharSet=TreeCharSet(),
+                    printkeys::Union{Bool,Nothing}=nothing,
+                    depth::Integer=0,
+                    prefix::AbstractString="",
+                   )
     # Get node representation as string
-    toprint = tree !== roottree && isa(treekind(roottree), IndexedTree) ? roottree[tree] : tree
-    str = repr_node(toprint, context=io)
+    str = repr_node(node, context=io)
 
     # Copy buffer to output, prepending prefix to each line
     for (i, line) in enumerate(split(str, '\n'))
-        i != 1 && print(io, prefix)
+        i ≠ 1 && print(io, prefix)
         println(io, line)
     end
 
     # Node children
-    c = children(roottree, tree)
+    c = children(node)
 
     # No children?
     isempty(c) && return
 
     # Reached max depth?
-    if depth >= maxdepth
+    if depth ≥ maxdepth
         # Print truncation char(s)
         if indicate_truncation
             println(io, prefix, charset.trunc)
             println(io, prefix)
         end
-
         return
     end
 
     # Print keys?
-    this_printkeys = applicable(keys, c) && (printkeys === nothing ? printkeys_default(c) : printkeys)
+    this_printkeys = applicable(keys, c) && (isnothing(printkeys) ? shouldprintkeys(c) : printkeys)
 
     # Print children
     s = Iterators.Stateful(this_printkeys ? pairs(c) : c)
@@ -267,21 +254,11 @@ function _print_tree(printnode::Function,
             child_prefix *= " " ^ (textwidth(key_str) + textwidth(charset.pair))
         end
 
-        _print_tree(printnode, io, child;
-            maxdepth=maxdepth, indicate_truncation=indicate_truncation, charset=charset,
-            printkeys=printkeys, roottree=roottree, depth=depth + 1, prefix=child_prefix)
+        print_tree(printnode, io, child;
+                   maxdepth, indicate_truncation, charset, printkeys,
+                   depth=depth+1, prefix=child_prefix
+                  )
     end
-end
-
-function print_tree(f::Function,
-                    io::IO,
-                    tree;
-                    maxdepth::Int=5,
-                    indicate_truncation::Bool=true,
-                    charset::TreeCharSet=TreeCharSet(),
-                    printkeys::Union{Bool,Nothing}=nothing,
-                   )
-    _print_tree(f, io, tree; maxdepth, indicate_truncation, charset, printkeys)
 end
 
 print_tree(io::IO, tree, args...; kwargs...) = print_tree(printnode, io, tree, args...; kwargs...)
