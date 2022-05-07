@@ -190,6 +190,27 @@ end
 descend(select, node) = descend(select, ChildIndexing(node), node)
 
 
+"""
+    StatelessBFS{T} <: TreeIterator{T}
+
+Iterator to visit the nodes of a tree, all nodes of a level will be visited
+before their children
+
+e.g. for the tree
+
+```
+Any[1,Any[2,3]]
+├─ 1
+└─ Any[2,3]
+   ├─ 2
+   └─ 3
+```
+
+we will get `[[1, [2,3]], 1, [2, 3], 2, 3]`.
+
+WARNING: This is \$O(n^2)\$, only use this if you know you need it, as opposed to
+a more standard statefull approach.
+"""
 struct StatelessBFS{T} <: TreeIterator{T}
     root::T
 end
@@ -240,3 +261,72 @@ function Base.iterate(ti::StatelessBFS, ind)
     end
     (childindex(ti.root, newinds), newinds)
 end
+
+
+"""
+    MapNode{T,C}
+
+A node in a tree which is returned by [`treemap`](@ref).  It consists of a value which is hte result of the function
+call and an array of the children, which are also of type `MapNode`.
+
+Every `MapNode` is itself a tree with the [`IndexedChildren`](@ref) trait and therefore supports indexing via
+[`childindex`](@ref).
+
+Use [`AbstractTrees.unwrap`](@ref) or `mapnode.value` to obtain the wrapped value.
+"""
+struct MapNode{T,C}
+    value::T
+    children::Vector{C}
+
+    function MapNode(𝒻, node)
+        v = 𝒻(node)
+        ch = map(c -> MapNode(𝒻, c), children(node))
+        if isempty(ch)
+            new{typeof(v),MapNode{Union{}}}(v, MapNode{Union{}}[])
+        else
+            new{typeof(v),eltype(ch)}(v, ch)
+        end
+    end
+end
+
+children(μ::MapNode) = μ.children
+
+unwrap(μ::MapNode) = μ.value
+
+ChildIndexing(::MapNode) = IndexedChildren()
+
+function Base.show(io::IO, μ::MapNode)
+    print(io, typeof(μ))
+    print(io, "(", μ.value, ")")
+end
+
+Base.show(io::IO, ::MIME"text/plain", μ::MapNode) = print_tree(io, μ)
+
+
+"""
+    treemap(𝒻, node)
+
+Apply the function `𝒻` to every node in the tree with root `node`.  `node` must satisfy the AbstractTrees interface.
+Instead of returning the result of `𝒻(n)` directly the result will be a tree of [`MapNode`](@ref) objects isomorphic
+to the original tree but with values equal to the corresponding `𝒻(n)`.
+
+Note that in most common cases tree nodes are of a type which depends on their connectedness and the function
+`𝒻` should take this into account.  For example the tree `[1, [2, 3]]` contains integer leaves but two
+`Vector` nodes.  Therefore, the `𝒻` in `treemap(𝒻, [1, [2,3]])` must be a function that is valid for either
+`Int` or `Vector`.  Alternatively, to only operate on leaves do `map(𝒻, Leaves(itr))`.
+
+## Example
+```julia
+julia> t = [1, [2, 3]];
+
+julia> 𝒻(x) = x isa AbstractArray ? nothing : x + 1;
+
+julia> treemap(𝒻, t)
+MapNode{Nothing, MapNode}(nothing)
+├─ MapNode{Int64, MapNode{Union{}}}(2)
+└─ MapNode{Nothing, MapNode{Int64, MapNode{Union{}}}}(nothing)
+   ├─ MapNode{Int64, MapNode{Union{}}}(3)
+   └─ MapNode{Int64, MapNode{Union{}}}(4)
+```
+"""
+treemap(𝒻, node) = MapNode(𝒻, node)

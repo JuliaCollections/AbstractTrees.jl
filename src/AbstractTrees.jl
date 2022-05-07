@@ -42,6 +42,10 @@ export TreeCursor, ImplicitCursor, SiblingCursor
 #indexing
 export childindex, indexed
 
+# iteration
+export PreOrderDFS, PostOrderDFS, Siblings, StatelessBFS, MapNode
+export treemap
+
 # printing
 export print_tree
 

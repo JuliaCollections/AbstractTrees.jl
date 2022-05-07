@@ -137,7 +137,7 @@ If the `childrentype` can be inferred from the type of the node alone, the type 
 **OPTIONAL**: In most cases, [`childtype`](@ref) is used instead.  If `childtype` is not defined it will fall back
 to `eltype ∘ childrentype`.
 """
-childrentype(::Type) = Any
+childrentype(nodetype::Type) = Base._return_type(children, Tuple{nodetype})
 childrentype(node) = typeof(children(node))
 
 """
@@ -164,14 +164,9 @@ Indicates the type of the iteration state of the tree node `n` or its type `T`. 
 algorithms which must retain this state.  It therefore is necessary to define this to ensure that most tree
 traversal is type stable.
 
-For nodes with indexed children (as indicated with [`ChildIndexing`](@ref)), this is typically `Int` and it will
-fall back to that in those cases.
-
-**OPTIONAL**: For types with `IndexedChildren` this will default to `Int`, otherwise `Any`.
-If this is the indexing type and it is used in iteration, there is no need to define this function.
-In other cases it might be hard to discover what this should be assigned to in the first place, if in doubt use `Any`.
+**OPTIONAL**: Type inference is used to attempt to
 """
-childstatetype(::Type{T}) where {T} = (ChildIndexing(T) ≡ IndexedChildren() ? Int : Any)
+childstatetype(::Type{T}) where {T} = Iterators.approx_iter_type(childrentype(T))
 childstatetype(node) = childstatetype(typeof(node))
 
 
