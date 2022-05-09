@@ -115,7 +115,7 @@ function is not available.
 Equivalence is established with the `equiv` function.  Note that new methods should also define `equiv` or calls
 may fall back to the default method.
 """
-isdescendant(node1, node2; equiv=(≡)) = equiv(node1, node2) || intree(node1, node2)
+isdescendant(node1, node2; equiv=(≡)) = !equiv(node1, node2) && intree(node1, node2; equiv)
 
 
 """

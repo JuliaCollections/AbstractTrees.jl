@@ -10,6 +10,17 @@ end
 
 abstract type TreeIterator{T} end
 
+#====================================================================================================
+This is pretty confusing and deserves some explanation...
+
+Yes, we were careful enough with tree cursors that it seems like this should be HasEltype, but
+the HasEltype() trait tells Julia not to try to narrow the eltype when using `collect`.
+Therefore, if you have e.g. Any[1,[2,3]], the "correct" eltype that would be given if we used
+HasEltype would be Any, but that's not really what we want.  Therefore we use EltypeUnknown here
+even if that is worse on the (very special case) of a fully-known node type.
+====================================================================================================#
+Base.IteratorEltype(::Type{<:TreeIterator}) = EltypeUnknown()
+
 Base.IteratorSize(::Type{<:TreeIterator}) = SizeUnknown()
 
 function Base.iterate(ti::TreeIterator, s::Union{Nothing,IteratorState}=initial(statetype(ti), ti.root))

@@ -14,22 +14,20 @@ using Base: HasLength, SizeUnknown, HasEltype, EltypeUnknown
 using Infiltrator
 
 
-abstract type AbstractShadowTree end
-
-struct ImplicitRootIndex end
-
 include("traits.jl")
 include("base.jl")
 include("indexing.jl")
 include("cursors.jl")
 include("iteration.jl")
+include("builtins.jl")
 include("printing.jl")
-#include("builtins.jl")
-#include("wrappers.jl")
 
 
 #interface
-export children, parentlinks, siblinglinks, childindexing, childtype
+export ParentLinks, StoredParents, ImplicitParents
+export SiblingLinks, StoredSiblings, ImplicitSiblings
+export ChildIndexing, IndexedChildren, NonIndexedChildren
+export children, parentlinks, siblinglinks, childindexing, childtype, childrentype
 #extended interface
 export nextsibling, prevsibling
 
@@ -37,13 +35,13 @@ export nextsibling, prevsibling
 export ischild, isroot, isroot, intree, isdescendant, treesize, treebreadth, treeheight, descendleft, getroot
 
 # cursors
-export TreeCursor, ImplicitCursor, SiblingCursor
+export TreeCursor, ImplicitCursor, SiblingCursor, treecursor
 
 #indexing
 export childindex, indexed
 
 # iteration
-export PreOrderDFS, PostOrderDFS, Siblings, StatelessBFS, MapNode
+export PreOrderDFS, PostOrderDFS, Siblings, Leaves, StatelessBFS, MapNode
 export treemap
 
 # printing

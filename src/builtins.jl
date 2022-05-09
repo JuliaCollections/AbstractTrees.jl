@@ -1,8 +1,12 @@
 # Tree API implementations for builtin types
 
 children(x::AbstractArray) = x
-childindexing(x::AbstractArray) = IndexedChildren()
+ChildIndexing(::AbstractArray) = IndexedChildren()
 
-# Expr
 children(x::Expr) = x.args
-childindexing(x::Expr) = IndexedChildren()
+ChildIndexing(::Expr) = IndexedChildren()
+
+children(p::Pair) = (p[2],)
+ChildIndexing(::Pair) = IndexedChildren()
+
+children(dct::AbstractDict) = pairs(dct)
