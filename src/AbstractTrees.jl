@@ -41,7 +41,7 @@ export TreeCursor, ImplicitCursor, SiblingCursor, treecursor
 export childindex, indexed
 
 # iteration
-export PreOrderDFS, PostOrderDFS, Siblings, Leaves, StatelessBFS, MapNode
+export TreeIterator, PreOrderDFS, PostOrderDFS, Siblings, Leaves, StatelessBFS, MapNode
 export treemap
 
 # printing
