@@ -3,6 +3,7 @@
 [![Build Status](https://github.com/JuliaCollections/AbstractTrees.jl/actions/workflows/CI.yml/badge.svg)](https://github.com/JuliaCollections/AbstractTrees.jl/actions/workflows/CI.yml)
 [![codecov](https://codecov.io/gh/JuliaCollections/AbstractTrees.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/JuliaCollections/AbstractTrees.jl)
 [![](https://img.shields.io/badge/docs-stable-blue.svg)](https://JuliaCollections.github.io/AbstractTrees.jl/stable)
+[![](https://img.shields.io/badge/docs-latest-blue.svg)](https://JuliaCollections.github.io/AbstractTrees.jl/dev)
 
 This package provides several utilities for working with tree-like data structures.
 See the [documentation](https://JuliaCollections.github.io/AbstractTrees.jl/stable)
