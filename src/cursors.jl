@@ -1,4 +1,7 @@
 
+struct InitialState end
+
+
 """
     TreeCursor{P,N}
 
@@ -11,8 +14,7 @@ Tree cursors satisfy the abstract tree interface with a few additional guarantee
 - The above functions returning tree nodes are guaranteed to also return tree cursors.
 
 Tree nodes which define `children` and have the traits [`StoredParents`](@ref) and
-[`StoredSiblings`](@ref) satisfy the `TreeCursor` interface and can be used as such,
-see [`treecursor`](@ref).
+[`StoredSiblings`](@ref) satisfy the `TreeCursor` interface and can be used as such.
 """
 abstract type TreeCursor{P,N} end
 
@@ -30,6 +32,10 @@ Base.length(tc::TreeCursor) = (length ∘ children ∘ unwrap)(csr)
 
 Base.IteratorEltype(::Type{<:TreeCursor}) = EltypeUnknown()
 
+ParentLinks(::Type{<:TreeCursor}) = StoredParents()
+
+SiblingLinks(::Type{<:TreeCursor}) = StoredSiblings()
+
 # all TreeCursor give children on iteration
 children(tc::TreeCursor) = tc
 
@@ -40,7 +46,34 @@ unwrap(tc::TreeCursor) = tc.node
 parent(tc::TreeCursor) = tc.parent
 
 
-struct InitialState end
+# this exists mostly for the sake of guaranteeing a uniform interface
+struct TrivialCursor{P,N} <: TreeCursor{P,N}
+    parent::P
+    node::N
+end
+
+parent(csr::TrivialCursor) = parent(csr.node)
+
+TrivialCursor(node) = TrivialCursor(parent(node), node)
+
+function Base.iterate(csr::TrivialCursor, s=InitialState())
+    cs = (children ∘ unwrap)(csr)
+    r = s isa InitialState ? iterate(cs) : iterate(cs, s)
+    isnothing(r) && return nothing
+    (n′, s′) = r
+    o = TrivialCursor(n′)
+    (o, (o, s′))
+end
+
+function nextsibling(csr::TrivialCursor) 
+    n = nextsibling(csr.node)
+    isnothing(n) ? nothing : TrivialCursor(csr.parent, n)
+end
+
+function prevsibling(csr::TrivialCursor) 
+    p = prevsibling(csr.node)
+    isnothing(p) ? nothing : TrivialCursor(csr.parent, p)
+end
 
 
 # this version assumes all we can do is call `children`… if even that is inefficient you're fucked
@@ -67,14 +100,14 @@ function Base.eltype(csr::ImplicitCursor)
     ImplicitCursor{typeof(csr),childtype(unwrap(csr)),cst}
 end
 
-function Base.iterate(csr::ImplicitCursor, (c, s)=(nothing, InitialState()))
+function Base.iterate(csr::ImplicitCursor, s=InitialState())
     cs = (children ∘ unwrap)(csr)
     # do NOT just write an iterate(x, ::InitialState) method, it's an ambiguity nightmare
     r = s isa InitialState ? iterate(cs) : iterate(cs, s)
     isnothing(r) && return nothing
     (n′, s′) = r
     o = ImplicitCursor(csr, n′, s′)
-    (o, (o, s′))
+    (o, s′)
 end
 
 function nextsibling(csr::ImplicitCursor)
@@ -100,7 +133,6 @@ end
 IndexedCursor(node) = IndexedCursor(nothing, node)
 
 Base.IteratorSize(::Type{<:IndexedCursor}) = HasLength()
-Base.IteratorEltype(::Type{<:IndexedCursor}) = HasEltype()
 
 function Base.eltype(::Type{IndexedCursor{P,N}}) where {P,N}
     P′ = IndexedCursor{P,N}
@@ -175,15 +207,11 @@ function prevsibling(csr::SiblingCursor)
 end
 
 
-TreeCursor(::NonIndexedChildren, node) = ImplicitCursor(node)
-TreeCursor(::IndexedChildren, node) = IndexedCursor(node)
+TreeCursor(::ChildIndexing, ::StoredParents, ::StoredSiblings, node) = TrivialCursor(node)
 
-TreeCursor(::ImplicitSiblings, node) = TreeCursor(ChildIndexing(node), node)
-TreeCursor(::StoredSiblings, node) = SiblingCursor(node)
+TreeCursor(::ChildIndexing, ::ImplicitParents, ::StoredSiblings, node) = SiblingCursor(node)
 
-TreeCursor(node) = TreeCursor(SiblingLinks(node), node)
+TreeCursor(::NonIndexedChildren, ::ParentLinks, ::ImplicitSiblings, node) = ImplicitCursor(node)
+TreeCursor(::IndexedChildren, ::ParentLinks, ::ImplicitSiblings, node) = IndexedCursor(node)
 
-# this has a different name because it may not return TreeCursor
-treecursor(::ImplicitParents, node) = TreeCursor(node)
-treecursor(::StoredParents, node) = node
-treecursor(node) = treecursor(ParentLinks(node), node)
+TreeCursor(node) = TreeCursor(ChildIndexing(node), ParentLinks(node), SiblingLinks(node), node)

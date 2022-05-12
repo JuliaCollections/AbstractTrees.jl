@@ -8,16 +8,30 @@ By default, this function is the identity.
 """
 unwrap(node) = node
 
+#====================================================================================================
+NOTE:
+
+I have decided that the right move is to completely dispose of the concept of "indexed trees" in
+favor of having users define node objects.  This eliminates a lot of complexity which is extremely
+nasty to deal with in the general case.  The main issue is that the "indexed tree" idea tends to
+conflate the notion of a node with a notion of a tree state or "index".
+
+TODO:
+need a lot more documentation explaining this decision...
+====================================================================================================#
+
 """
-    children([root,] node)
+    children(node)
 
-Get the immediate children of node `node` (optionally in the context of tree with root `root`).
+Get the immediate children of node `node`.
 
-**REQUIRED**: The 1-argument version of this function is required for all trees.  The 2-argument version is optional
-and falls back to `children(node)`.
+By default, every object is a parent node of an empty set of children.  This is to make it simpler to define
+trees with nodes of different types, for example arrays are trees regardless of their `eltype`.
+
+**REQUIRED**: This is required for all tree nodes with non-empty sets of children.  If it is not possible to infer
+the children from the node alone, this should be defined for a wrapper object which does.
 """
 children(node) = ()
-children(root, node) = children(node)
 
 """
     siblings(node)

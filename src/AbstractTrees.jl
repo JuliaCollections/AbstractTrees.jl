@@ -35,7 +35,7 @@ export nextsibling, prevsibling
 export ischild, isroot, isroot, intree, isdescendant, treesize, treebreadth, treeheight, descendleft, getroot
 
 # cursors
-export TreeCursor, ImplicitCursor, SiblingCursor, treecursor
+export TreeCursor, TrivialCursor, ImplicitCursor, SiblingCursor
 
 #indexing
 export childindex, indexed
