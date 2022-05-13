@@ -50,7 +50,7 @@ function Indexed(node)
     Indexed{typeof(node),eltype(ch)}(node, ch)
 end
 
-unwrap(inode::Indexed) = inode.node
+nodevalue(inode::Indexed) = inode.node
 
 ChildIndexing(::Indexed) = IndexedChildren()
 

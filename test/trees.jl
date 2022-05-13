@@ -1,42 +1,7 @@
-struct IDTreeNode
-    id::Int
-    children::Vector{IDTreeNode}
+using AbstractTrees
+using Test
 
-    IDTreeNode(id::Integer, children::Vector{IDTreeNode}=IDTreeNode[]) = new(id, children)
-end
-
-AbstractTrees.children(node::IDTreeNode) = node.children
-AbstractTrees.printnode(io::IO, node::IDTreeNode) = print(io, "#", node.id)
-
-"""
-Basic tree type used for testing.
-
-Each node has a unique ID, making them easy to reference. Node children are ordered.
-
-Node type only implements `children`, so serves to test default implementations of most functions.
-"""
-struct IDTree
-    nodes::Dict{Int, IDTreeNode}
-    root::IDTreeNode
-end
-
-_make_idtreenode(id::Integer) = IDTreeNode(id)
-_make_idtreenode((id, children)::Pair{<:Integer, <:Any}) = IDTreeNode(id, _make_idtreenode.(children))
-
-"""
-Create from nested `id => children` pairs. Leaf nodes may be represented by ID only.
-"""
-function IDTree(x)
-    root = _make_idtreenode(x)
-    nodes = Dict{Int, IDTreeNode}()
-
-    for node in PreOrderDFS(root)
-        haskey(nodes, node.id) && error("Duplicate node ID $(node.id)")
-        nodes[node.id] = node
-    end
-
-    return IDTree(nodes, root)
-end
+include(joinpath(@__DIR__,"examples","idtree.jl"))
 
 @testset "IDTree" begin
     tree = IDTree(1 => [
@@ -94,61 +59,20 @@ end
     @test [n.id for n in PreOrderDFS(tree.root)] == 1:16
     @test [n.id for n in PostOrderDFS(tree.root)] == [3, 5, 4, 2, 6, 9, 10, 12, 13, 14, 11, 15, 8, 7, 16, 1]
     @test [n.id for n in Leaves(tree.root)] == [3, 5, 6, 9, 10, 12, 13, 14, 15, 16]
-
-    # printing
-    @test AbstractTrees.repr_tree(tree.root) == """
-    #1
-    ├─ #2
-    │  ├─ #3
-    │  └─ #4
-    │     └─ #5
-    ├─ #6
-    ├─ #7
-    │  └─ #8
-    │     ├─ #9
-    │     ├─ #10
-    │     ├─ #11
-    │     │  ├─ #12
-    │     │  ├─ #13
-    │     │  └─ #14
-    │     └─ #15
-    └─ #16
-    """
 end
 
-
-"""
-    A tree in which every node has 0 or 1 children
-"""
-struct OneTree
-    nodes::Vector{Int}
-end
-AbstractTrees.treekind(::Type{OneTree}) = AbstractTrees.IndexedTree()
-AbstractTrees.siblinglinks(::Type{OneTree}) = AbstractTrees.StoredSiblings()
-Base.getindex(t::OneTree, idx) = t.nodes[idx]
-AbstractTrees.rootindex(tree::OneTree) = 1
-AbstractTrees.children(tree::Indexed{OneTree}, node::Int) =
-    (ret = (node == 0 || tree[node] == 0) ? () : (tree[node],))
-AbstractTrees.children(tree::OneTree) = AbstractTrees.children(Indexed(tree), 1)
-AbstractTrees.printnode(io::IO, t::OneTree) =
-    AbstractTrees.printnode(io::IO, AbstractTrees.rootindex(t))
-Base.eltype(::Type{<:TreeIterator{OneTree}}) = Int
-Base.IteratorEltype(::Type{<:TreeIterator{OneTree}}) = Base.HasEltype()
+include(joinpath(@__DIR__,"examples","onetree.jl"))
 
 @testset "OneTree" begin
-    ot = OneTree([2,3,4,0])
-    @test repr_tree(ot) == """
-        2
-        └─ 3
-           └─ 4
-              └─ 0
-        """
-    @test @inferred(collect(Leaves(ot))) == [0]
-    @test eltype(collect(Leaves(ot))) === Int
-    @test collect(PreOrderDFS(ot)) == [2,3,4,0]
-    @test collect(PostOrderDFS(ot)) == [0,4,3,2]
+    ot = OneNode([2,3,4,0], 1)
+    @inferred collect(Leaves(ot))
+    @test nodevalue.(collect(Leaves(ot))) == [0]
+    @test eltype(nodevalue.(collect(Leaves(ot)))) === Int
+    @test nodevalue.(collect(PreOrderDFS(ot))) == [2,3,4,0]
+    @test nodevalue.(collect(PostOrderDFS(ot))) == [0,4,3,2]
 end
 
+#TODO: try using RefNode with this
 
 """
     Stores an explicit parent for some other kind of tree
@@ -183,6 +107,7 @@ AbstractTrees.printnode(io::IO, t::ParentTree) =
     @test collect(PostOrderDFS(pt)) == [0,4,3,2]
 end
 
+#=
 @testset "treemap!" begin
     # Test modification while iterating over PreOrderDFS
     a = [1,[2,[3]]]
@@ -227,3 +152,4 @@ end == IntTree(6,[IntTree(1,IntTree[]),IntTree(5,[IntTree(2,IntTree[]),IntTree(3
 =#
 
 @test collect(PostOrderDFS([])) == Any[[]]
+=#

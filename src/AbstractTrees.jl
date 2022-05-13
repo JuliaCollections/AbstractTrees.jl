@@ -27,7 +27,7 @@ include("printing.jl")
 export ParentLinks, StoredParents, ImplicitParents
 export SiblingLinks, StoredSiblings, ImplicitSiblings
 export ChildIndexing, IndexedChildren, NonIndexedChildren
-export children, parentlinks, siblinglinks, childindexing, childtype, childrentype
+export nodevalue, children, parentlinks, siblinglinks, childindexing, childtype, childrentype
 #extended interface
 export nextsibling, prevsibling
 

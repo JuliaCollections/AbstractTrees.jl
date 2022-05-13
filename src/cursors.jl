@@ -18,8 +18,8 @@ Tree nodes which define `children` and have the traits [`StoredParents`](@ref) a
 """
 abstract type TreeCursor{P,N} end
 
-unwrapedtype(::Type{<:TreeCursor{P,N}}) where {P,N} = N
-unwrapedtype(csr::TreeCursor) = unwrapedtype(typeof(csr))
+nodevalueedtype(::Type{<:TreeCursor{P,N}}) where {P,N} = N
+nodevalueedtype(csr::TreeCursor) = unwrapedtype(typeof(csr))
 
 # note that this is guaranteed to return another of the same type of TreeCursor
 parenttype(::Type{<:TreeCursor{P,N}}) where {P,N} = P
@@ -28,7 +28,7 @@ parenttype(csr::TreeCursor) = parenttype(typeof(csr))
 # this is a fallback and may not always be the case
 Base.IteratorSize(::Type{<:TreeCursor{P,N}}) where {P,N} = IteratorSize(childtype(N))
 
-Base.length(tc::TreeCursor) = (length ∘ children ∘ unwrap)(csr)
+Base.length(tc::TreeCursor) = (length ∘ children ∘ nodevalue)(csr)
 
 Base.IteratorEltype(::Type{<:TreeCursor}) = EltypeUnknown()
 
@@ -39,9 +39,9 @@ SiblingLinks(::Type{<:TreeCursor}) = StoredSiblings()
 # all TreeCursor give children on iteration
 children(tc::TreeCursor) = tc
 
-ChildIndexing(tc::TreeCursor) = ChildIndexing(unwrap(tc))
+ChildIndexing(tc::TreeCursor) = ChildIndexing(nodevalue(tc))
 
-unwrap(tc::TreeCursor) = tc.node
+nodevalue(tc::TreeCursor) = tc.node
 
 parent(tc::TreeCursor) = tc.parent
 
@@ -57,7 +57,7 @@ parent(csr::TrivialCursor) = parent(csr.node)
 TrivialCursor(node) = TrivialCursor(parent(node), node)
 
 function Base.iterate(csr::TrivialCursor, s=InitialState())
-    cs = (children ∘ unwrap)(csr)
+    cs = (children ∘ nodevalue)(csr)
     r = s isa InitialState ? iterate(cs) : iterate(cs, s)
     isnothing(r) && return nothing
     (n′, s′) = r
@@ -90,18 +90,18 @@ ImplicitCursor(node) = ImplicitCursor(nothing, node)
 Base.IteratorEltype(::Type{<:ImplicitCursor}) = HasEltype()
 
 function Base.eltype(::Type{ImplicitCursor{P,N,S}}) where {P,N,S}
-    cst = (childstatetype ∘ unwrapedtype)(P)
+    cst = (childstatetype ∘ nodevalueedtype)(P)
     P′ = ImplicitCursor{P,N,S}
     ImplicitCursor{P′,childtype(N),cst}
 end
 
 function Base.eltype(csr::ImplicitCursor)
-    cst = (childstatetype ∘ parent ∘ unwrap)(csr)
-    ImplicitCursor{typeof(csr),childtype(unwrap(csr)),cst}
+    cst = (childstatetype ∘ parent ∘ nodevalue)(csr)
+    ImplicitCursor{typeof(csr),childtype(nodevalue(csr)),cst}
 end
 
 function Base.iterate(csr::ImplicitCursor, s=InitialState())
-    cs = (children ∘ unwrap)(csr)
+    cs = (children ∘ nodevalue)(csr)
     # do NOT just write an iterate(x, ::InitialState) method, it's an ambiguity nightmare
     r = s isa InitialState ? iterate(cs) : iterate(cs, s)
     isnothing(r) && return nothing
@@ -112,7 +112,7 @@ end
 
 function nextsibling(csr::ImplicitCursor)
     isroot(csr) && return nothing
-    cs = (children ∘ unwrap ∘ parent)(csr)
+    cs = (children ∘ nodevalue ∘ parent)(csr)
     # do NOT just write an iterate(x, ::InitialState) method, it's an ambiguity nightmare
     r = csr.sibling_state isa InitialState ? iterate(cs) : iterate(cs, csr.sibling_state)
     isnothing(r) && return nothing
@@ -138,11 +138,11 @@ function Base.eltype(::Type{IndexedCursor{P,N}}) where {P,N}
     P′ = IndexedCursor{P,N}
     IndexedCursor{P′,childtype(N)}
 end
-Base.eltype(csr::IndexedCursor) = IndexedCursor{typeof(csr),childtype(unwrap(csr))}
-Base.length(csr::IndexedCursor) = (length ∘ children ∘ unwrap)(csr)
+Base.eltype(csr::IndexedCursor) = IndexedCursor{typeof(csr),childtype(nodevalue(csr))}
+Base.length(csr::IndexedCursor) = (length ∘ children ∘ nodevalue)(csr)
 
 function Base.getindex(csr::IndexedCursor, idx)
-    cs = (children ∘ unwrap)(csr)
+    cs = (children ∘ nodevalue)(csr)
     IndexedCursor(csr, cs[idx], idx)
 end
 
@@ -180,15 +180,15 @@ Base.IteratorSize(::Type{SiblingCursor{P,N}}) where {P,N} = IteratorSize(childty
 Base.IteratorEltype(::Type{<:SiblingCursor}) = HasEltype()
 
 function Base.eltype(::Type{SiblingCursor{P,N}}) where {P,N}
-    cst = (childstatetype ∘ unwrapedtype)(P)
+    cst = (childstatetype ∘ nodevalueedtype)(P)
     P′ = SiblingCursor{P,N}
     SiblingCursor{P′,childtype(N)}
 end
 
-Base.eltype(csr::SiblingCursor) = SiblingCursor{typeof(csr),childtype(unwrap(csr))}
+Base.eltype(csr::SiblingCursor) = SiblingCursor{typeof(csr),childtype(nodevalue(csr))}
 
 function Base.iterate(csr::SiblingCursor, (c, s)=(nothing, InitialState()))
-    cs = (children ∘ unwrap)(csr)
+    cs = (children ∘ nodevalue)(csr)
     r = s isa InitialState ? iterate(cs) : iterate(cs, s)
     isnothing(r) && return nothing
     (n′, s′) = r
@@ -197,12 +197,12 @@ function Base.iterate(csr::SiblingCursor, (c, s)=(nothing, InitialState()))
 end
 
 function nextsibling(csr::SiblingCursor)
-    n = nextsibling(unwrap(csr))
+    n = nextsibling(nodevalue(csr))
     SiblingCursor(parent(csr), n)
 end
 
 function prevsibling(csr::SiblingCursor)
-    p = prevsibling(unwrap(csr))
+    p = prevsibling(nodevalue(csr))
     SiblingCursor(parent(csr), p)
 end
 

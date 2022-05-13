@@ -25,7 +25,7 @@ Base.IteratorSize(::Type{<:TreeIterator}) = SizeUnknown()
 
 function Base.iterate(ti::TreeIterator, s::Union{Nothing,IteratorState}=initial(statetype(ti), ti.root))
     isnothing(s) && return nothing
-    (unwrap(s.cursor), next(s))
+    (nodevalue(s.cursor), next(s))
 end
 
 
@@ -40,7 +40,7 @@ PreOrderState(node) = (PreOrderState ∘ TreeCursor)(node)
 initial(::Type{PreOrderState}, node) = PreOrderState(node)
 
 function next(f, s::PreOrderState)
-    if f(unwrap(s.cursor))
+    if f(nodevalue(s.cursor))
         ch = children(s.cursor)
         isempty(ch) || return instance(PreOrderState, first(ch))
     end
@@ -70,7 +70,7 @@ statetype(itr::PreOrderDFS) = PreOrderState
 
 function Base.iterate(ti::PreOrderDFS, s::Union{Nothing,IteratorState}=initial(statetype(ti), ti.root))
     isnothing(s) && return nothing
-    (unwrap(s.cursor), next(ti.filter, s))
+    (nodevalue(s.cursor), next(ti.filter, s))
 end
 
 
@@ -283,7 +283,7 @@ call and an array of the children, which are also of type `MapNode`.
 Every `MapNode` is itself a tree with the [`IndexedChildren`](@ref) trait and therefore supports indexing via
 [`childindex`](@ref).
 
-Use [`AbstractTrees.unwrap`](@ref) or `mapnode.value` to obtain the wrapped value.
+Use [`AbstractTrees.nodevalue`](@ref) or `mapnode.value` to obtain the wrapped value.
 """
 struct MapNode{T,C}
     value::T
@@ -302,7 +302,7 @@ end
 
 children(μ::MapNode) = μ.children
 
-unwrap(μ::MapNode) = μ.value
+nodevalue(μ::MapNode) = μ.value
 
 ChildIndexing(::MapNode) = IndexedChildren()
 

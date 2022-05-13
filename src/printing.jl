@@ -77,12 +77,12 @@ function print_tree end
 """
     printnode(io::IO, node)
 
-Print a compact representation of a single node.
+Print a compact representation of a single node.  By default, this prints `nodevalue(node)`.
 
 **OPTIONAL**: This can be extended for custom types and controls how nodes are shown
 in [`print_tree`](@ref).
 """
-printnode(io::IO, node) = show(IOContext(io, :compact => true, :limit => true), node)
+printnode(io::IO, node) = show(IOContext(io, :compact => true, :limit => true), nodevalue(node))
 
 
 """
