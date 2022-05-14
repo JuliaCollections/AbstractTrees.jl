@@ -20,17 +20,16 @@ AbstractTrees.nodevalue(n::IntNode) = n.value
 """
 nodevalue(node) = node
 
-#====================================================================================================
-NOTE:
+"""
+    nodevalue(tree, node_index)
 
-I have decided that the right move is to completely dispose of the concept of "indexed trees" in
-favor of having users define node objects.  This eliminates a lot of complexity which is extremely
-nasty to deal with in the general case.  The main issue is that the "indexed tree" idea tends to
-conflate the notion of a node with a notion of a tree state or "index".
+Get the value of the node specified by `node_index` from the indexed tree object `tree`.
 
-TODO:
-need a lot more documentation explaining this decision...
-====================================================================================================#
+By default, this falls back to `tree[node_index]`.
+
+**OPTIONAL**: Indexed trees only require this if the fallback to `getindex` is not sufficient.
+"""
+nodevalue(tree, idx) = tree[idx]
 
 """
     children(node)

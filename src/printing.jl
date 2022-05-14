@@ -170,8 +170,9 @@ The base behavior is to print keys for all collections for which `keys()` is def
 exception of `AbstractVector`s and tuples.
 """
 shouldprintkeys(ch) = applicable(keys, ch)
-shouldprintkeys(ch::AbstractVector) = false
-shouldprintkeys(ch::Tuple) = false
+shouldprintkeys(::AbstractVector) = false
+shouldprintkeys(::Tuple) = false
+shouldprintkeys(::Base.Generator) = false
 
 
 """

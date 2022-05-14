@@ -1,29 +1,30 @@
-"""
-    OneNode
+using AbstractTrees
 
-The node of a tree in which every node has 0 or 1 children.
 """
-struct OneNode
+    OneTree
+
+A tree in which each node has 0 or 1 children.
+"""
+struct OneTree
     nodes::Vector{Int}
-    idx::Int
 end
 
-AbstractTrees.ChildIndexing(::Type{OneNode}) = IndexedChildren()
-AbstractTrees.ParentLinks(::Type{OneNode}) = StoredParents()
-AbstractTrees.SiblingLinks(::Type{OneNode}) = StoredSiblings()
+AbstractTrees.ParentLinks(::Type{OneTree}) = StoredParents()
+AbstractTrees.SiblingLinks(::Type{OneTree}) = StoredSiblings()
 
-AbstractTrees.parent(ot::OneNode) = ot.idx == 1 ? nothing : OneNode(ot.nodes, ot.idx-1)
+AbstractTrees.rootindex(::OneTree) = 1
 
-# no nodes ever have siblings
-AbstractTrees.nextsibling(ot::OneNode) = nothing
-
-AbstractTrees.nodevalue(ot::OneNode) = ot.nodes[ot.idx]
-
-# this guarantees that all nodes in the tree have the same type
-Base.IteratorEltype(::Type{<:TreeIterator{OneNode}}) = Base.HasEltype()
-Base.eltype(::Type{<:TreeIterator{OneNode}}) = OneNode
-
-function AbstractTrees.children(ot::OneNode)
-    idx = ot.idx + 1
-    idx > length(ot.nodes) ? () : (OneNode(ot.nodes, idx),)
+function AbstractTrees.childindices(ot::OneTree, idx::Integer)
+    idx == length(ot.nodes) ? () : (idx+1,)
 end
+
+AbstractTrees.nodevalue(ot::OneTree, idx::Integer) = ot.nodes[idx]
+
+AbstractTrees.parentindex(ot::OneTree, idx::Integer) = (idx == 1) ? nothing : idx-1
+
+AbstractTrees.nextsiblingindex(::OneTree, ::Integer) = nothing
+
+AbstractTrees.prevsiblingindex(::OneTree, ::Integer) = nothing
+
+Base.IteratorEltype(::Type{<:TreeIterator{<:IndexNode{OneTree}}}) = Base.HasEltype()
+Base.eltype(::Type{<:TreeIterator{<:IndexNode{OneTree}}}) = IndexNode{OneTree,Int}

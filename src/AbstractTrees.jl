@@ -38,7 +38,7 @@ export ischild, isroot, isroot, intree, isdescendant, treesize, treebreadth, tre
 export TreeCursor, TrivialCursor, ImplicitCursor, SiblingCursor
 
 #indexing
-export childindex, indexed
+export childindex, childindices, rootindex, parentindex, nextsiblingindex, prevsiblingindex, IndexNode
 
 # iteration
 export TreeIterator, PreOrderDFS, PostOrderDFS, Siblings, Leaves, StatelessBFS, MapNode

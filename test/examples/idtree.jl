@@ -1,3 +1,5 @@
+using AbstractTrees
+
 struct IDTreeNode
     id::Int
     children::Vector{IDTreeNode}

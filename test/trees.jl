@@ -61,53 +61,30 @@ include(joinpath(@__DIR__,"examples","idtree.jl"))
     @test [n.id for n in Leaves(tree.root)] == [3, 5, 6, 9, 10, 12, 13, 14, 15, 16]
 end
 
-include(joinpath(@__DIR__,"examples","onetree.jl"))
+include(joinpath(@__DIR__,"examples","onenode.jl"))
 
-@testset "OneTree" begin
+@testset "OneNode" begin
     ot = OneNode([2,3,4,0], 1)
     @inferred collect(Leaves(ot))
     @test nodevalue.(collect(Leaves(ot))) == [0]
-    @test eltype(nodevalue.(collect(Leaves(ot)))) === Int
+    @test eltype(nodevalue.(collect(Leaves(ot)))) ≡ Int
     @test nodevalue.(collect(PreOrderDFS(ot))) == [2,3,4,0]
     @test nodevalue.(collect(PostOrderDFS(ot))) == [0,4,3,2]
 end
 
-#TODO: try using RefNode with this
+include(joinpath(@__DIR__,"examples","onetree.jl"))
 
-"""
-    Stores an explicit parent for some other kind of tree
-"""
-struct ParentTree{T}
-    tree::T
-    parents::Vector{Int}
-end
-AbstractTrees.treekind(::Type{ParentTree{T}}) where {T} = AbstractTrees.treekind(T)
-AbstractTrees.parentlinks(::Type{ParentTree{T}}) where {T} = AbstractTrees.StoredParents()
-AbstractTrees.siblinglinks(::Type{ParentTree{T}}) where {T} = AbstractTrees.siblinglinks(T)
-Base.getindex(t::ParentTree, idx) = t.tree[idx]
-AbstractTrees.children(tree::Indexed{<:ParentTree}, node::Int) = AbstractTrees.children(Indexed(tree.tree.tree), node)
-AbstractTrees.children(tree::ParentTree) = AbstractTrees.children(tree, tree)
-AbstractTrees.rootindex(tree::ParentTree) = AbstractTrees.rootindex(tree.tree)
-AbstractTrees.parent(tree::Indexed{ParentTree}, node::Int) = tree.parents[node]
-AbstractTrees.printnode(io::IO, t::ParentTree) =
-    AbstractTrees.printnode(io::IO, t[AbstractTrees.rootindex(t)])
-
-@testset "ParentTree" begin
+@testset "OneTree" begin
     ot = OneTree([2,3,4,0])
-    pt = ParentTree(ot,[0,1,2,3])
+    n = IndexNode(ot)
 
-    @test repr_tree(pt) == """
-        2
-        └─ 3
-           └─ 4
-              └─ 0
-        """
-    @test collect(Leaves(pt)) == [0]
-    @test collect(PreOrderDFS(pt)) == [2,3,4,0]
-    @test collect(PostOrderDFS(pt)) == [0,4,3,2]
+    @inferred collect(Leaves(n))
+    @test nodevalue.(collect(Leaves(n))) == [0]
+    @test eltype(nodevalue.(collect(Leaves(n)))) ≡ Int
+    @test nodevalue.(collect(PreOrderDFS(n))) == [2,3,4,0]
+    @test nodevalue.(collect(PostOrderDFS(n))) == [0,4,3,2]
 end
 
-#=
 @testset "treemap!" begin
     # Test modification while iterating over PreOrderDFS
     a = [1,[2,[3]]]
@@ -122,7 +99,7 @@ end
     @test b == Any[0,1,Any[0,2,[0,3]]]
 end
 
-
+#=
 struct IntTree
     num::Int
     children::Vector{IntTree}

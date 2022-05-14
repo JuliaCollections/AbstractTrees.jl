@@ -274,6 +274,7 @@ function Base.iterate(ti::StatelessBFS, ind)
 end
 
 
+#TODO: still experimenting here
 """
     MapNode{T,C}
 
@@ -287,20 +288,19 @@ Use [`AbstractTrees.nodevalue`](@ref) or `mapnode.value` to obtain the wrapped v
 """
 struct MapNode{T,C}
     value::T
-    children::Vector{C}
+    children::C
 
+    #TODO: need a way to modify children but hard to think of a good general way of doing it...
     function MapNode(𝒻, node)
         v = 𝒻(node)
         ch = map(c -> MapNode(𝒻, c), children(node))
-        if isempty(ch)
-            new{typeof(v),MapNode{Union{}}}(v, MapNode{Union{}}[])
-        else
-            new{typeof(v),eltype(ch)}(v, ch)
-        end
+        new{typeof(v),typeof(ch)}(v, ch)
     end
 end
 
 children(μ::MapNode) = μ.children
+
+childrentype(::Type{MapNode{T,C}}) where {T,C} = C
 
 nodevalue(μ::MapNode) = μ.value
 
@@ -314,6 +314,7 @@ end
 Base.show(io::IO, ::MIME"text/plain", μ::MapNode) = print_tree(io, μ)
 
 
+#TODO: still experimenting here
 """
     treemap(𝒻, node)
 
