@@ -169,5 +169,3 @@ traversal is type stable.
 childstatetype(::Type{T}) where {T} = Iterators.approx_iter_type(childrentype(T))
 childstatetype(node) = childstatetype(typeof(node))
 
-
-#TODO: do a `nodetype` so we can have type stability for iteration of trees with common node type

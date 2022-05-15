@@ -1,13 +1,63 @@
 
+"""
+    IteratorState{T<:TreeCursor}
 
+The state of a [`TreeIterator`](@ref) object.  These are simple wrappers of [`TreeCursor`](@ref) objects which define
+a method for [`next`](@ref).  `TreeIterator`s are in turn simple wrappers of `IteratorState`s.
+
+Each `IteratorState` fully determines the current iteration state and therefore the next state can be obtained
+with `next` (`nothing` is returned after the final state is reached).
+"""
 abstract type IteratorState{T<:TreeCursor} end
 
 # we define this explicitly to avoid run-time dispatch
+"""
+    instance(::Type{<:IteratorState}, node; kw...)
+
+Create an instance of the given [`IteratorState`](@ref) around node `node`.  This is mostly just a constructor
+for `IteratorState` except that if `node` is `nothing` it will return `nothing`.
+"""
 function instance(::Type{S}, node; kw...) where {S<:IteratorState}
     isnothing(node) ? nothing : S(node; kw...)
 end
 
+"""
+    initial(::Type{<:IteratorState}, node)
 
+Obtain the initial [`IteratorState`](@ref) of the provided type for the node `node`.
+"""
+function initial end
+
+"""
+    next(s::IteratorState)
+    next(f, s::IteratorState)
+
+Obtain the next [`IteratorState`](@ref) after the current one.  If `s` is the final state, this will return
+`nothing`.
+
+This provides an alternative iteration protocol which only uses the states directly as opposed to
+[`Base.iterate`](@ref) which takes an iterator object and the current state as separate arguments.
+"""
+function next end
+
+"""
+    statetype(::Type{<:TreeIterator})
+
+Gives the type of [`IteratorState`](@ref) which is the state of the provided [`TreeIterator`](@ref).
+"""
+function statetype end
+
+
+"""
+    TreeIterator{T}
+
+An iterator of a tree that implements the AbstractTrees interface.  Every `TreeIterator` is simply a wrapper
+of an [`IteratorState`](@ref) which fully determine the iteration state and implement their own alternative
+protocol using [`next`](@ref).
+
+## Constructors
+All `TreeIterator`s have a one argument constructor `T(node)` which starts iteration from `node`.
+"""
 abstract type TreeIterator{T} end
 
 #====================================================================================================
@@ -28,7 +78,17 @@ function Base.iterate(ti::TreeIterator, s::Union{Nothing,IteratorState}=initial(
     (nodevalue(s.cursor), next(s))
 end
 
+"""
+    PreOrderState{T<:TreeCursor} <: IteratorState{T}
 
+The iteration state of a tree iterator which guarantees that parent nodes will be visited *before* their children,
+i.e. which descends a tree from root to leaves.
+
+This state implements a [`next`](@ref) method which accepts a filter function as its first argument, allowing
+tree branches to be skipped.
+
+See [`PreOrderDFS`](@ref).
+"""
 struct PreOrderState{T<:TreeCursor} <: IteratorState{T}
     cursor::T
 
@@ -59,6 +119,28 @@ end
 next(s::PreOrderState) = next(x -> true, s)
 
 
+"""
+    PreOrderDFS{T,F} <: TreeIterator{T}
+
+Iterator to visit the nodes of a tree, guaranteeing that parents
+will be visited before their children.
+
+Optionally takes a filter function that determines whether the iterator
+should continue iterating over a node's children (if it has any) or should
+consider that node a leaf.
+
+e.g. for the tree
+```
+Any[Any[1,2],Any[3,4]]
+├─ Any[1,2]
+|  ├─ 1
+|  └─ 2
+└─ Any[3,4]
+   ├─ 3
+   └─ 4
+```
+we will get `[[[1, 2], [3, 4]], [1, 2], 1, 2, [3, 4], 3, 4]`.
+"""
 struct PreOrderDFS{T,F} <: TreeIterator{T}
     filter::F
     root::T
@@ -74,6 +156,14 @@ function Base.iterate(ti::PreOrderDFS, s::Union{Nothing,IteratorState}=initial(s
 end
 
 
+"""
+    PostOrderState{T<:TreeCursor} <: IteratorState{T}
+
+The state of a tree iterator which guarantees that parents are visited *after* their children, i.e. ascends
+a tree from leaves to root.
+
+See [`PostOrderDFS`](@ref).
+"""
 struct PostOrderState{T<:TreeCursor} <: IteratorState{T}
     cursor::T
 
@@ -95,6 +185,22 @@ function next(s::PostOrderState)
 end
 
 
+"""
+    PostOrderDFS{T} <: TreeIterator{T}
+
+Iterator to visit the nodes of a tree, guaranteeing that children
+will be visited before their parents.
+
+e.g. for the tree
+```
+Any[1,Any[2,3]]
+├─ 1
+└─ Any[2,3]
+   ├─ 2
+   └─ 3
+```
+we will get `[1, 2, 3, [2, 3], [1, [2, 3]]]`.
+"""
 struct PostOrderDFS{T} <: TreeIterator{T}
     root::T
 end
@@ -102,6 +208,13 @@ end
 statetype(itr::PostOrderDFS) = PostOrderState
 
 
+"""
+    LeavesState{T<:TreeCursor} <: IteratorState{T}
+
+A [`IteratorState`](@ref) of an iterator which visits all and only the laves of a tree.
+
+See [`Leaves`](@ref).
+"""
 struct LeavesState{T<:TreeCursor} <: IteratorState{T}
     cursor::T
 
@@ -127,6 +240,19 @@ function next(s::LeavesState)
 end
 
 
+"""
+    Leaves{T} <: TreeIterator{T}
+
+Iterator to visit the leaves of a tree, e.g. for the tree
+```
+Any[1,Any[2,3]]
+├─ 1
+└─ Any[2,3]
+   ├─ 2
+   └─ 3
+```
+we will get `[1,2,3]`.
+"""
 struct Leaves{T} <: TreeIterator{T}
     root::T
 end
@@ -134,6 +260,13 @@ end
 statetype(itr::Leaves) = LeavesState
 
 
+"""
+    SiblingState{T<:TreeCursor} <: IteratorState{T}
+
+A [`IteratorState`](@ref) of an iterator which visits all of the tree siblings after the current sibling.
+
+See [`Siblings`](@ref).
+"""
 struct SiblingState{T<:TreeCursor} <: IteratorState{T}
     cursor::T
 
@@ -147,6 +280,11 @@ initial(::Type{SiblingState}, node) = SiblingState(node)
 next(s::SiblingState) = nextsibling(s.cursor)
 
 
+"""
+    Siblings{T} <: TreeIterator{T}
+
+A [`TreeIterator`](@ref) which visits the siblings of a node after the provided node.
+"""
 struct Siblings{T} <: TreeIterator{T}
     root::T
 end

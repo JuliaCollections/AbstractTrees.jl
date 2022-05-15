@@ -85,6 +85,7 @@ include(joinpath(@__DIR__,"examples","onetree.jl"))
     @test nodevalue.(collect(PostOrderDFS(n))) == [0,4,3,2]
 end
 
+#=
 @testset "treemap!" begin
     # Test modification while iterating over PreOrderDFS
     a = [1,[2,[3]]]
@@ -98,6 +99,7 @@ end
     end
     @test b == Any[0,1,Any[0,2,[0,3]]]
 end
+=#
 
 #=
 struct IntTree

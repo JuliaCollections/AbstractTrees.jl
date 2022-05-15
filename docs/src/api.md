@@ -1,3 +1,7 @@
+```@meta
+CurrentModule = AbstractTrees
+```
+
 # API
 
 
@@ -28,19 +32,26 @@ treesize
 ## Printing
 
 ```@docs
-AbstractTrees.DEFAULT_CHARSET
-AbstractTrees.ASCII_CHARSET
-AbstractTrees.TreeCharSet
+TreeCharSet
 print_tree
-AbstractTrees.print_child_key
-AbstractTrees.printkeys_default
-AbstractTrees.printnode
-AbstractTrees.repr_node
-AbstractTrees.repr_tree
+repr_tree
+printnode
 ```
 
 
 ## Iteration
+
+### Iteration States
+```@docs
+IteratorState
+next
+initial
+instance
+PreOrderState
+PostOrderState
+LeavesState
+SiblingsState
+```
 
 ```@docs
 Leaves

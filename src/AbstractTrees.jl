@@ -10,9 +10,6 @@ module AbstractTrees
 
 using Base: HasLength, SizeUnknown, HasEltype, EltypeUnknown
 
-# this should be removed for commits
-using Infiltrator
-
 
 include("traits.jl")
 include("base.jl")
@@ -45,7 +42,7 @@ export TreeIterator, PreOrderDFS, PostOrderDFS, Siblings, Leaves, StatelessBFS, 
 export treemap
 
 # printing
-export print_tree
+export print_tree, repr_tree
 
 
 end # module

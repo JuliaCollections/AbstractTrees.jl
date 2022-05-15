@@ -93,14 +93,17 @@ argument or else it will fall back to `≡`.
 ischild(node1, node2; equiv=(≡)) = any(node -> equiv(node, node1), children(node2))
 
 """
-    parent([root,] x)
+    parent(node)
 
-Get the immediate parent of a node `x`
+Get the immediate parent of a node `node`.
+
+By default all objects are considered nodes of a trivial tree with no children and no parents.  That is,
+the default method is simply `parent(node) = nothing`.
 
 **OPTIONAL**: The 1-argument version of this function must be implemented for nodes with the [`StoredParents`](@ref)
 trait.  The 2-argument version is always optional.
 """
-parent(root, x) = parent(x)
+parent(node) = nothing
 
 """
     isroot(x)

@@ -1,4 +1,11 @@
 
+"""
+    InitialState
+
+A type used for some AbstractTrees.jl iterators to indicate that iteration is in its initial state.
+Typically this is used for wrapper types to indicate that the `iterate` function has not yet  been called
+on the wrapped object.
+"""
 struct InitialState end
 
 
@@ -15,13 +22,30 @@ Tree cursors satisfy the abstract tree interface with a few additional guarantee
 
 Tree nodes which define `children` and have the traits [`StoredParents`](@ref) and
 [`StoredSiblings`](@ref) satisfy the `TreeCursor` interface and can be used as such.
+
+## Constructors
+All `TreeCursor`s possess (at least) the following constructors
+- `T(node)`
+- `T(parent, node)`
+
+In the former case the `TreeCursor` is constructed for the tree of which `node` is the root.
 """
 abstract type TreeCursor{P,N} end
 
-nodevalueedtype(::Type{<:TreeCursor{P,N}}) where {P,N} = N
-nodevalueedtype(csr::TreeCursor) = unwrapedtype(typeof(csr))
+"""
+    nodevaluetype(csr::TreeCursor)
 
-# note that this is guaranteed to return another of the same type of TreeCursor
+Get the type of the wrapped node.  This should match the return type of [`nodevalue`](@ref).
+"""
+nodevaluetype(::Type{<:TreeCursor{P,N}}) where {P,N} = N
+nodevaluetype(csr::TreeCursor) = nodevaluetype(typeof(csr))
+
+"""
+    parenttype(csr::TreeCursor)
+
+The return type of `parent(csr)`.  For properly constructed `TreeCursor`s this is guaranteed to be another
+`TreeCursor`.
+"""
 parenttype(::Type{<:TreeCursor{P,N}}) where {P,N} = P
 parenttype(csr::TreeCursor) = parenttype(typeof(csr))
 
@@ -46,7 +70,13 @@ nodevalue(tc::TreeCursor) = tc.node
 parent(tc::TreeCursor) = tc.parent
 
 
-# this exists mostly for the sake of guaranteeing a uniform interface
+"""
+    TrivialCursor{P,N} <: TreeCursor{P,N}
+
+A [`TreeCursor`](@ref) which matches the functionality of the underlying node.  Tree nodes wrapped by this
+cursor themselves have most of the functionality required of a `TreeCursor`, this type exists entirely
+for the sake of maintaining a fully consistent interface with other `TreeCursor` objects.
+"""
 struct TrivialCursor{P,N} <: TreeCursor{P,N}
     parent::P
     node::N
@@ -65,18 +95,25 @@ function Base.iterate(csr::TrivialCursor, s=InitialState())
     (o, (o, s′))
 end
 
-function nextsibling(csr::TrivialCursor) 
+function nextsibling(csr::TrivialCursor)
     n = nextsibling(csr.node)
     isnothing(n) ? nothing : TrivialCursor(csr.parent, n)
 end
 
-function prevsibling(csr::TrivialCursor) 
+function prevsibling(csr::TrivialCursor)
     p = prevsibling(csr.node)
     isnothing(p) ? nothing : TrivialCursor(csr.parent, p)
 end
 
 
-# this version assumes all we can do is call `children`… if even that is inefficient you're fucked
+"""
+    ImplicitCursor{P,N,S} <: TreeCursor{P,N}
+
+A [`TreeCursor`](@ref) which wraps nodes which cannot efficiently access either their parents or siblings directly.
+This should be thought of as a "worst case scenario" tree cursor.  In particular, `ImplicitCursor`s store the
+child iteration state of type `S` and for any of `ImplicitCursor`s method to be type-stable it must be possible
+to infer the child iteration state type, see [`childstatetype`](@ref).
+"""
 struct ImplicitCursor{P,N,S} <: TreeCursor{P,N}
     parent::P
     node::N
@@ -90,7 +127,7 @@ ImplicitCursor(node) = ImplicitCursor(nothing, node)
 Base.IteratorEltype(::Type{<:ImplicitCursor}) = HasEltype()
 
 function Base.eltype(::Type{ImplicitCursor{P,N,S}}) where {P,N,S}
-    cst = (childstatetype ∘ nodevalueedtype)(P)
+    cst = (childstatetype ∘ nodevalueeltype)(P)
     P′ = ImplicitCursor{P,N,S}
     ImplicitCursor{P′,childtype(N),cst}
 end
@@ -121,7 +158,16 @@ function nextsibling(csr::ImplicitCursor)
 end
 
 
-# this is still useful because it simplifies what the "user" has to do to specify the types
+"""
+    IndexedCursor{P,N} <: TreeCursor{P,N}
+
+A [`TreeCursor`](@ref) for tree nodes with the [`IndexedChildren`](@ref) trait but for which parents and siblings
+are not directly accessible.
+
+This type is very similar to [`ImplicitCursor`](@ref) except that it is free to assume that the child iteration
+state is an integer starting at `1` which drastially simplifies type inference and slightly simplifies the
+iteration methods.
+"""
 struct IndexedCursor{P,N} <: TreeCursor{P,N}
     parent::P
     node::N
@@ -166,6 +212,11 @@ function prevsibling(csr::IndexedCursor)
 end
 
 
+"""
+    SiblingCursor{P,N} <: TreeCursor{P,N}
+
+A [`TreeCursor`](@ref) for trees with the [`StoredSiblings`](@ref) trait.
+"""
 struct SiblingCursor{P,N} <: TreeCursor{P,N}
     parent::P
     node::N
@@ -180,7 +231,7 @@ Base.IteratorSize(::Type{SiblingCursor{P,N}}) where {P,N} = IteratorSize(childty
 Base.IteratorEltype(::Type{<:SiblingCursor}) = HasEltype()
 
 function Base.eltype(::Type{SiblingCursor{P,N}}) where {P,N}
-    cst = (childstatetype ∘ nodevalueedtype)(P)
+    cst = (childstatetype ∘ nodevaluetype)(P)
     P′ = SiblingCursor{P,N}
     SiblingCursor{P′,childtype(N)}
 end
