@@ -6,8 +6,10 @@ makedocs(
     authors = "Keno Fischer",
     format = Documenter.HTML(prettyurls = get(ENV, "CI", nothing) == "true"),
     pages = [
-        "index.md",
-        #"api.md",
+        "Home" => "index.md",
+        "Iteration" => "iteration.md",
+        "Internals" => "internals.md",
+        "FAQ" => "faq.md",
     ],
 )
 

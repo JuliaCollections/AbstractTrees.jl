@@ -21,7 +21,7 @@ Print a text representation of `tree` to the given `io` object.
 
 # Examples
 
-```jldoctest; setup = :(using AbstractTrees)
+```julia
 julia> tree = [1:3, "foo", [[[4, 5], 6, 7], 8]];
 
 julia> print_tree(tree)
