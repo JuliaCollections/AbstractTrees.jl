@@ -366,8 +366,8 @@ end
 
 Base.iterate(ti::StatelessBFS) = (ti.root, [])
 
-function _level(inds, next_node, lvl)
-    while length(inds) ≠ lvl
+function _descend_left(inds, next_node, level)
+    while length(inds) ≠ level
         ch = children(next_node)
         isempty(ch) && break
         push!(inds, 1)
@@ -376,7 +376,7 @@ function _level(inds, next_node, lvl)
     inds
 end
 
-function _nextind_or_deadend(node, ind, lvl)
+function _nextind_or_deadend(node, ind, level)
     current_lvl = active_lvl = length(ind)
     active_inds = copy(ind)
     # go up until there is a sibling to the right
@@ -390,7 +390,7 @@ function _nextind_or_deadend(node, ind, lvl)
         if !isnothing(iterate(ch, ni))
             newinds = [active_inds; ni]
             next_node = ch[ni]
-            return _level(newinds, next_node, lvl)
+            return _descend_left(newinds, next_node, level)
         end
     end
     nothing
@@ -404,7 +404,7 @@ function Base.iterate(ti::StatelessBFS, ind)
         if isnothing(newinds)
             active_lvl += 1
             active_lvl > org_lvl + 1 && return nothing
-            newinds = _level([], ti.root, active_lvl)
+            newinds = _descend_left([], ti.root, active_lvl)
         end
         length(newinds) == active_lvl && break
     end
