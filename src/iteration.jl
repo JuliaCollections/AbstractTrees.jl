@@ -116,7 +116,7 @@ function next(f, s::PreOrderState)
     end
     nothing
 end
-next(s::PreOrderState) = next(x -> true, s)
+next(s::PreOrderState) = next(_ -> true, s)
 
 
 """
@@ -146,7 +146,7 @@ struct PreOrderDFS{T,F} <: TreeIterator{T}
     root::T
 end
 
-PreOrderDFS(root) = PreOrderDFS(x -> true, root)
+PreOrderDFS(root) = PreOrderDFS(_ -> true, root)
 
 statetype(itr::PreOrderDFS) = PreOrderState
 
@@ -211,7 +211,7 @@ statetype(itr::PostOrderDFS) = PostOrderState
 """
     LeavesState{T<:TreeCursor} <: IteratorState{T}
 
-A [`IteratorState`](@ref) of an iterator which visits all and only the laves of a tree.
+A [`IteratorState`](@ref) of an iterator which visits the leaves of a tree.
 
 See [`Leaves`](@ref).
 """
@@ -366,7 +366,7 @@ end
 
 Base.iterate(ti::StatelessBFS) = (ti.root, [])
 
-function _descend_left(inds, next_node, lvl)
+function _level(inds, next_node, lvl)
     while length(inds) ≠ lvl
         ch = children(next_node)
         isempty(ch) && break
@@ -390,7 +390,7 @@ function _nextind_or_deadend(node, ind, lvl)
         if !isnothing(iterate(ch, ni))
             newinds = [active_inds; ni]
             next_node = ch[ni]
-            return _descend_left(newinds, next_node, lvl)
+            return _level(newinds, next_node, lvl)
         end
     end
     nothing
@@ -404,7 +404,7 @@ function Base.iterate(ti::StatelessBFS, ind)
         if isnothing(newinds)
             active_lvl += 1
             active_lvl > org_lvl + 1 && return nothing
-            newinds = _descend_left([], ti.root, active_lvl)
+            newinds = _level([], ti.root, active_lvl)
         end
         length(newinds) == active_lvl && break
     end
@@ -416,7 +416,7 @@ end
 """
     MapNode{T,C}
 
-A node in a tree which is returned by [`treemap`](@ref).  It consists of a value which is hte result of the function
+A node in a tree which is returned by [`treemap`](@ref).  It consists of a value which is the result of the function
 call and an array of the children, which are also of type `MapNode`.
 
 Every `MapNode` is itself a tree with the [`IndexedChildren`](@ref) trait and therefore supports indexing via
@@ -454,24 +454,24 @@ Base.show(io::IO, ::MIME"text/plain", μ::MapNode) = print_tree(io, μ)
 
 #TODO: still experimenting here
 """
-    treemap(𝒻, node)
+    treemap(f, node)
 
-Apply the function `𝒻` to every node in the tree with root `node`.  `node` must satisfy the AbstractTrees interface.
-Instead of returning the result of `𝒻(n)` directly the result will be a tree of [`MapNode`](@ref) objects isomorphic
-to the original tree but with values equal to the corresponding `𝒻(n)`.
+Apply the function `f` to every node in the tree with root `node`.  `node` must satisfy the AbstractTrees interface.
+Instead of returning the result of `f(n)` directly the result will be a tree of [`MapNode`](@ref) objects isomorphic
+to the original tree but with values equal to the corresponding `f(n)`.
 
 Note that in most common cases tree nodes are of a type which depends on their connectedness and the function
-`𝒻` should take this into account.  For example the tree `[1, [2, 3]]` contains integer leaves but two
-`Vector` nodes.  Therefore, the `𝒻` in `treemap(𝒻, [1, [2,3]])` must be a function that is valid for either
+`f` should take this into account.  For example the tree `[1, [2, 3]]` contains integer leaves but two
+`Vector` nodes.  Therefore, the `f` in `treemap(f, [1, [2,3]])` must be a function that is valid for either
 `Int` or `Vector`.  Alternatively, to only operate on leaves do `map(𝒻, Leaves(itr))`.
 
 ## Example
 ```julia
 julia> t = [1, [2, 3]];
 
-julia> 𝒻(x) = x isa AbstractArray ? nothing : x + 1;
+julia> f(x) = x isa AbstractArray ? nothing : x + 1;
 
-julia> treemap(𝒻, t)
+julia> treemap(f, t)
 MapNode{Nothing, MapNode}(nothing)
 ├─ MapNode{Int64, MapNode{Union{}}}(2)
 └─ MapNode{Nothing, MapNode{Int64, MapNode{Union{}}}}(nothing)
@@ -479,4 +479,4 @@ MapNode{Nothing, MapNode}(nothing)
    └─ MapNode{Int64, MapNode{Union{}}}(4)
 ```
 """
-treemap(𝒻, node) = MapNode(𝒻, node)
+treemap(f, node) = MapNode(f, node)

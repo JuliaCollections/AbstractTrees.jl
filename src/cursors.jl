@@ -16,12 +16,13 @@ Abstract type for tree cursors which when constructed from a node can be used to
 navigate the entire tree descended from that node.
 
 Tree cursors satisfy the abstract tree interface with a few additional guarantees:
-- In addition to [`children`](@ref), [`parent`](@ref), [`nextsibling`](@ref) and
-    optionally [`prevsibling`](@ref) must be defined.
+- Tree cursors always define [`children`](@ref), [`parent`](@ref) and [`nextsibling`](@ref).
+    [`prevsibling`](@ref) may be defined depending on whether it is defined for the wrapped tree.
 - The above functions returning tree nodes are guaranteed to also return tree cursors.
 
 Tree nodes which define `children` and have the traits [`StoredParents`](@ref) and
-[`StoredSiblings`](@ref) satisfy the `TreeCursor` interface and can be used as such.
+[`StoredSiblings`](@ref) satisfy the `TreeCursor` interface, but calling `TreeCursor(node)` on such
+a node wraps them in a [`TrivialCursor`](@ref) to maintain a consistent interface.
 
 ## Constructors
 All `TreeCursor`s possess (at least) the following constructors

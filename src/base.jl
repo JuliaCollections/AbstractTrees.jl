@@ -45,19 +45,6 @@ the children from the node alone, this should be defined for a wrapper object wh
 children(node) = ()
 
 """
-    siblings(node)
-
-Get the siblings (i.e. children of the parent of) the node `node`.  The fall-back method for this only works for
-nodes with the trait [`StoredParents`](@ref).
-
-For a general case iterator see [`Siblings`](@ref).
-
-**OPTIONAL**: This function is optional in all cases.
-"""
-siblings(node) = siblings(ParentLinks(node), node)
-siblings(::StoredParents, node) = (children ∘ parent)(node)
-
-"""
     nextsibling(node)
 
 Get the next sibling (child of the same parent) of the tree node `node`.  The returned node should be the same as
@@ -80,7 +67,7 @@ obtain the previous sibling and all iterators act in the "forward" direction.
 function prevsibling end
 
 """
-    ischild(node1, node2; equiv=(≡))
+    ischild(node1, node2; equiv=(===))
 
 Check if `node1` is a child of `node2`.
 
@@ -88,7 +75,7 @@ By default this iterates through `children(node2)`, so performance may be improv
 specialized method for given node type.
 
 Equivalence is established with the `equiv` function.  New methods of this function should include this
-argument or else it will fall back to `≡`.
+argument or else it will fall back to `===`.
 """
 ischild(node1, node2; equiv=(≡)) = any(node -> equiv(node, node1), children(node2))
 
@@ -101,7 +88,7 @@ By default all objects are considered nodes of a trivial tree with no children a
 the default method is simply `parent(node) = nothing`.
 
 **OPTIONAL**: The 1-argument version of this function must be implemented for nodes with the [`StoredParents`](@ref)
-trait.  The 2-argument version is always optional.
+trait.
 """
 parent(node) = nothing
 

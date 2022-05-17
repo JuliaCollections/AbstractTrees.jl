@@ -9,4 +9,4 @@ ChildIndexing(::Expr) = IndexedChildren()
 children(p::Pair) = (p[2],)
 ChildIndexing(::Pair) = IndexedChildren()
 
-children(dct::AbstractDict) = pairs(dct)
+children(dict::AbstractDict) = pairs(dict)
