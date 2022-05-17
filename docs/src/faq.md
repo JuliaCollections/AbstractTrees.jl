@@ -43,6 +43,12 @@ A summary of major internal changes from 0.3 to 0.4 is as follows:
     change the external API.
 - `treemap` and `treemap!` have been replaced with versions that depend on [`MapNode`](@ref).
 
+# Why aren't all iterators trees by default?
+Iteration is very widely implemented for Julia types and there are many types which define iteration
+but which don't make sense as trees.  Major examples in `Base` alone include `Number` and `String`,
+`Char` and `Task`.  If there are this many examples in `Base` there are likely to be a lot more in
+other packages.
+
 # Why does `treemap` return a special node type?
 As described above, older versions of this package conflate tree nodes with values attached to them.
 This makes sense for certain built-in types, particularly arrays, but it imposes constraints on what
