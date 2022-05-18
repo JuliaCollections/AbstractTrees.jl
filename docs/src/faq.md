@@ -17,6 +17,9 @@ and a dedicated set of methods.  Authors of packages using indexed trees should 
 Tree Interface](@ref).  Roughly speaking, the changes are
 - `children(tree, node)` ``\rightarrow`` `childindices(tree, node_index)`
 - `Iterator(tree)` ``\rightarrow`` `Iterator(IndexNode(tree))`
+- Check if your tree satisfies the [`StoredParents`](@ref) or [`StoredSiblings`](@ref) traits.
+- Consider defining [`childrentype`](@ref) or [`childtype`](@ref) (can make some algorithms closer
+    to type-stable).
 
 
 # Why were breaking changes necessary for 0.4?
