@@ -1,89 +1,132 @@
-# Wrappers which allow for tree-like indexing into objects
 
+"""
+    childindex(node, idx)
 
-struct Tree
-    x::Any
-end
-Tree(x::Tree) = x
-Tree(x::AbstractShadowTree) = x
-show(io::IO, tree::Tree) = print_tree(io, tree.x)
+Obtain a node from a tree with [`IndexedChildren`](@ref) by indexing each level of the tree with the elements
+of `idx`.
 
-mutable struct AnnotationNode{T}
-    val::T
-    children::Vector{AnnotationNode{T}}
-end
+Note that this is a separate concept form indexed trees which by default do not have `IndexedChildren()`,
+see [`IndexNode`](@ref).
 
-children(x::AnnotationNode) = x.children
-printnode(io::IO, x::AnnotationNode) = print(io, x.val)
+## Example
+```julia
+v = [1, [2, [3, 4]]]
 
-struct ShadowTree <: AbstractShadowTree
-    tree::Tree
-    shadow::Tree
-    ShadowTree(x::Tree,y::Tree) = new(x,y)
-    ShadowTree(x,y) = ShadowTree(Tree(x),Tree(y))
-end
-first_tree(x::ShadowTree) = x.tree
-second_tree(x::ShadowTree) = x.shadow
-
-function zip_min(c1, c2)
-    n1, n2 = length(c1), length(c2)
-    if n1 < n2
-        c2 = Iterators.take(c2,n1)
-    elseif n2 < n1
-        c1 = Iterators.take(c1,n2)
+childindex(v, (2, 2, 1)) == 3
+```
+"""
+function childindex(::IndexedChildren, node, idx)
+    n = node
+    for j ∈ idx
+        n = children(n)[j]
     end
-    zip(c1, c2)
+    n
+end
+childindex(node, idx) = childindex(ChildIndexing(node), node, idx)
+
+
+"""
+    childindices(tree, node_index)
+
+Get the indices of the children of the node of tree `tree` specified by `node_index`.
+
+To be consistent with [`children`](@ref), by default this returns an empty tuple.
+
+**REQUIRED** for indexed trees:  Indexed trees, i.e. trees that do not implement [`children`](@ref) must implement
+this function.
+"""
+childindices(tree, idx) = ()
+
+"""
+    parentindex(tree, node_index)
+
+Get the index of the parent of the node of tree `tree` specified by `node_index`.
+
+Nodes that have no parent (i.e. the root node) should return `nothing`.
+
+**OPTIONAL**: Indexed trees with the [`StoredParents`](@ref) trait must implement this.
+"""
+function parentindex end
+
+"""
+    nextsiblingindex(tree, node_index)
+
+Get the index of the next sibling of the node of tree `tree` specified by `node_index`.
+
+Nodes which have no next sibling should return `nothing`.
+
+**OPTIONAL**: Indexed trees with the [`StoredSiblings`](@ref) trait must implement this.
+"""
+function nextsiblingindex end
+
+"""
+    prevsiblingindex(tree, node_index)
+
+Get the index of the previous sibling of the node of tree `tree` specified by `node_index`.
+
+Nodes which have no previous sibling should return `nothing`.
+
+**OPTIONAL**: Indexed trees that have [`StoredSiblings`](@ref) can implement this, but no built-in tree algorithms
+require it.
+"""
+function prevsiblingindex end
+
+"""
+    rootindex(tree)
+
+Get the root index of the indexed tree `tree`.
+
+**OPTIONAL**: The single-argument constructor for [`IndexNode`](@ref) requires this, but it is not required for
+any built-in tree algorithms.
+"""
+function rootindex end
+
+"""
+    IndexNode{T,I}
+
+The node of a tree which implements the indexed tree interface.  Such a tree consists of an object `tree` from
+which nodes can be obtained with the two-argument method of [`nodevalue`](@ref) which by default calls `getindex`.
+
+An `IndexNode` implements the tree interface, and can be thought of an adapter from an object that implements the
+indexed tree interface to one that implements the tree interface.
+
+`IndexNode` do not store the value associated with the node but can obtain it by calling [`nodevalue`](@ref).
+
+## Constructors
+```julia
+IndexNode(tree, node_index)
+
+IndexNode(tree) = IndexNode(tree, rootindex(tree))  # one-argument constructor requires `rootindex`
+```
+
+Here `tree` is an object which stores or can obtain information for the entire tree structure, and `node_index`
+is the index of the node for which `node_index` is being constructed.
+"""
+struct IndexNode{T,I}
+    tree::T
+    index::I
 end
 
-make_zip(x::AbstractShadowTree) = zip_min(children(x.tree.x), children(x.shadow.x))
+IndexNode(tree) = IndexNode(tree, rootindex(tree))
 
-function children(x::AbstractShadowTree)
-    map(res->typeof(x)(res[1], res[2]),make_zip(x))
+ParentLinks(::Type{<:IndexNode{N,T}}) where {N,T} = ParentLinks(T)
+SiblingLinks(::Type{<:IndexNode{N,T}}) where {N,T} = SiblingLinks(T)
+
+nodevalue(idx::IndexNode) = nodevalue(idx.tree, idx.index)
+
+children(idx::IndexNode) = Iterators.map(c -> IndexNode(idx.tree, c), childindices(idx.tree, idx.index))
+
+function parent(idx::IndexNode) 
+    pidx = parentindex(idx.tree, idx.index)
+    isnothing(pidx) ? nothing : IndexNode(idx.tree, pidx)
 end
 
-iterate(x::AbstractShadowTree, state...) = iterate(make_zip(x), state...)
-
-function make_annotations(cb, tree, parent, s)
-    s = cb(tree, parent, s)
-    AnnotationNode{Any}(s, AnnotationNode{Any}[make_annotations(cb, child, tree, s) for child in children(tree)])
+function nextsibling(idx::IndexNode) 
+    sidx = nextsiblingindex(idx.tree, idx.index)
+    isnothing(sidx) ? nothing : IndexNode(idx.tree, sidx)
 end
 
-function getindex(tree::Tree, indices)
-    node = tree.x
-    for idx in indices
-        node = children(node)[idx]
-    end
-    node
-end
-
-
-function getindexhighest(tree::Tree, indices)
-    node = tree.x
-    for (i,idx) in enumerate(indices)
-        cs = children(node)
-        if idx > length(cs)
-            return (indices[1:i-1],node)
-        end
-        node = children(node)[idx]
-    end
-    (indices, node)
-end
-
-function setindex!(tree::Tree, val, cursor::LinkedTreeCursor)
-    p = getnode(parent(cursor))
-    setindex!(children(p), val, cursor.nodepos.index)
-end
-
-function getindex(tree::AbstractShadowTree, indices)
-    typeof(tree)(Tree(first_tree(tree))[indices],Tree(second_tree(tree))[indices])
-end
-
-function setindex!(tree::AbstractShadowTree, val, indices)
-    setindex!(Tree(first_tree(tree)), first_tree(val), indices)
-    setindex!(Tree(second_tree(tree)), second_tree(val), indices)
-end
-
-function setindex!(tree::AbstractShadowTree, val::Tuple, indices)
-    setindex!(Tree(first_tree(tree)), val[1], indices)
-    setindex!(Tree(second_tree(tree)), val[2], indices)
+function prevsibling(rn::IndexNode)
+    sidx = prevsiblingindex(idx.tree, idx.index)
+    isnothing(sidx) ? nothing : IndexNode(idx.tree, sidx)
 end
