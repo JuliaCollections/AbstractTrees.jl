@@ -345,8 +345,10 @@ descend(select, node) = descend(select, ChildIndexing(node), node)
 Iterator to visit the nodes of a tree, all nodes of a level will be visited
 before their children
 
-e.g. for the tree
+This iterator requires [`childindex`](@ref) to be valid for all nodes in the
+tree, but the nodes do not necessarily need the [`IndexedChildren`](@ref) trait.
 
+e.g. for the tree
 ```
 Any[1,Any[2,3]]
 ├─ 1

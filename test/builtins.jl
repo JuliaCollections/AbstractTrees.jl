@@ -65,3 +65,12 @@ end
     @test collect(Leaves(expr)) == [:foo, :+, :^, :x, 2, 3]
 end
 
+@testset "Array-Dict" begin
+    t = [1, 2, Dict("a"=>3, "b"=>[4,5])]
+    @test Set(Leaves(t)) == Set(1:5)  # don't want to guarantee ordering because of dict
+
+    t = [1, Dict("a"=>2)]
+    @test collect(Leaves(t)) == [1, 2]
+    @test collect(PreOrderDFS(t)) == [t, 1, t[2], "a"=>2, 2]
+    @test collect(PostOrderDFS(t)) == [1, 2, "a"=>2, t[2], t]
+end
