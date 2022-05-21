@@ -35,7 +35,6 @@ prevsibling
 childrentype
 childtype
 childstatetype
-siblings
 ```
 
 !!! note
