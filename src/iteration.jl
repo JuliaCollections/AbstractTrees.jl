@@ -79,6 +79,14 @@ function Base.iterate(ti::TreeIterator, s::Union{Nothing,IteratorState}=initial(
 end
 
 """
+    values(itr::TreeIterator)
+
+An iterator which returns the `nodevalue` of each node in the tree, equivalent to
+`Iterators.map(nodevalue, itr)`.
+"""
+Base.values(itr::TreeIterator) = Iterators.map(nodevalue, itr)
+
+"""
     PreOrderState{T<:TreeCursor} <: IteratorState{T}
 
 The iteration state of a tree iterator which guarantees that parent nodes will be visited *before* their children,
@@ -345,7 +353,7 @@ descend(select, node) = descend(select, ChildIndexing(node), node)
 Iterator to visit the nodes of a tree, all nodes of a level will be visited
 before their children
 
-This iterator requires [`childindex`](@ref) to be valid for all nodes in the
+This iterator requires [`getdescendant`](@ref) to be valid for all nodes in the
 tree, but the nodes do not necessarily need the [`IndexedChildren`](@ref) trait.
 
 e.g. for the tree
@@ -384,7 +392,7 @@ function _nextind_or_deadend(node, ind, level)
     # go up until there is a sibling to the right
     while current_lvl > 0
         active_inds = ind[1:(current_lvl-1)]
-        parent = childindex(node, active_inds)
+        parent = getdescendant(node, active_inds)
         cur_child = ind[current_lvl]
         ch = children(parent)
         ni = nextind(ch, cur_child)
@@ -410,7 +418,7 @@ function Base.iterate(ti::StatelessBFS, ind)
         end
         length(newinds) == active_lvl && break
     end
-    (childindex(ti.root, newinds), newinds)
+    (getdescendant(ti.root, newinds), newinds)
 end
 
 
@@ -421,7 +429,7 @@ A node in a tree which is returned by [`treemap`](@ref).  It consists of a value
 call and an array of the children, which are also of type `MapNode`.
 
 Every `MapNode` is itself a tree with the [`IndexedChildren`](@ref) trait and therefore supports indexing via
-[`childindex`](@ref).
+[`getdescendant`](@ref).
 
 Use [`AbstractTrees.nodevalue`](@ref) or `mapnode.value` to obtain the wrapped value.
 """

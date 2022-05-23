@@ -1,6 +1,6 @@
 
 """
-    childindex(node, idx)
+    getdescendant(node, idx)
 
 Obtain a node from a tree with by indexing each level of the tree with the elements of `idx`.
 
@@ -10,17 +10,20 @@ are indexable, a prominent example being `Array` which may not have indexable su
 array contianing a Dict) but there are common special cases in which array trees are fully indexable
 (e.g. a tree in which every non-leaf node is an array).
 
-Note that this is a separate concept form indexed trees which by default do not have `IndexedChildren()`,
+The elements of `idx` can be any argument to `getindex`, not necessarily integers.  For example,
+`getdescendant(Dict("a"=>1), ("a",))` returns `1`.
+
+Note that this is a separate concept from indexed trees which by default do not have `IndexedChildren()`,
 see [`IndexNode`](@ref).
 
 ## Example
 ```julia
 v = [1, [2, [3, 4]]]
 
-childindex(v, (2, 2, 1)) == 3
+getdescendant(v, (2, 2, 1)) == 3
 ```
 """
-function childindex(node, idx)
+function getdescendant(node, idx)
     n = node
     for j ∈ idx
         n = children(n)[j]
@@ -120,12 +123,12 @@ nodevalue(idx::IndexNode) = nodevalue(idx.tree, idx.index)
 
 children(idx::IndexNode) = Iterators.map(c -> IndexNode(idx.tree, c), childindices(idx.tree, idx.index))
 
-function parent(idx::IndexNode) 
+function parent(idx::IndexNode)
     pidx = parentindex(idx.tree, idx.index)
     isnothing(pidx) ? nothing : IndexNode(idx.tree, pidx)
 end
 
-function nextsibling(idx::IndexNode) 
+function nextsibling(idx::IndexNode)
     sidx = nextsiblingindex(idx.tree, idx.index)
     isnothing(sidx) ? nothing : IndexNode(idx.tree, sidx)
 end
