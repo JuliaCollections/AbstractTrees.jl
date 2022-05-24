@@ -259,7 +259,57 @@ end
 
 statetype(itr::Leaves) = LeavesState
 
+"""
+    pivots(node)
+Used in tree `findfirst` methods
+Returns a sorted collection of pivots such that `length(pivots(node))+=length(children(node))` and
+`pivots[i-1] < nodevalue(children(node)[i]) <= pivots[i]`.
+"""
+fucntion pivots(tree) end
 
+"""
+    descend(needle, tree)
+Finds the child of a sorted tree which might store a node with value `needle`.
+This is a fallback method that requires `pivots(node)` to be defined.
+Depending on the structure of the tree, it may be easier to override this than `pivots(tree)`.
+"""
+function findchild(needle, parent)
+    _children = children(parent)
+    length(_children) == 1 && return only(_children)
+    _pivots = pivots(parent)
+    for (p,c) in zip(_pivots, _children)
+        if needle <= p
+            return c
+        end
+    end
+    return last(_children)
+end
+
+"""
+    findfirst(needle, ::Leaves)
+Finds the leaf of a sorted tree such that `nodevalue(leaf) == needle)`.
+This method requires either an overload of `findchild` or `pivots`.
+"""
+function Base.findfirst(needle, ti::Leaves)
+    while !isempty(children(ti.root))
+        ti = Leaves(findchild(needle, ti.root))
+    end
+    return isequal(nodevalue(ti.root), needle) ? ti.root : nothing
+end
+
+
+"""
+    findfirst(needle, ::PreOrderDFS)
+Finds the first node of a sorted tree with lowest depth such that `nodevalue(leaf) == needle)`.
+This method requires either an overload of `findchild` or `pivots`.
+"""
+function Base.findfirst(needle, ti::PreOrderDFS)
+    while !isequal(nodevalue(ti.root), needle)
+        ti = PreOrderDFS(findchild(needle, ti.root))
+    end
+    return isequal(nodevalue(ti.root), needle) ? ti.root : nothing
+end
+            
 """
     SiblingState{T<:TreeCursor} <: IteratorState{T}
 
