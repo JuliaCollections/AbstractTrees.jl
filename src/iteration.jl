@@ -268,7 +268,7 @@ Returns a sorted collection of pivots such that `length(pivots(node))+=length(ch
 fucntion pivots(tree) end
 
 """
-    descend(needle, tree)
+    descend(needle, parent)
 Finds the child of a sorted tree which might store a node with value `needle`.
 This is a fallback method that requires `pivots(node)` to be defined.
 Depending on the structure of the tree, it may be easier to override this than `pivots(tree)`.
