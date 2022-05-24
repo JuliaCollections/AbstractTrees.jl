@@ -388,7 +388,7 @@ end
 
 function _nextind_or_deadend(node, ind, level)
     current_lvl = active_lvl = length(ind)
-    active_inds = copy(ind)
+    active_inds = ind
     # go up until there is a sibling to the right
     while current_lvl > 0
         active_inds = ind[1:(current_lvl-1)]

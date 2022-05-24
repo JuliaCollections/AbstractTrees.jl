@@ -2,7 +2,7 @@
 """
     getdescendant(node, idx)
 
-Obtain a node from a tree with by indexing each level of the tree with the elements of `idx`.
+Obtain a node from a tree by indexing each level of the tree with the elements of `idx`.
 
 This function is defined for all trees regardless of whether they have the [`IndexedChildren`](@ref).
 This is because a tree without [`IndexedChildren`](@ref) might have special cases in which all children
