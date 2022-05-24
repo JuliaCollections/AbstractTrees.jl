@@ -265,7 +265,7 @@ Used in tree `findfirst` methods
 Returns a sorted collection of pivots such that `length(pivots(node))+=length(children(node))` and
 `pivots[i-1] < nodevalue(children(node)[i]) <= pivots[i]`.
 """
-fucntion pivots(tree) end
+function pivots(tree) end
 
 """
     descend(needle, parent)
