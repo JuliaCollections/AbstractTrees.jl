@@ -172,3 +172,44 @@ traversal is type stable.
 childstatetype(::Type{T}) where {T} = Iterators.approx_iter_type(childrentype(T))
 childstatetype(node) = childstatetype(typeof(node))
 
+
+"""
+    NodeType(::Type)
+    NodeType(node)
+
+A trait which specifiees whether a tree has a predictable node type (`HasNodeType()`) or not (`NodeTypeUnknown()`).
+
+This is analogous to `Base.IteratorEltype`.  In particular the `IteratorEltype` of [`TreeIterator`](@ref) is dictated
+by this trait.
+
+The default value is `NodeTypeUnknown()`.
+"""
+abstract type NodeType end
+
+"""
+    HasNodeType <: NodeType
+
+Indicates that this node is connected to a tree for which *all* nodes have types descended from `eltype(node)`.
+"""
+struct HasNodeType <: NodeType end
+
+"""
+    NodeTypeUnknown <: NodeType
+
+Indicates that this node is connected to a tree for which it cannot be guaranteed that all nodes have the same
+type.
+"""
+struct NodeTypeUnknown <: NodeType end
+
+NodeType(::Type) = NodeTypeUnknown()
+NodeType(node) = NodeType(typeof(node))
+
+"""
+    nodetype(::Type{T})
+    nodetype(node) = nodetype(typeof(node))
+
+Returns a type which must be a parent type of all nodes in the tree connected to `node`.  This can be used to,
+for example, specify the `eltype` of any `TreeIterator` on `node`.
+"""
+nodetype(::Type) = Any
+nodetype(node) = nodetype(typeof(node))

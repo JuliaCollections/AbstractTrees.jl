@@ -80,6 +80,17 @@ The default value of `ChildIndexing` is `NonIndexedChildren`.
 Types with the `IndexedChildren` trait *must* return an indexable object from `children` (i.e.
 `children(node)[idx]` must be valid for positive integers `idx`).
 
+#### `NodeType`
+```@docs
+NodeType
+NodeTypeUnknown
+HasNodeType
+```
+
+This can be used e.g. to guarantee the `eltype` of `TreeIterator`s.  It should be defined especially
+for trees in which all nodes have the same type, which are the only cases in which iteration over a
+tree can be type stable.
+
 
 ## The Indexed Tree Interface
 The abstract tree interface assumes that all information about the descendants of a node is
