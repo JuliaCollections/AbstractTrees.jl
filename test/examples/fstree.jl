@@ -1,12 +1,14 @@
 using AbstractTrees
 
-struct File
+abstract type FSNode end
+
+struct File <: FSNode
     path::String
 end
 
-AbstractTrees.children(f::File) = ()
+AbstractTrees.children(::File) = ()
 
-struct Directory
+struct Directory <: FSNode
     path::String
 end
 
@@ -20,6 +22,20 @@ function AbstractTrees.children(d::Directory)
     return children
 end
 
+# in real life this probably wouldn't be useful, but it's convenient for testing
+AbstractTrees.nodevalue(n::FSNode) = n.path
+
 AbstractTrees.printnode(io::IO, d::Directory) = print(io, basename(d.path))
 AbstractTrees.printnode(io::IO, f::File) = print(io, basename(f.path))
 
+function mk_tree_test_dir(f, parentdir=tempdir(); prefix="jl_")
+    mktempdir(parentdir; prefix) do path
+        cd(path) do
+            open(io -> write(io, "test1"), "f1"; write=true)
+            mkdir("A")
+            open(io -> write(io, "test2"), joinpath("A","f2"); write=true)
+            mkdir("B")
+            f(path)
+        end
+    end
+end

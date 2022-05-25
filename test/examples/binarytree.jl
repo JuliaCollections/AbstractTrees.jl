@@ -43,11 +43,8 @@ AbstractTrees.ParentLinks(::Type{<:BinaryNode}) = StoredParents()
 
 AbstractTrees.parent(n::BinaryNode) = n.parent
 
-## Optional enhancements
-# These next two definitions allow inference of the item type in iteration.
-# (They are not sufficient to solve all internal inference issues, however.)
-Base.eltype(::Type{<:TreeIterator{BinaryNode{T}}}) where T = BinaryNode{T}
-Base.IteratorEltype(::Type{<:TreeIterator{BinaryNode{T}}}) where T = Base.HasEltype()
+AbstractTrees.NodeType(::Type{<:BinaryNode{T}}) where {T} = HasNodeType()
+AbstractTrees.nodetype(::Type{<:BinaryNode{T}}) where {T} = BinaryNode{T}
 
 function binarynode_example()
     n₀ = BinaryNode(0)

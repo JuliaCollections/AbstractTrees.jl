@@ -85,44 +85,34 @@ include(joinpath(@__DIR__,"examples","onetree.jl"))
     @test nodevalue.(collect(PostOrderDFS(n))) == [0,4,3,2]
 end
 
-@testset "treemap" begin
-    a = [1,[2,[3]]]
-    f = n -> n isa AbstractArray ? (nothing, children(n)) : (n+1, children(n))
-    b = treemap(f, a)
-    @test nodevalue.(PreOrderDFS(b)) == [nothing, 2, nothing, 3, nothing, 4]
-    g = n -> isempty(children(n)) ? (nodevalue(n), ()) : (nothing, [0; children(n)])
-    b = treemap(g, a)
-    @test nodevalue.(PostOrderDFS(b)) == [0, 1, 0, 2, 0, 3, nothing, nothing, nothing]
+include(joinpath(@__DIR__,"examples","fstree.jl"))
+
+@testset "FSNode" begin
+    mk_tree_test_dir() do path
+        tree = Directory(".")
+
+        ls = nodevalue.((collect ∘ Leaves)(tree))
+        # use set so we don't have to guarantee ordering
+        @test Set(ls) == Set([joinpath(".","A","f2"), joinpath(".","B"), joinpath(".","f1")])
+        @test treeheight(tree) == 2
+    end
 end
 
-#=
-struct IntTree
-    num::Int
-    children::Vector{IntTree}
-end
-==(x::IntTree,y::IntTree) = x.num == y.num && x.children == y.children
-AbstractTrees.children(itree::IntTree) = itree.children
-Base.eltype(::Type{<:TreeIterator{IntTree}}) = IntTree
-Base.IteratorEltype(::Type{<:TreeIterator{IntTree}}) = Base.HasEltype()
-AbstractTrees.nodetype(::IntTree) = IntTree
+include(joinpath(@__DIR__,"examples","binarytree.jl"))
 
-@testset "IntTree" begin
-    itree = IntTree(1, [IntTree(2, IntTree[])])
-    iter = Leaves(itree)
-    (v"1.6-" < VERSION < v"1.7-") || @inferred first(iter) # 1.6 has a weird inference bug
-    @test first(iter) == IntTree(2, IntTree[])
-    val, state = iterate(iter)
-    @test Base.return_types(iterate, Tuple{typeof(iter), typeof(state)}) ==
-        [Union{Nothing, Tuple{IntTree,typeof(state)}}]
+@testset "BinaryNode" begin
+    t = binarynode_example()
+
+    ls = @inferred collect(Leaves(t))
+    @test nodevalue.(ls) == [3, 2]
+
+    predfs = @inferred collect(PreOrderDFS(t))
+    @test nodevalue.(predfs) == [0,1,3,2]
+
+    postdfs = @inferred collect(PostOrderDFS(t))
+    @test nodevalue.(postdfs) == [3,1,2,0]
+
+    sbfs = @inferred collect(StatelessBFS(t))
+    @test nodevalue.(sbfs) == [0,1,2,3]
 end
 
-
-#=
-@test treemap(PostOrderDFS(tree)) do ind, x, children
-    IntTree(isa(x,Int) ? x : mapreduce(x->x.num,+,0,children),
-        isempty(children) ? IntTree[] : children)
-end == IntTree(6,[IntTree(1,IntTree[]),IntTree(5,[IntTree(2,IntTree[]),IntTree(3,IntTree[])])])
-=#
-
-@test collect(PostOrderDFS([])) == Any[[]]
-=#

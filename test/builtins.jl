@@ -49,8 +49,9 @@ using Test
     @test treesize(tree3) == 1
     @test treebreadth(tree3) == 1
     @test treeheight(tree3) == 0
-end
 
+    @test collect(PostOrderDFS([])) == Any[[]]
+end
 
 @testset "Pair" begin
     tree = 1=>(3=>4)
@@ -74,3 +75,14 @@ end
     @test collect(PreOrderDFS(t)) == [t, 1, t[2], "a"=>2, 2]
     @test collect(PostOrderDFS(t)) == [1, 2, "a"=>2, t[2], t]
 end
+
+@testset "treemap" begin
+    a = [1,[2,[3]]]
+    f = n -> n isa AbstractArray ? (nothing, children(n)) : (n+1, children(n))
+    b = treemap(f, a)
+    @test nodevalue.(PreOrderDFS(b)) == [nothing, 2, nothing, 3, nothing, 4]
+    g = n -> isempty(children(n)) ? (nodevalue(n), ()) : (nothing, [0; children(n)])
+    b = treemap(g, a)
+    @test nodevalue.(PostOrderDFS(b)) == [0, 1, 0, 2, 0, 3, nothing, nothing, nothing]
+end
+

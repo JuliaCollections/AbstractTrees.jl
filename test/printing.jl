@@ -1,22 +1,5 @@
-# Test print_tree()
-
-
-# count(pattern::String, string::String) and equivalent findall() method not
-# present in Julia 0.7
-function count_matches(pattern::AbstractString, string::AbstractString)
-    c = 0
-    next = 1
-
-    while true
-        match = findnext(pattern, string, next)
-        if match === nothing
-            return c
-        else
-            c += 1
-            next = match.stop + 1
-        end
-    end
-end
+using AbstractTrees
+using AbstractTrees: TreeCharSet
 
 
 # Node type that wraps an integer value `n` and has two children with value `n + 1`.
@@ -75,15 +58,15 @@ AbstractTrees.printnode(io::IO, u::UnindexableChildren) = AbstractTrees.printnod
     #       └─ 3
     #
 
-    truncation_str = AbstractTrees.DEFAULT_CHARSET.trunc
+    truncation_str = TreeCharSet().trunc
 
     for maxdepth in [3,5,8]
         ptxt = repr_tree(Num(0), maxdepth=maxdepth)
 
         # Check that we see depth #s the expected number of times
-        @test count_matches(string(maxdepth-1), ptxt) == 2^(maxdepth-1)
-        @test count_matches(string(maxdepth), ptxt) == 2^maxdepth
-        @test count_matches(string(maxdepth+1), ptxt) == 0
+        @test length(findall(string(maxdepth-1), ptxt)) == 2^(maxdepth-1)
+        @test length(findall(string(maxdepth), ptxt)) == 2^maxdepth
+        @test length(findall(string(maxdepth+1), ptxt)) == 0
 
         # test that `print_tree(headnode)` prints truncation characters under each
         # node at the maximum depth
@@ -116,54 +99,49 @@ end
     @testset "AbstractVector" begin
         tree = 1:2
 
-        @test repr_tree(tree) == """
-            UnitRange{Int64}
-            ├─ 1
-            └─ 2
-            """
+        # let's not bother testing the exact string of the type itself, it breaks too easily
 
-        @test repr_tree(tree, printkeys=true) == """
-            UnitRange{Int64}
-            ├─ 1 => 1
-            └─ 2 => 2
-            """
+        @test endswith(repr_tree(tree), """
+                       ├─ 1
+                       └─ 2
+                       """)
+
+        @test endswith(repr_tree(tree, printkeys=true), """
+                       ├─ 1 ⇒ 1
+                       └─ 2 ⇒ 2
+                       """)
     end
 
     @testset "Tuple" begin
         tree = (1, 2)
 
-        @test repr_tree(tree) == """
-            (1, 2)
-            ├─ 1
-            └─ 2
-            """
+        @test endswith(repr_tree(tree), """
+                       ├─ 1
+                       └─ 2
+                       """)
 
-        @test repr_tree(tree, printkeys=true) == """
-            (1, 2)
-            ├─ 1 => 1
-            └─ 2 => 2
-            """
+        @test endswith(repr_tree(tree, printkeys=true), """
+                       ├─ 1 ⇒ 1
+                       └─ 2 ⇒ 2
+                       """)
     end
 
     @testset "Matrix" begin
         tree = [1 2; 3 4]
-        T = typeof(tree)  # Prints as Array{Int64, 2} on older versions of Julia
 
-        @test repr_tree(tree) == """
-            $T
-            ├─ (1, 1) => 1
-            ├─ (2, 1) => 3
-            ├─ (1, 2) => 2
-            └─ (2, 2) => 4
-            """
+        @test endswith(repr_tree(tree), """
+        ├─ (1, 1) ⇒ 1
+        ├─ (2, 1) ⇒ 3
+        ├─ (1, 2) ⇒ 2
+        └─ (2, 2) ⇒ 4
+        """)
 
-        @test repr_tree(tree, printkeys=false) == """
-            $T
-            ├─ 1
-            ├─ 3
-            ├─ 2
-            └─ 4
-            """
+        @test endswith(repr_tree(tree, printkeys=false), """
+        ├─ 1
+        ├─ 3
+        ├─ 2
+        └─ 4
+        """)
     end
 
     @testset "No keys" begin
@@ -174,37 +152,19 @@ end
     end
 end
 
-
-@testset "print_tree maxdepth as positional argument" begin
-    tree = Num(0)
-
-    @test_deprecated print_tree(devnull, tree, 3)
-    @test_deprecated print_tree(AbstractTrees.printnode, devnull, tree, 3)
-
-    buf = IOBuffer()
-
-    for maxdepth in [3, 5, 8]
-        @test_deprecated print_tree(buf, tree, maxdepth)
-        str = String(take!(buf))
-        truncate(buf, 0)
-
-        @test str == repr_tree(tree, maxdepth=maxdepth)
-    end
-end
-
-
+   
 @testset "print_tree with non-indexable children" begin
     tree = Num(0)
     @test repr_tree(UnindexableChildren(tree), maxdepth=4) == repr_tree(tree, maxdepth=4)
 end
-
-
+    
+    
 # Prints node as cool message box
 struct BoxNode
     s::String
     children::Vector
 end
-
+    
 AbstractTrees.children(n::BoxNode) = n.children
 function AbstractTrees.printnode(io::IO, n::BoxNode)
     println(io, "┌", "─" ^ textwidth(n.s), "┐")
@@ -215,26 +175,17 @@ end
 @testset "printnode multiline" begin
     tree = ["foo", BoxNode("bar", [1, 2:4, 5]), "baz"]
 
-    @test repr_tree(tree) == """
-        $(typeof(tree))
-        ├─ "foo"
-        ├─ ┌───┐
-        │  │bar│
-        │  └───┘
-        │  ├─ 1
-        │  ├─ UnitRange{Int64}
-        │  │  ├─ 2
-        │  │  ├─ 3
-        │  │  └─ 4
-        │  └─ 5
-        └─ "baz"
-        """
-end
-
-
-@testset "TreeCharSet constructor" begin
-    base = AbstractTrees.DEFAULT_CHARSET
-
-    @test TreeCharSet(base) == base
-    @test TreeCharSet(base, terminator="...") == TreeCharSet(base.mid, "...", base.skip, base.dash, base.trunc, base.pair)
+    @test endswith(repr_tree(tree), """
+                   ├─ "foo"
+                   ├─ ┌───┐
+                   │  │bar│
+                   │  └───┘
+                   │  ├─ 1
+                   │  ├─ 2:4
+                   │  │  ├─ 2
+                   │  │  ├─ 3
+                   │  │  └─ 4
+                   │  └─ 5
+                   └─ "baz"
+                   """)
 end

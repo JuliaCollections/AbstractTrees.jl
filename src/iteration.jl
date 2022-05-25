@@ -63,7 +63,7 @@ abstract type TreeIterator{T} end
 _iterator_eltype(::NodeTypeUnknown) = EltypeUnknown()
 _iterator_eltype(::HasNodeType) = HasEltype()
 
-Base.IteratorEltype(::Type{<:TreeIterator{T}}) where {T} = _iterator_eltype(NodeType(T))
+Base.IteratorEltype(::Type{<:TreeIterator{T}}) where {T}  = _iterator_eltype(NodeType(T))
 
 Base.eltype(::Type{<:TreeIterator{T}}) where {T} = nodetype(T)
 Base.eltype(ti::TreeIterator) = eltype(typeof(ti))
