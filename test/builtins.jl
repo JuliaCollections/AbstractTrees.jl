@@ -80,7 +80,7 @@ end
     a = [1,[2,[3]]]
     f = n -> n isa AbstractArray ? (nothing, children(n)) : (n+1, children(n))
     b = treemap(f, a)
-    @test nodevalue.(PreOrderDFS(b)) == [nothing, 2, nothing, 3, nothing, 4]
+    @test collect(nodevalues(PreOrderDFS(b))) == [nothing, 2, nothing, 3, nothing, 4]
     g = n -> isempty(children(n)) ? (nodevalue(n), ()) : (nothing, [0; children(n)])
     b = treemap(g, a)
     @test nodevalue.(PostOrderDFS(b)) == [0, 1, 0, 2, 0, 3, nothing, nothing, nothing]

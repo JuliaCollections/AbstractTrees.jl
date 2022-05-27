@@ -76,12 +76,12 @@ function Base.iterate(ti::TreeIterator, s::Union{Nothing,IteratorState}=initial(
 end
 
 """
-    values(itr::TreeIterator)
+    nodevalues(itr::TreeIterator)
 
 An iterator which returns the `nodevalue` of each node in the tree, equivalent to
 `Iterators.map(nodevalue, itr)`.
 """
-Base.values(itr::TreeIterator) = Iterators.map(nodevalue, itr)
+nodevalues(itr::TreeIterator) = Iterators.map(nodevalue, itr)
 
 """
     PreOrderState{T<:TreeCursor} <: IteratorState{T}
