@@ -10,3 +10,7 @@ children(p::Pair) = (p[2],)
 ChildIndexing(::Pair) = IndexedChildren()
 
 children(dict::AbstractDict) = pairs(dict)
+
+
+# For potentially-large containers, just show the type
+printnode(io::IO, ::T) where T <: Union{AbstractArray, AbstractDict} = print(io, T)
