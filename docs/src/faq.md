@@ -79,9 +79,10 @@ several major obstacles
 All of this means that you are unlikely to get type-stable code from AbstractTrees.jl without some
 effort.
 
-The simplest way around this is to define the `eltype` of tree iterators via
+The simplest way around this is to define the `NodeType` trait and `nodetype` (analogous to
+`Base.IteratorEltype` and `eltype`):
 ```julia
-Base.NodeType(::Type{<:ExampleNode}) = HasNodeType()
+AbstractTrees.NodeType(::Type{<:ExampleNode}) = HasNodeType()
 AbstractTrees.nodetype(::Type{<:ExampleNode}) = ExampleNode
 ```
 which is equivalent to asserting that all nodes of a tree are of the same type.  Performance

@@ -9,14 +9,14 @@ A package for dealing with generalized tree-like data structures.
 
 ## Examples
 ```julia
-julia> t = [[1,2], [3,4]];  # collections in Base are trees
+julia> t = [[1,2], [3,4]];  # AbstractArray and AbstractDict are trees
 
 julia> children(t)
 2-element Vector{Vector{Int64}}:
  [1, 2]
  [3, 4]
 
-julia> childindex(t, (2,1))
+julia> getdescendant(t, (2,1))
 3
 
 julia> collect(PreOrderDFS(t))  # iterate from root to leaves
