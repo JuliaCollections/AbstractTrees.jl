@@ -1,6 +1,6 @@
 name = "AbstractTrees"
 uuid = "1520ce14-60c1-5f80-bbc7-55ef81b5835c"
-version = "0.3.5"
+version = "0.4.0"
 authors = ["Keno Fischer <keno@alumni.harvard.edu>"]
 
 [deps]

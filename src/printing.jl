@@ -265,8 +265,8 @@ function print_tree(printnode::Function, io::IO, node;
     end
 end
 
-print_tree(io::IO, tree, args...; kwargs...) = print_tree(printnode, io, tree, args...; kwargs...)
-print_tree(tree, args...; kwargs...) = print_tree(stdout::IO, tree, args...; kwargs...)
+print_tree(io::IO, node; kw...) = print_tree(printnode, io, node; kw...)
+print_tree(tree, node; kw...) = print_tree(stdout, node; kw...)
 
 
 """

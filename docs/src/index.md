@@ -35,7 +35,6 @@ prevsibling
 childrentype
 childtype
 childstatetype
-siblings
 ```
 
 !!! note
@@ -81,6 +80,38 @@ The default value of `ChildIndexing` is `NonIndexedChildren`.
 Types with the `IndexedChildren` trait *must* return an indexable object from `children` (i.e.
 `children(node)[idx]` must be valid for positive integers `idx`).
 
+#### `NodeType`
+```@docs
+NodeType
+NodeTypeUnknown
+HasNodeType
+```
+
+Providing the `HasNodeType` trait will guarantee that all nodes connected to the node must be of the
+type returned by [`nodetype`](@ref).
+
+An important use case of this trait is to guarantee the return types of a `TreeIterator`.  Tree
+nodes with `NodeTypeUnknown` cannot have type-stable iteration over the entire tree.
+
+For example
+```julia
+struct ExampleNode
+    x::Int
+    children::Vector{ExampleNode}
+end
+
+AbstractTrees.nodevalue(x::ExampleNode) = x.x
+AbstractTrees.children(x::ExampleNode) = x.children
+
+AbstractTrees.NodeType(::Type{<:ExampleNode}) = HasNodeType()
+AbstractTrees.nodetype(::Type{<:ExampleNode}) = ExampleNode
+```
+In this example, iteration over a tree of `ExampleNode`s is type-stable with `eltype`
+`ExampleNode`.
+
+Providing the `nodetype(::Type)` method is preferable to defining `nodetype(::ExampleNode)` because
+it ensures that `nodetype` can be involved at compile time even if values are not known.
+
 
 ## The Indexed Tree Interface
 The abstract tree interface assumes that all information about the descendants of a node is
@@ -114,9 +145,25 @@ prevsiblingindex
 rootindex
 ```
 
+## Additional Functions
+```@docs
+getdescendant
+nodevalues
+ischild
+isroot
+intree
+isdescendant
+treebreadth
+treeheight
+descendleft
+getroot
+```
+
 ## Example Implementations
 - All objects in base which define the abstract trees interface are defined in
     [`builtins.jl`](https://github.com/JuliaCollections/AbstractTrees.jl/blob/master/src/builtins.jl).
-- [`IDTree`](https://github.com/JuliaCollections/AbstractTrees.jl/blob/master/test/idtree.jl)
-- [`OneNode`](https://github.com/JuliaCollections/AbstractTrees.jl/blob/master/test/onenode.jl)
-- [`OneTree`](https://github.com/JuliaCollections/AbstractTrees.jl/blob/master/test/onetree.jl)
+- [`IDTree`](https://github.com/JuliaCollections/AbstractTrees.jl/blob/master/test/examples/idtree.jl)
+- [`OneNode`](https://github.com/JuliaCollections/AbstractTrees.jl/blob/master/test/examples/onenode.jl)
+- [`OneTree`](https://github.com/JuliaCollections/AbstractTrees.jl/blob/master/test/examples/onetree.jl)
+- [`FSNode`](https://github.com/JuliaCollections/AbstractTrees.jl/blob/master/test/examples/fstree.jl)
+- [`BinaryNode`](https://github.com/JuliaCollections/AbstractTrees.jl/blob/master/test/examples/binarytree.jl)

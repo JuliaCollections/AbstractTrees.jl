@@ -1,28 +1,35 @@
 
 """
-    childindex(node, idx)
+    getdescendant(node, idx)
 
-Obtain a node from a tree with [`IndexedChildren`](@ref) by indexing each level of the tree with the elements
-of `idx`.
+Obtain a node from a tree by indexing each level of the tree with the elements of `idx`.
 
-Note that this is a separate concept form indexed trees which by default do not have `IndexedChildren()`,
+This function is defined for all trees regardless of whether they have the [`IndexedChildren`](@ref).
+This is because a tree without [`IndexedChildren`](@ref) might have special cases in which all children
+are indexable, a prominent example being `Array` which may not have indexable sub-trees (e.g. an
+array contianing a Dict) but there are common special cases in which array trees are fully indexable
+(e.g. a tree in which every non-leaf node is an array).
+
+The elements of `idx` can be any argument to `getindex`, not necessarily integers.  For example,
+`getdescendant(Dict("a"=>1), ("a",))` returns `1`.
+
+Note that this is a separate concept from indexed trees which by default do not have `IndexedChildren()`,
 see [`IndexNode`](@ref).
 
 ## Example
 ```julia
 v = [1, [2, [3, 4]]]
 
-childindex(v, (2, 2, 1)) == 3
+getdescendant(v, (2, 2, 1)) == 3
 ```
 """
-function childindex(::IndexedChildren, node, idx)
+function getdescendant(node, idx)
     n = node
     for j ∈ idx
         n = children(n)[j]
     end
     n
 end
-childindex(node, idx) = childindex(ChildIndexing(node), node, idx)
 
 
 """
@@ -116,12 +123,12 @@ nodevalue(idx::IndexNode) = nodevalue(idx.tree, idx.index)
 
 children(idx::IndexNode) = Iterators.map(c -> IndexNode(idx.tree, c), childindices(idx.tree, idx.index))
 
-function parent(idx::IndexNode) 
+function parent(idx::IndexNode)
     pidx = parentindex(idx.tree, idx.index)
     isnothing(pidx) ? nothing : IndexNode(idx.tree, pidx)
 end
 
-function nextsibling(idx::IndexNode) 
+function nextsibling(idx::IndexNode)
     sidx = nextsiblingindex(idx.tree, idx.index)
     isnothing(sidx) ? nothing : IndexNode(idx.tree, sidx)
 end

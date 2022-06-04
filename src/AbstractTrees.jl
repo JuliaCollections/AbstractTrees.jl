@@ -24,7 +24,8 @@ include("printing.jl")
 export ParentLinks, StoredParents, ImplicitParents
 export SiblingLinks, StoredSiblings, ImplicitSiblings
 export ChildIndexing, IndexedChildren, NonIndexedChildren
-export nodevalue, children, parentlinks, siblinglinks, childindexing, childtype, childrentype
+export NodeType, HasNodeType, NodeTypeUnknown
+export nodetype, nodevalue, nodevalues, children, parentlinks, siblinglinks, childindexing, childtype, childrentype
 #extended interface
 export nextsibling, prevsibling
 
@@ -35,7 +36,7 @@ export ischild, isroot, isroot, intree, isdescendant, treesize, treebreadth, tre
 export TreeCursor, TrivialCursor, ImplicitCursor, SiblingCursor
 
 #indexing
-export childindex, childindices, rootindex, parentindex, nextsiblingindex, prevsiblingindex, IndexNode
+export getdescendant, childindices, rootindex, parentindex, nextsiblingindex, prevsiblingindex, IndexNode
 
 # iteration
 export TreeIterator, PreOrderDFS, PostOrderDFS, Siblings, Leaves, StatelessBFS, MapNode

@@ -60,16 +60,13 @@ All `TreeIterator`s have a one argument constructor `T(node)` which starts itera
 """
 abstract type TreeIterator{T} end
 
-#====================================================================================================
-This is pretty confusing and deserves some explanation...
+_iterator_eltype(::NodeTypeUnknown) = EltypeUnknown()
+_iterator_eltype(::HasNodeType) = HasEltype()
 
-Yes, we were careful enough with tree cursors that it seems like this should be HasEltype, but
-the HasEltype() trait tells Julia not to try to narrow the eltype when using `collect`.
-Therefore, if you have e.g. Any[1,[2,3]], the "correct" eltype that would be given if we used
-HasEltype would be Any, but that's not really what we want.  Therefore we use EltypeUnknown here
-even if that is worse on the (very special case) of a fully-known node type.
-====================================================================================================#
-Base.IteratorEltype(::Type{<:TreeIterator}) = EltypeUnknown()
+Base.IteratorEltype(::Type{<:TreeIterator{T}}) where {T}  = _iterator_eltype(NodeType(T))
+
+Base.eltype(::Type{<:TreeIterator{T}}) where {T} = nodetype(T)
+Base.eltype(ti::TreeIterator) = eltype(typeof(ti))
 
 Base.IteratorSize(::Type{<:TreeIterator}) = SizeUnknown()
 
@@ -77,6 +74,14 @@ function Base.iterate(ti::TreeIterator, s::Union{Nothing,IteratorState}=initial(
     isnothing(s) && return nothing
     (nodevalue(s.cursor), next(s))
 end
+
+"""
+    nodevalues(itr::TreeIterator)
+
+An iterator which returns the `nodevalue` of each node in the tree, equivalent to
+`Iterators.map(nodevalue, itr)`.
+"""
+nodevalues(itr::TreeIterator) = Iterators.map(nodevalue, itr)
 
 """
     PreOrderState{T<:TreeCursor} <: IteratorState{T}
@@ -345,8 +350,10 @@ descend(select, node) = descend(select, ChildIndexing(node), node)
 Iterator to visit the nodes of a tree, all nodes of a level will be visited
 before their children
 
-e.g. for the tree
+This iterator requires [`getdescendant`](@ref) to be valid for all nodes in the
+tree, but the nodes do not necessarily need the [`IndexedChildren`](@ref) trait.
 
+e.g. for the tree
 ```
 Any[1,Any[2,3]]
 ├─ 1
@@ -378,11 +385,11 @@ end
 
 function _nextind_or_deadend(node, ind, level)
     current_lvl = active_lvl = length(ind)
-    active_inds = copy(ind)
+    active_inds = ind
     # go up until there is a sibling to the right
     while current_lvl > 0
         active_inds = ind[1:(current_lvl-1)]
-        parent = childindex(node, active_inds)
+        parent = getdescendant(node, active_inds)
         cur_child = ind[current_lvl]
         ch = children(parent)
         ni = nextind(ch, cur_child)
@@ -408,7 +415,7 @@ function Base.iterate(ti::StatelessBFS, ind)
         end
         length(newinds) == active_lvl && break
     end
-    (childindex(ti.root, newinds), newinds)
+    (getdescendant(ti.root, newinds), newinds)
 end
 
 
@@ -419,7 +426,7 @@ A node in a tree which is returned by [`treemap`](@ref).  It consists of a value
 call and an array of the children, which are also of type `MapNode`.
 
 Every `MapNode` is itself a tree with the [`IndexedChildren`](@ref) trait and therefore supports indexing via
-[`childindex`](@ref).
+[`getdescendant`](@ref).
 
 Use [`AbstractTrees.nodevalue`](@ref) or `mapnode.value` to obtain the wrapped value.
 """

@@ -251,12 +251,12 @@ end
 
 function nextsibling(csr::SiblingCursor)
     n = nextsibling(nodevalue(csr))
-    SiblingCursor(parent(csr), n)
+    isnothing(n) ? nothing : SiblingCursor(parent(csr), n)
 end
 
 function prevsibling(csr::SiblingCursor)
     p = prevsibling(nodevalue(csr))
-    SiblingCursor(parent(csr), p)
+    isnothing(n) ? nothing : SiblingCursor(parent(csr), p)
 end
 
 
