@@ -13,6 +13,7 @@ jobs:
       fail-fast: false
       matrix:
         version:
+          - '1.0'    # 1.0 is only partially tested; in the next breaking release, add [compat] 'julia = "1.6"' and drop this
           - '1.6'
           - '1'
           - 'nightly'
