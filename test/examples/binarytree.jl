@@ -1,5 +1,8 @@
 using AbstractTrees
 
+if !isdefined(Base, :isnothing)        # Julia 1.0 support
+    using AbstractTrees: isnothing
+end
 
 mutable struct BinaryNode{T}
     data::T

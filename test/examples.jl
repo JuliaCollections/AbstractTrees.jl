@@ -1,4 +1,5 @@
 # Ensure that we can run all files in the examples directory with no errors.
+# Note: fstree doesn't work on Julia 1.0
 
 exampledir = joinpath(dirname(@__DIR__), "examples")
 examples = readdir(exampledir)
