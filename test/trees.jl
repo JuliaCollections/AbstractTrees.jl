@@ -88,7 +88,7 @@ end
 include(joinpath(@__DIR__,"examples","fstree.jl"))
 
 @testset "FSNode" begin
-    mk_tree_test_dir() do path
+    Base.VERSION >= v"1.6" && mk_tree_test_dir() do path
         tree = Directory(".")
 
         ls = nodevalue.((collect ∘ Leaves)(tree))

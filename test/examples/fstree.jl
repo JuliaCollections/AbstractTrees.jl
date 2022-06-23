@@ -29,7 +29,8 @@ AbstractTrees.printnode(io::IO, d::Directory) = print(io, basename(d.path))
 AbstractTrees.printnode(io::IO, f::File) = print(io, basename(f.path))
 
 function mk_tree_test_dir(f, parentdir=tempdir(); prefix="jl_")
-    mktempdir(parentdir; prefix) do path
+    # While Julia 1.0 can parse this, `mktempdir` does not support the `prefix` kw
+    mktempdir(parentdir; prefix=prefix) do path
         cd(path) do
             open(io -> write(io, "test1"), "f1"; write=true)
             mkdir("A")
