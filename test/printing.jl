@@ -188,4 +188,25 @@ end
                    │  └─ 5
                    └─ "baz"
                    """)
+
+    # Test printnode override
+    str = repr_tree(tree) do io, s
+        if s isa BoxNode
+            print(io, s.s)
+        else
+            AbstractTrees.printnode(io, s)
+        end
+    end
+
+    @test endswith(str, """
+                   ├─ "foo"
+                   ├─ bar
+                   │  ├─ 1
+                   │  ├─ 2:4
+                   │  │  ├─ 2
+                   │  │  ├─ 3
+                   │  │  └─ 4
+                   │  └─ 5
+                   └─ "baz"
+                   """)
 end

@@ -194,7 +194,9 @@ function print_tree(printnode::Function, io::IO, node;
                     prefix::AbstractString="",
                    )
     # Get node representation as string
-    str = repr_node(node, context=io)
+    buf = IOBuffer()
+    printnode(IOContext(buf, io), node)
+    str = String(take!(buf))
 
     # Copy buffer to output, prepending prefix to each line
     for (i, line) in enumerate(split(str, '\n'))
@@ -249,7 +251,6 @@ function print_tree(printnode::Function, io::IO, node;
 
         # Print key
         if this_printkeys
-            buf = IOBuffer()
             print_child_key(IOContext(buf, io), child_key)
             key_str = String(take!(buf))
 
@@ -271,14 +272,16 @@ print_tree(node; kw...) = print_tree(stdout, node; kw...)
 
 """
     repr_tree(tree; context=nothing, kw...)
+    repr_tree(f, tree; context=nothing, kw...)
 
 Get the string result of calling [`print_tree`](@ref) with the supplied arguments.
 
 The `context` argument works as it does in `Base.repr`.
 """
-function repr_tree(tree; context=nothing, kw...)
+repr_tree(tree; context=nothing, kw...) = repr_tree(printnode, tree; context=nothing, kw...)
+function repr_tree(f, tree; context=nothing, kw...)
     buf = IOBuffer()
     io = context === nothing ? buf : IOContext(buf, context)
-    print_tree(io, tree; kw...)
+    print_tree(f, io, tree; kw...)
     return String(take!(buf))
 end
