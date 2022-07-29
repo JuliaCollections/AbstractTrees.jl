@@ -13,7 +13,7 @@ If `StoredParents()`, all nodes in the tree must also have `StoredParents()`, ot
 
 **OPTIONAL**: This should be implemented for a tree if parents of nodes are stored
 ```julia
-AbstractTrees.parentlinks(::Type{<:TreeType}) = AbstractTrees.StoredParents()
+AbstractTrees.ParentLinks(::Type{<:TreeType}) = AbstractTrees.StoredParents()
 parent(t::TreeType) = get_parent(t)
 ```
 """
