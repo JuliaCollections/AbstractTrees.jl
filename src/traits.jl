@@ -6,14 +6,14 @@
 A trait which indicates whether a tree node stores references to its parents (`StoredParents()`) or
 if the parents must be inferred from the tree structure (`ImplicitParents()`).
 
-Trees for which `parentlinks` returns `StoredParents()` *MUST* implement [`parent`](@ref).
+Trees for which `ParentLinks` returns `StoredParents()` *MUST* implement [`parent`](@ref).
 
 If `StoredParents()`, all nodes in the tree must also have `StoredParents()`, otherwise use
 `ImplicitParents()`.
 
 **OPTIONAL**: This should be implemented for a tree if parents of nodes are stored
 ```julia
-AbstractTrees.parentlinks(::Type{<:TreeType}) = AbstractTrees.StoredParents()
+AbstractTrees.ParentLinks(::Type{<:TreeType}) = AbstractTrees.StoredParents()
 parent(t::TreeType) = get_parent(t)
 ```
 """
@@ -92,12 +92,15 @@ SiblingLinks(tree) = SiblingLinks(typeof(tree))
     ChildIndexing(node)
 
 A trait indicating whether the tree node `n` has children (as returned by [`children`](@ref)) which can be
-indexed using 1-based indexing.
+indexed using 1-based indexing. Options are either [`NonIndexedChildren`](@ref) (default) or [`IndexedChildren`](@ref).
+
+To declare that the tree `TreeType` supports one-based indexing on the children, define
+```julia
+AbstractTrees.ChildIndexing(::Type{<:TreeType}) = AbstractTrees.IndexedChildren()
+```
 
 If a node has the `IndexedChildren()` so must all connected nodes in the tree.  Otherwise, use
 `NonIndexedChildren()` instead.
-
-Options are either [`NonIndexedChildren`](@ref) (default) or [`IndexedChildren`](@ref).
 """
 abstract type ChildIndexing end
 
