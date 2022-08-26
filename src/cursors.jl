@@ -82,11 +82,15 @@ for the sake of maintaining a fully consistent interface with other `TreeCursor`
 struct TrivialCursor{P,N} <: TreeCursor{P,N}
     parent::P
     node::N
+    function TrivialCursor(node::N, p=parent(node)) where N
+        if NodeType(N) == HasNodeType()
+            return new{TrivialCursor{Union{nodetype(N), N}}, N}(p, node)
+        end
+        return new{TrivialCursor, N}(parent(node), node)
+    end
 end
 
 parent(csr::TrivialCursor) = parent(csr.node)
-
-TrivialCursor(node) = TrivialCursor(parent(node), node)
 
 function Base.iterate(csr::TrivialCursor, s=InitialState())
     cs = (children ∘ nodevalue)(csr)
@@ -121,7 +125,14 @@ struct ImplicitCursor{P,N,S} <: TreeCursor{P,N}
     node::N
     sibling_state::S
 
-    ImplicitCursor(p::Union{Nothing,ImplicitCursor}, n, s=InitialState()) = new{typeof(p),typeof(n),typeof(s)}(p, n, s)
+    function ImplicitCursor(p::Union{Nothing,ImplicitCursor}, node::N, s=InitialState()) where N
+        if NodeType(N) == HasNodeType()
+            parenttype = ImplicitCursor{Union{nodetype(N), N}, N}
+        else
+            parenttype = ImplicitCursor
+        end
+        return new{Union{Nothing, parenttype}, N, typeof(s)}(p, node, s)
+    end
 end
 
 ImplicitCursor(node) = ImplicitCursor(nothing, node)
