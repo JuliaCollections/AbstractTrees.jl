@@ -10,7 +10,7 @@ struct InitialState end
 
 
 """
-    TreeCursor{P,N}
+    TreeCursor{N}
 
 Abstract type for tree cursors which when constructed from a node can be used to
 navigate the entire tree descended from that node.
@@ -18,7 +18,7 @@ navigate the entire tree descended from that node.
 Tree cursors satisfy the abstract tree interface with a few additional guarantees:
 - Tree cursors all have the [`StoredParents`](@ref) and [`StoredSiblings`](@ref) traits.
 - All functions acting on a cursor which returns a tree node is guaranteed to return another `TreeCursor`.
-    For example, `children`, `parent` and `nextsiblin` all return a `TreeCursor` of the same type as
+    For example, `children`, `parent` and `nextsibling` all return a `TreeCursor` of the same type as
     the argument.
 
 Tree nodes which define `children` and have the traits [`StoredParents`](@ref) and
@@ -32,14 +32,14 @@ All `TreeCursor`s possess (at least) the following constructors
 
 In the former case the `TreeCursor` is constructed for the tree of which `node` is the root.
 """
-abstract type TreeCursor{P,N} end
+abstract type TreeCursor{N} end
 
 """
     nodevaluetype(csr::TreeCursor)
 
 Get the type of the wrapped node.  This should match the return type of [`nodevalue`](@ref).
 """
-nodevaluetype(::Type{<:TreeCursor{P,N}}) where {P,N} = N
+nodevaluetype(::Type{<:TreeCursor{N}}) where {N} = N
 nodevaluetype(csr::TreeCursor) = nodevaluetype(typeof(csr))
 
 """
@@ -48,11 +48,11 @@ nodevaluetype(csr::TreeCursor) = nodevaluetype(typeof(csr))
 The return type of `parent(csr)`.  For properly constructed `TreeCursor`s this is guaranteed to be another
 `TreeCursor`.
 """
-parenttype(::Type{<:TreeCursor{P,N}}) where {P,N} = P
+parenttype(::Type{<:TreeCursor{N}}) where N = TreeCursor{N}
 parenttype(csr::TreeCursor) = parenttype(typeof(csr))
 
 # this is a fallback and may not always be the case
-Base.IteratorSize(::Type{<:TreeCursor{P,N}}) where {P,N} = IteratorSize(childtype(N))
+Base.IteratorSize(::Type{<:TreeCursor{N}}) where {N} = IteratorSize(childtype(N))
 
 Base.length(tc::TreeCursor) = (length ∘ children ∘ nodevalue)(csr)
 
@@ -73,24 +73,23 @@ parent(tc::TreeCursor) = tc.parent
 
 
 """
-    TrivialCursor{P,N} <: TreeCursor{P,N}
+    TrivialCursor{N} <: TreeCursor{N}
 
 A [`TreeCursor`](@ref) which matches the functionality of the underlying node.  Tree nodes wrapped by this
 cursor themselves have most of the functionality required of a `TreeCursor`, this type exists entirely
 for the sake of maintaining a fully consistent interface with other `TreeCursor` objects.
 """
-struct TrivialCursor{P,N} <: TreeCursor{P,N}
-    parent::P
+struct TrivialCursor{N} <: TreeCursor{N}
     node::N
-    function TrivialCursor(node::N, p=parent(node)) where N
-        if NodeType(N) == HasNodeType()
-            return new{TrivialCursor{Union{nodetype(N), N}}, N}(p, node)
-        end
-        return new{TrivialCursor, N}(parent(node), node)
-    end
 end
 
-parent(csr::TrivialCursor) = parent(csr.node)
+TrivialCursor(parent, node) = TrivialCursor(node)
+
+function parent(csr::TrivialCursor)
+    p = parent(csr.node)
+    isnothing(p) && return nothing
+    return TrivialCursor(p)
+end
 
 function Base.iterate(csr::TrivialCursor, s=InitialState())
     cs = (children ∘ nodevalue)(csr)
@@ -103,12 +102,12 @@ end
 
 function nextsibling(csr::TrivialCursor)
     n = nextsibling(csr.node)
-    isnothing(n) ? nothing : TrivialCursor(csr.parent, n)
+    isnothing(n) ? nothing : TrivialCursor(n)
 end
 
 function prevsibling(csr::TrivialCursor)
     p = prevsibling(csr.node)
-    isnothing(p) ? nothing : TrivialCursor(csr.parent, p)
+    isnothing(p) ? nothing : TrivialCursor(p)
 end
 
 
@@ -120,18 +119,13 @@ This should be thought of as a "worst case scenario" tree cursor.  In particular
 child iteration state of type `S` and for any of `ImplicitCursor`s method to be type-stable it must be possible
 to infer the child iteration state type, see [`childstatetype`](@ref).
 """
-struct ImplicitCursor{P,N,S} <: TreeCursor{P,N}
-    parent::P
+struct ImplicitCursor{N,S} <: TreeCursor{N}
+    parent::Union{ImplicitCursor, Nothing}
     node::N
     sibling_state::S
 
-    function ImplicitCursor(p::Union{Nothing,ImplicitCursor}, node::N, s=InitialState()) where N
-        if NodeType(N) == HasNodeType()
-            parenttype = ImplicitCursor{Union{nodetype(N), N}, N}
-        else
-            parenttype = ImplicitCursor
-        end
-        return new{Union{Nothing, parenttype}, N, typeof(s)}(p, node, s)
+    function ImplicitCursor(p::Union{ImplicitCursor, Nothing}, node::N, s=InitialState()) where N
+        return new{N, typeof(s)}(p, node, s)
     end
 end
 
@@ -139,15 +133,15 @@ ImplicitCursor(node) = ImplicitCursor(nothing, node)
 
 Base.IteratorEltype(::Type{<:ImplicitCursor}) = HasEltype()
 
-function Base.eltype(::Type{ImplicitCursor{P,N,S}}) where {P,N,S}
-    cst = (childstatetype ∘ nodevalueeltype)(P)
-    P′ = ImplicitCursor{P,N,S}
-    ImplicitCursor{P′,childtype(N),cst}
+function Base.eltype(::Type{ImplicitCursor{N,S}}) where {N,S}
+    nt = nodetype(N)
+    cst = (childstatetype ∘ nodevalueeltype)(ImplicitCursor{nt, S})
+    ImplicitCursor{nt,cst}
 end
 
-function Base.eltype(csr::ImplicitCursor)
+function Base.eltype(csr::ImplicitCursor{N,S}) where {N,S}
     cst = (childstatetype ∘ parent ∘ nodevalue)(csr)
-    ImplicitCursor{typeof(csr),childtype(nodevalue(csr)),cst}
+    ImplicitCursor{nodetype(N),cst}
 end
 
 function Base.iterate(csr::ImplicitCursor, s=InitialState())
@@ -172,7 +166,7 @@ end
 
 
 """
-    IndexedCursor{P,N} <: TreeCursor{P,N}
+    IndexedCursor{N} <: TreeCursor{N}
 
 A [`TreeCursor`](@ref) for tree nodes with the [`IndexedChildren`](@ref) trait but for which parents and siblings
 are not directly accessible.
@@ -181,21 +175,20 @@ This type is very similar to [`ImplicitCursor`](@ref) except that it is free to 
 state is an integer starting at `1` which drastially simplifies type inference and slightly simplifies the
 iteration methods.
 """
-struct IndexedCursor{P,N} <: TreeCursor{P,N}
-    parent::P
+struct IndexedCursor{N} <: TreeCursor{N}
+    parent::Union{IndexedCursor, Nothing}
     node::N
     index::Int
 
-    IndexedCursor(p::Union{Nothing,IndexedCursor}, n, idx::Integer=1) = new{typeof(p),typeof(n)}(p, n, idx)
+    IndexedCursor(p::Union{Nothing,IndexedCursor}, n, idx::Integer=1) = new{typeof(n)}(p, n, idx)
 end
 
 IndexedCursor(node) = IndexedCursor(nothing, node)
 
 Base.IteratorSize(::Type{<:IndexedCursor}) = HasLength()
 
-function Base.eltype(::Type{IndexedCursor{P,N}}) where {P,N}
-    P′ = IndexedCursor{P,N}
-    IndexedCursor{P′,childtype(N)}
+function Base.eltype(::Type{IndexedCursor{N}}) where {N}
+    IndexedCursor{childtype(N)}
 end
 Base.eltype(csr::IndexedCursor) = IndexedCursor{typeof(csr),childtype(nodevalue(csr))}
 Base.length(csr::IndexedCursor) = (length ∘ children ∘ nodevalue)(csr)
@@ -226,27 +219,27 @@ end
 
 
 """
-    SiblingCursor{P,N} <: TreeCursor{P,N}
+    SiblingCursor{N} <: TreeCursor{N}
 
 A [`TreeCursor`](@ref) for trees with the [`StoredSiblings`](@ref) trait.
 """
-struct SiblingCursor{P,N} <: TreeCursor{P,N}
-    parent::P
+struct SiblingCursor{N} <: TreeCursor{N}
+    parent::SiblingCursor
     node::N
 
-    SiblingCursor(p::Union{Nothing,SiblingCursor}, n) = new{typeof(p),typeof(n)}(p, n)
+    SiblingCursor(p::Union{Nothing,SiblingCursor}, n) = new{typeof(n)}(p, n)
 end
 
 SiblingCursor(node) = SiblingCursor(nothing, node)
 
-Base.IteratorSize(::Type{SiblingCursor{P,N}}) where {P,N} = IteratorSize(childtype(N))
+Base.IteratorSize(::Type{SiblingCursor{N}}) where {N} = IteratorSize(childtype(N))
 
 Base.IteratorEltype(::Type{<:SiblingCursor}) = HasEltype()
 
-function Base.eltype(::Type{SiblingCursor{P,N}}) where {P,N}
-    cst = (childstatetype ∘ nodevaluetype)(P)
-    P′ = SiblingCursor{P,N}
-    SiblingCursor{P′,childtype(N)}
+function Base.eltype(::Type{SiblingCursor{N}}) where {N}
+    nt = nodetype(SiblingCursor{N})
+    cst = (childstatetype ∘ nodevaluetype)(SiblingCursor{nt})
+    SiblingCursor{childtype(N)}
 end
 
 Base.eltype(csr::SiblingCursor) = SiblingCursor{typeof(csr),childtype(nodevalue(csr))}
