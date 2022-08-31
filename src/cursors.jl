@@ -41,6 +41,8 @@ Get the type of the wrapped node.  This should match the return type of [`nodeva
 """
 nodevaluetype(::Type{<:TreeCursor{N}}) where {N} = N
 nodevaluetype(csr::TreeCursor) = nodevaluetype(typeof(csr))
+NodeType(::Type{<:TreeCursor}) = HasNodeType()
+nodetype(::Type{<:T}) where {T <: TreeCursor} = T
 
 """
     parenttype(csr::TreeCursor)
@@ -87,8 +89,7 @@ TrivialCursor(parent, node) = TrivialCursor(node)
 
 function parent(csr::TrivialCursor)
     p = parent(csr.node)
-    isnothing(p) && return nothing
-    return TrivialCursor(p)
+    isnothing(p) ? nothing : TrivialCursor(p)
 end
 
 function Base.iterate(csr::TrivialCursor, s=InitialState())
@@ -120,7 +121,7 @@ child iteration state of type `S` and for any of `ImplicitCursor`s method to be 
 to infer the child iteration state type, see [`childstatetype`](@ref).
 """
 struct ImplicitCursor{N,S} <: TreeCursor{N}
-    parent::Union{ImplicitCursor, Nothing}
+    parent::Union{ImplicitCursor{<:nodetype(N)}, Nothing}
     node::N
     sibling_state::S
 
@@ -164,6 +165,17 @@ function nextsibling(csr::ImplicitCursor)
     ImplicitCursor(parent(csr), n′, s′)
 end
 
+function prevsibling(csr::ImplicitCursor)
+    p = parent(csr)
+    isroot(csr) && return nothing
+    cs = (children ∘ nodevalue)(p)
+    old_child = nothing
+    for child in cs
+        child == csr.node && return ImplicitCursor(p, old_child)
+        old_child = child
+    end
+    return nothing
+end
 
 """
     IndexedCursor{N} <: TreeCursor{N}
@@ -176,7 +188,7 @@ state is an integer starting at `1` which drastially simplifies type inference a
 iteration methods.
 """
 struct IndexedCursor{N} <: TreeCursor{N}
-    parent::Union{IndexedCursor, Nothing}
+    parent::Union{IndexedCursor{<:nodetype(N)}, Nothing}
     node::N
     index::Int
 
@@ -224,7 +236,7 @@ end
 A [`TreeCursor`](@ref) for trees with the [`StoredSiblings`](@ref) trait.
 """
 struct SiblingCursor{N} <: TreeCursor{N}
-    parent::SiblingCursor
+    parent::Union{SiblingCursor{<:nodetype(N)}, Nothing}
     node::N
 
     SiblingCursor(p::Union{Nothing,SiblingCursor}, n) = new{typeof(n)}(p, n)
@@ -254,7 +266,7 @@ function Base.iterate(csr::SiblingCursor, (c, s)=(nothing, InitialState()))
 end
 
 function nextsibling(csr::SiblingCursor)
-    n = nextsibling(nodevalue(csr))
+    n = nextsibling(<:nodevalue(csr))
     isnothing(n) ? nothing : SiblingCursor(parent(csr), n)
 end
 
