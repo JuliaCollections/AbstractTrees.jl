@@ -266,7 +266,7 @@ function Base.iterate(csr::SiblingCursor, (c, s)=(nothing, InitialState()))
 end
 
 function nextsibling(csr::SiblingCursor)
-    n = nextsibling(<:nodevalue(csr))
+    n = nextsibling(nodevalue(csr))
     isnothing(n) ? nothing : SiblingCursor(parent(csr), n)
 end
 
