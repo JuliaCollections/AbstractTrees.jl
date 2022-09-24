@@ -360,3 +360,6 @@ TreeCursor(::NodeTypeUnknown, ::ChildIndexing, ::ImplicitParents, ::StoredSiblin
 
 TreeCursor(::NodeTypeUnknown, ::NonIndexedChildren, ::ParentLinks, ::ImplicitSiblings, node) = ImplicitCursor(node)
 
+# extra methods to resolve ambiguity
+TreeCursor(::NodeTypeUnknown, ::IndexedChildren, ::StoredParents, ::StoredSiblings, node) = TrivialCursor(node)
+TreeCursor(::NodeTypeUnknown, ::NonIndexedChildren, ::StoredParents, ::StoredSiblings, node) = TrivialCursor(node)
