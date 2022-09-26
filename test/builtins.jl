@@ -86,3 +86,25 @@ end
     @test nodevalue.(PostOrderDFS(b)) == [0, 1, 0, 2, 0, 3, nothing, nothing, nothing]
 end
 
+@testset "StableNode" begin
+    t = [1,[2,3,[4,5]]]
+
+    n = StableNode{Union{Int,Nothing}}(t) do m
+        m isa Integer ? convert(Int, m) : nothing
+    end
+
+    @test treeheight(n) == 3
+    @test treebreadth(n) == 5
+
+    @test typeof(TreeCursor(n)) == AbstractTrees.StableIndexedCursor{StableNode{Union{Int,Nothing}}}
+
+    ls = @inferred collect(Leaves(n))
+    ls = nodevalue.(ls)
+    @test eltype(ls) <: Union{Nothing,Int}
+    @test nodevalue.(ls) == 1:5
+
+    ns = @inferred collect(PreOrderDFS(n))
+    ns = nodevalue.(ns)
+    @test eltype(ns) == Union{Nothing,Int}
+    @test ns == [nothing, 1, nothing, 2, 3, nothing, 4, 5]
+end

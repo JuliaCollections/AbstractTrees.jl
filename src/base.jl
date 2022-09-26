@@ -191,3 +191,85 @@ function getroot(::StoredParents, node)
         p = parent(p)
     end
 end
+
+
+"""
+    AbstractNode{T}
+
+Abstract type of tree nodes that implement the AbstractTrees.jl interface.
+
+It is *NOT* necessary for tree nodes to inherit from this type to implement the AbstractTrees.jl interface.
+Conversely, all `AbstractNode` types are required to satisfy the AbstractTrees.jl interface (i.e. they must
+at least define [`children`](@ref)).
+
+Package developers should keep in mind when writing methods that most trees *will not* be of this type.
+Therefore, any functions which are intended to work on any tree should not dispatch on `AbstractNode`.
+
+The type parameter `T` is the type of the [`nodevalue`](@ref) of the concrete type descented from `AbstractNode`.
+"""
+abstract type AbstractNode{T} end
+
+function Base.show(io::IO, node::AbstractNode)
+    print(io, typeof(node), "(")
+    show(io, nodevalue(node))
+    print(io, ", nchildren=", length(children(node)), ")")
+end
+
+Base.show(io::IO, ::MIME"text/plain", node::AbstractNode) = print_tree(io, node)
+
+
+"""
+    StableNode{T} <: AbstractNode{T}
+
+A node belonging to a tree in which all nodes are of type `StableNode{T}`.  This type is provided so that
+trees with [`NodeTypeUnknown`](@ref) can implement methods to be converted to type-stable trees with indexable
+`children` which allow for efficient traversal and iteration.
+
+## Constructors
+```julia
+StableNode{T}(x::T, ch)
+StableNode(x, ch=())
+StableNode(𝒻, T, node)
+```
+
+## Arguments
+- `x`: the value of the constructed node, returned by [`nodevalue`](@ref).
+- `ch`: the children of the node, each must be of type `StableNode`.
+- `𝒻`: A function which, when called on the node of a tree returns a value which should be wrapped
+    by a `StableNode`.  The return value of `𝒻` must be convertable to `T` (see example).
+- `T`: The value type of the `StableNode`s in a tree.
+- `node`: A node from a tree which is to be used to construct the `StableNode` tree.
+
+## Examples
+```julia
+t = [1, [2,3]]
+
+node = StableNode(Union{Int,Nothing}, t) do n
+    n isa Integer ? convert(Int, n) : nothing
+end
+```
+In the above example `node` is a tree with [`HasNodeType`](@ref), nodes of type `StableNode{Union{Int,Nothing}}`.
+The nodes in the new tree corresponding to arrays have value `nothing` while other nodes have their
+corresponding `Int` value.
+"""
+struct StableNode{T} <: AbstractNode{T}
+    value::T
+    children::Vector{StableNode{T}}
+
+    # this ensures proper handling of all cases for iterables ch
+    StableNode{T}(x::T, ch) where {T} = new{T}(x, collect(StableNode{T}, ch))
+end
+
+nodevalue(n::StableNode) = n.value
+
+children(n::StableNode) = n.children
+
+NodeType(::Type{<:StableNode}) = HasNodeType()
+nodetype(::Type{StableNode{T}}) where {T} = StableNode{T}
+
+ChildIndexing(::Type{<:StableNode}) = IndexedChildren()
+
+function StableNode{T}(𝒻, node) where {T}
+    StableNode{T}(convert(T, 𝒻(node)), map(n -> StableNode{T}(𝒻, n), children(node)))
+end
+

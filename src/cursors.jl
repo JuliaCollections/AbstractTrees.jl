@@ -81,6 +81,17 @@ nodevalue(tc::TreeCursor) = tc.node
 parent(tc::TreeCursor) = tc.parent
 
 
+#====================================================================================================
+Note for developers:
+
+The following code for `TreeCursor` types contains a fair amount of code duplication.
+In particular, some of the cursors can probably be combined (e.g. ImplicitCursor and StableCursor).
+
+This duplication is deliberate: cursors can get very subtle and it is rather easy to break them,
+break their type stability or cause O(tree_depth) recursive compilation costs.
+====================================================================================================#
+
+
 """
     TrivialCursor{N,P} <: TreeCursor{N,P}
 

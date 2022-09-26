@@ -19,11 +19,6 @@ include("iteration.jl")
 include("builtins.jl")
 include("printing.jl")
 
-# Julia 1.0 support (delete when we no longer support it)
-if !isdefined(Base, :isnothing)
-    isnothing(x) = x === nothing
-end
-
 
 #interface
 export ParentLinks, StoredParents, ImplicitParents
@@ -33,6 +28,8 @@ export NodeType, HasNodeType, NodeTypeUnknown
 export nodetype, nodevalue, nodevalues, children, parentlinks, siblinglinks, childindexing, childtype, childrentype
 #extended interface
 export nextsibling, prevsibling
+
+export AbstractNode, StableNode
 
 # properties
 export ischild, isroot, isroot, intree, isdescendant, treesize, treebreadth, treeheight, descendleft, getroot
