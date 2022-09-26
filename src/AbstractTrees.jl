@@ -19,6 +19,11 @@ include("iteration.jl")
 include("builtins.jl")
 include("printing.jl")
 
+# Julia 1.0 support (delete when we no longer support it)
+if !isdefined(Base, :isnothing)
+    isnothing(x) = x === nothing
+end
+
 
 #interface
 export ParentLinks, StoredParents, ImplicitParents
