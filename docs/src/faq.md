@@ -66,29 +66,3 @@ map leaves.
 
 Introducing a new type becomes necessary to ensure that it can accommodate arbitrary output types.
 
-# Why is my code type unstable?
-Guaranteeing type stability when iterating over trees is challenging to say the least.  There are
-several major obstacles
-- The children of a tree node do not, in general, have the same type as their parent.
-- Even if it is easy to infer the type of a node's immediate children, it is usually much harder to
-    infer the types of the node's more distant descendants.
-- Navigating a tree requires inferring not just the types of the children but the types of the
-    children's *iteration states*.  To make matters worse, Julia's `Base` does not include traits
-    for describing these, and the `Base` iteration protocol makes very few assumptions about them.
-
-All of this means that you are unlikely to get type-stable code from AbstractTrees.jl without some
-effort.
-
-The simplest way around this is to define the `NodeType` trait and `nodetype` (analogous to
-`Base.IteratorEltype` and `eltype`):
-```julia
-AbstractTrees.NodeType(::Type{<:ExampleNode}) = HasNodeType()
-AbstractTrees.nodetype(::Type{<:ExampleNode}) = ExampleNode
-```
-which is equivalent to asserting that all nodes of a tree are of the same type.  Performance
-critical code must ensure that it is possible to construct such a tree, which may not be trivial.
-
-Note that even after defining `Base.eltype` it might still be difficult to achieve type-stability
-due to the aforementioned difficulties with iteration states.  The most reliable around this is to
-ensure that the object returned by `children` is indexable and that the node has the
-`IndexedChildren` state.  This guarantees that `Int` can always be used as an iteration state.

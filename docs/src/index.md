@@ -145,6 +145,33 @@ prevsiblingindex
 rootindex
 ```
 
+## The `AbstractNode` Type
+It is not required that objects implementing the AbstractTrees.jl interface are of this type, but it
+can be used to indicate that an object *must* implement the interface.
+```@docs
+AbstractNode
+```
+
+## Type Stability and Performance
+Because of the recursive nature of trees it can be quite challenging to achieve type stability when
+traversing it in any way such as iterating over nodes.  Only trees which guarantee that all nodes
+are of the same type (with [`HasNodeType`](@ref)) can be type stable.
+
+To make it easier to convert trees with non-uniform node types this package provides the
+`StableNode` type.
+```@docs
+StableNode
+```
+
+To achieve the same performance with custom node types be sure to define at least
+```julia
+AbstractTrees.NodeType(::Type{<:ExampleNode}) = HasNodeType()
+AbstractTrees.nodetype(::Type{<:ExampleNode}) = ExampleNode
+```
+
+In some circumstances it is also more efficient for nodes to have [`ChildIndexing`](@ref) since this
+also guarantees the type of the iteration state of the iterator returned by `children`.
+
 ## Additional Functions
 ```@docs
 getdescendant

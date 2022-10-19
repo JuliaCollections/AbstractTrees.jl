@@ -34,6 +34,7 @@ PostOrderDFS
 Leaves
 Siblings
 StatelessBFS
+treemap
 ```
 
 ### Iterator States

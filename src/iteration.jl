@@ -430,7 +430,7 @@ Every `MapNode` is itself a tree with the [`IndexedChildren`](@ref) trait and th
 
 Use [`AbstractTrees.nodevalue`](@ref) or `mapnode.value` to obtain the wrapped value.
 """
-struct MapNode{T,C}
+struct MapNode{T,C} <: AbstractNode{T}
     value::T
     children::C
 
@@ -449,13 +449,6 @@ childrentype(::Type{MapNode{T,C}}) where {T,C} = C
 nodevalue(μ::MapNode) = μ.value
 
 ChildIndexing(::MapNode) = IndexedChildren()
-
-function Base.show(io::IO, μ::MapNode)
-    print(io, typeof(μ))
-    print(io, "(", μ.value, ")")
-end
-
-Base.show(io::IO, ::MIME"text/plain", μ::MapNode) = print_tree(io, μ)
 
 
 """
@@ -478,6 +471,8 @@ Note that in most common cases tree nodes are of a type which depends on their c
 It's very easy to write an `f` that makes `treemap` stack-overflow.  To avoid this, ensure that `f` eventually
 termiantes, i.e. that sometimes it returns empty `children`.  For example, if `f(n) = (nothing, [0; children(n)])` will
 stack-overflow because every node will have at least 1 child.
+
+To create a tree with [`HasNodeType`](@ref) which enables efficient iteration, see [`StableNode`](@ref) instead.
 
 ## Examples
 ```julia

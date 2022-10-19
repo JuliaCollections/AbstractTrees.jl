@@ -143,7 +143,7 @@ If the `childrentype` can be inferred from the type of the node alone, the type 
 **OPTIONAL**: In most cases, [`childtype`](@ref) is used instead.  If `childtype` is not defined it will fall back
 to `eltype ∘ childrentype`.
 """
-childrentype(nodetype::Type) = Base._return_type(children, Tuple{nodetype})
+childrentype(::Type{T}) where {T} = Base._return_type(children, Tuple{T})
 childrentype(node) = typeof(children(node))
 
 """

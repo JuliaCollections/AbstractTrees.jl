@@ -34,6 +34,8 @@ export nodetype, nodevalue, nodevalues, children, parentlinks, siblinglinks, chi
 #extended interface
 export nextsibling, prevsibling
 
+export AbstractNode, StableNode
+
 # properties
 export ischild, isroot, isroot, intree, isdescendant, treesize, treebreadth, treeheight, descendleft, getroot
 
