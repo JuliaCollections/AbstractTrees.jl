@@ -376,5 +376,5 @@ TreeCursor(::NodeTypeUnknown, ::IndexedChildren, ::StoredParents, ::StoredSiblin
 TreeCursor(::NodeTypeUnknown, ::NonIndexedChildren, ::StoredParents, ::StoredSiblings, node) = TrivialCursor(node)
 
 function ischildenempty(x::TreeCursor)
-    ischildenempty(children(nodevalue(x)))
-end
+    (ischildenempty ∘ children ∘ nodevalue)(x)
+end 

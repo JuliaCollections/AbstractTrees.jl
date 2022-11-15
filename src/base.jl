@@ -275,10 +275,11 @@ end
 
 # isempty check for children that is consistent with interface
 # without this the fallback isempty can waste a call to iterate
-ischildenempty(ch::Tuple) = ch == ()
+# tested the test (ch===()) but it ended up being slopwer
+ischildenempty(@nospecialize ch::Tuple) = (@inline; ch == ())
 
 #fallback definition
-ischildenempty(ch) =  isempty(ch)
+ischildenempty(ch) =  (@inline; isempty(ch))
 
 
 
