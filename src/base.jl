@@ -273,13 +273,14 @@ function StableNode{T}(𝒻, node) where {T}
     StableNode{T}(convert(T, 𝒻(node)), map(n -> StableNode{T}(𝒻, n), children(node)))
 end
 
-#isempty check that is consistent with interface
+# isempty check for children that is consistent with interface
+# without this the fallback isempty can waste a call to iterate
 ischildenempty(ch::Tuple) = ch == ()
 
 #fallback definition
 ischildenempty(ch) =  isempty(ch)
 
-ischildenempty(x::AbstractArray) =  length(x) == 0 
+
 
 
 
