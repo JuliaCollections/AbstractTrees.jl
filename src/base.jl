@@ -152,7 +152,7 @@ Get the number of leaves in the tree rooted at `node`. Leaf nodes have a breadth
 By default this recurses through all nodes in the tree and so may be slow if a more specialized
 method has not been implemented for the given type.
 """
-treebreadth(node) = isemptychild(children(node)) ? 1 : mapreduce(treebreadth, +, children(node))
+treebreadth(node) = ischildenempty(children(node)) ? 1 : mapreduce(treebreadth, +, children(node))
 
 
 """
@@ -163,7 +163,7 @@ Get the maximum depth from `node` to any of its descendants. Leaf nodes have a h
 By default this recurses through all nodes in the tree and so may be slow if a more specialized
 method has not been implemented for the given type.
 """
-treeheight(node) = isemptychild(children(node)) ? 0 : 1 + mapreduce(treeheight, max, children(node))
+treeheight(node) = ischildenempty(children(node)) ? 0 : 1 + mapreduce(treeheight, max, children(node))
 
 """
     descendleft(node)
@@ -173,7 +173,7 @@ Descend from the node `node` to the first encountered leaf node by recursively c
 """
 function descendleft(node)
     ch = children(node)
-    isemptychild(ch) && return node
+    ischildenempty(ch) && return node
     descendleft(first(ch))
 end
 
@@ -273,14 +273,13 @@ function StableNode{T}(𝒻, node) where {T}
     StableNode{T}(convert(T, 𝒻(node)), map(n -> StableNode{T}(𝒻, n), children(node)))
 end
 
+#isempty check that is consistent with interface
+ischildenempty(ch::Tuple) = ch == ()
 
-isemptychild(ch::Tuple) = ch == () 
-function isemptychild(ch) 
-     isempty(ch)
-end
+#fallback definition
+ischildenempty(ch) =  isempty(ch)
 
-function isemptychild(x::AbstractArray)
-    length(x) == 0
-end
+ischildenempty(x::AbstractArray) =  length(x) == 0 
+
 
 
