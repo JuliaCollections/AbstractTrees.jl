@@ -1,7 +1,7 @@
 """
-    print_tree(tree; kwargs...)
-    print_tree(io::IO, tree; kwargs...)
-    print_tree(f::Function, io::IO, tree; kwargs...)
+    print_tree(tree; kw...)
+    print_tree(io::IO, tree; kw...)
+    print_tree(f::Function, io::IO, tree; kw...)
 
 Print a text representation of `tree` to the given `io` object.
 
@@ -82,7 +82,7 @@ Print a compact representation of a single node.  By default, this prints `nodev
 **OPTIONAL**: This can be extended for custom types and controls how nodes are shown
 in [`print_tree`](@ref).
 """
-printnode(io::IO, node) = show(IOContext(io, :compact => true, :limit => true), nodevalue(node))
+printnode(io::IO, node; kw...) = show(IOContext(io, :compact => true, :limit => true), nodevalue(node))
 
 
 """
@@ -192,10 +192,11 @@ function print_tree(printnode::Function, io::IO, node;
                     printkeys::Union{Bool,Nothing}=nothing,
                     depth::Integer=0,
                     prefix::AbstractString="",
+                    kw...
                    )
     # Get node representation as string
     buf = IOBuffer()
-    printnode(IOContext(buf, io), node)
+    printnode(IOContext(buf, io), node; kw...)
     str = String(take!(buf))
 
     # Copy buffer to output, prepending prefix to each line
