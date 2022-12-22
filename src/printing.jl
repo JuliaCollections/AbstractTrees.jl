@@ -1,14 +1,16 @@
 """
     print_tree(tree; kw...)
     print_tree(io::IO, tree; kw...)
-    print_tree(f::Function, io::IO, tree; kw...)
+    print_tree(f::Function, g::Function, io::IO, tree; kw...)
 
 Print a text representation of `tree` to the given `io` object.
 
 # Arguments
 
 * `f::Function` - custom implementation of [`printnode`](@ref) to use. Should have the
-  signature `f(io::IO, node)`.
+  signature `f(io::IO, node; kw...)`.
+* `g::Function` -  custom implementation of [`print_child_key`](@ref) to use. Should have the
+signature `g(io::IO, key;)`.
 * `io::IO` - IO stream to write to.
 * `tree` - tree to print.
 * `maxdepth::Integer = 5` - truncate printing of subtrees at this depth.
@@ -185,7 +187,7 @@ print_child_key(io::IO, key::CartesianIndex) = show(io, Tuple(key))
 
 branchwidth(cs::TreeCharSet) = sum(textwidth.((cs.mid, cs.dash)))
 
-function print_tree(printnode::Function, io::IO, node;
+function print_tree(printnode::Function, print_child_key::Function, io::IO, node;
                     maxdepth::Integer=5,
                     indicate_truncation::Bool=true,
                     charset::TreeCharSet=TreeCharSet(),
@@ -260,14 +262,14 @@ function print_tree(printnode::Function, io::IO, node;
             child_prefix *= " " ^ (textwidth(key_str) + textwidth(charset.pair))
         end
 
-        print_tree(printnode, io, child;
+        print_tree(printnode, print_child_key, io, child;
                    maxdepth=maxdepth, indicate_truncation=indicate_truncation, charset=charset,
                    printkeys=printkeys, depth=depth+1, prefix=child_prefix
                   )
     end
 end
 
-print_tree(io::IO, node; kw...) = print_tree(printnode, io, node; kw...)
+print_tree(io::IO, node; kw...) = print_tree(printnode, print_child_key, io, node; kw...)
 print_tree(node; kw...) = print_tree(stdout, node; kw...)
 
 
@@ -279,10 +281,10 @@ Get the string result of calling [`print_tree`](@ref) with the supplied argument
 
 The `context` argument works as it does in `Base.repr`.
 """
-repr_tree(tree; context=nothing, kw...) = repr_tree(printnode, tree; context=nothing, kw...)
-function repr_tree(f, tree; context=nothing, kw...)
+repr_tree(tree; context=nothing, kw...) = repr_tree(printnode, print_child_key, tree; context=nothing, kw...)
+function repr_tree(f, g, tree; context=nothing, kw...)
     buf = IOBuffer()
     io = context === nothing ? buf : IOContext(buf, context)
-    print_tree(f, io, tree; kw...)
+    print_tree(f, g, io, tree; kw...)
     return String(take!(buf))
 end
