@@ -364,6 +364,7 @@ TreeCursor(::HasNodeType, ::IndexedChildren, ::ParentLinks, ::SiblingLinks, node
 TreeCursor(::HasNodeType, ::NonIndexedChildren, ::ParentLinks, ::SiblingLinks, node) = StableCursor(node)
 
 TreeCursor(::NodeTypeUnknown, ::IndexedChildren, ::ParentLinks, ::SiblingLinks, node) = IndexedCursor(node)
+TreeCursor(::NodeTypeUnknown, ::IndexedChildren, ::ImplicitParents, ::StoredSiblings, node) = IndexedCursor(node)
 
 TreeCursor(::NodeTypeUnknown, ::ChildIndexing, ::StoredParents, ::StoredSiblings, node) = TrivialCursor(node)
 

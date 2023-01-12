@@ -70,7 +70,7 @@ Base.eltype(ti::TreeIterator) = eltype(typeof(ti))
 
 Base.IteratorSize(::Type{<:TreeIterator}) = SizeUnknown()
 
-function Base.iterate(ti::TreeIterator, s::Union{Nothing,IteratorState}=initial(statetype(ti), ti.root))
+function Base.iterate(ti::TreeIterator, s=initial(statetype(ti), ti.root))
     isnothing(s) && return nothing
     (nodevalue(s.cursor), next(s))
 end
