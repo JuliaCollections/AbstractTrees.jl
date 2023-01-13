@@ -30,7 +30,7 @@ export ParentLinks, StoredParents, ImplicitParents
 export SiblingLinks, StoredSiblings, ImplicitSiblings
 export ChildIndexing, IndexedChildren, NonIndexedChildren
 export NodeType, HasNodeType, NodeTypeUnknown
-export nodetype, nodevalue, nodevalues, children, parentlinks, siblinglinks, childindexing, childtype, childrentype
+export nodetype, nodevalue, nodevalues, children, childtype, childrentype
 #extended interface
 export nextsibling, prevsibling
 
