@@ -190,14 +190,10 @@ end
                    """)
 
     # Test printnode override
-    str = repr_tree(tree) do io, s
-        if s isa BoxNode
-            print(io, s.s)
-        else
-            AbstractTrees.printnode(io, s)
-        end
-    end
+    _f(io, s) = s isa BoxNode ? print(io, s.s) : AbstractTrees.printnode(io, s)
+    _g(io, k) = AbstractTrees.print_child_key(io, k)
 
+    str = repr_tree(_f, _g, tree) 
     @test endswith(str, """
                    ├─ "foo"
                    ├─ bar
