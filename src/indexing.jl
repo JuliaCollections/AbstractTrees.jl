@@ -133,7 +133,7 @@ function nextsibling(idx::IndexNode)
     isnothing(sidx) ? nothing : IndexNode(idx.tree, sidx)
 end
 
-function prevsibling(rn::IndexNode)
+function prevsibling(idx::IndexNode)
     sidx = prevsiblingindex(idx.tree, idx.index)
     isnothing(sidx) ? nothing : IndexNode(idx.tree, sidx)
 end
