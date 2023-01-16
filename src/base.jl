@@ -152,7 +152,7 @@ Get the number of leaves in the tree rooted at `node`. Leaf nodes have a breadth
 By default this recurses through all nodes in the tree and so may be slow if a more specialized
 method has not been implemented for the given type.
 """
-treebreadth(node) = ischildenempty(children(node)) ? 1 : mapreduce(treebreadth, +, children(node))
+treebreadth(node) = ischildrenempty(children(node)) ? 1 : mapreduce(treebreadth, +, children(node))
 
 
 """
@@ -163,7 +163,7 @@ Get the maximum depth from `node` to any of its descendants. Leaf nodes have a h
 By default this recurses through all nodes in the tree and so may be slow if a more specialized
 method has not been implemented for the given type.
 """
-treeheight(node) = ischildenempty(children(node)) ? 0 : 1 + mapreduce(treeheight, max, children(node))
+treeheight(node) = ischildrenempty(children(node)) ? 0 : 1 + mapreduce(treeheight, max, children(node))
 
 """
     descendleft(node)
@@ -173,7 +173,7 @@ Descend from the node `node` to the first encountered leaf node by recursively c
 """
 function descendleft(node)
     ch = children(node)
-    ischildenempty(ch) && return node
+    ischildrenempty(ch) && return node
     descendleft(first(ch))
 end
 
@@ -276,10 +276,10 @@ end
 # isempty check for children that is consistent with interface
 # without this the fallback isempty can waste a call to iterate
 # tested the test (ch===()) but it ended up being slopwer
-ischildenempty(@nospecialize ch::Tuple) = (@inline; ch == ())
+ischildrenempty(@nospecialize ch::Tuple) = (@inline; ch == ())
 
 #fallback definition
-ischildenempty(ch) =  (@inline; isempty(ch))
+ischildrenempty(ch) =  (@inline; isempty(ch))
 
 
 

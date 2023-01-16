@@ -283,7 +283,7 @@ struct StableCursor{N,S} <: TreeCursor{N,N}
     # note that this very deliberately takes childstatetype(n) and *not* childstatetype(p)
     # this is because p may be nothing
     StableCursor(::Nothing, n, st) = new{typeof(n),childstatetype(n)}(nothing, n, st)
-    
+
     # this method is important for eliminating expensive calls to childstatetype
     StableCursor(p::StableCursor{N,S}, n, st) where {N,S} = new{N,S}(p, n, st)
 end
@@ -375,6 +375,6 @@ TreeCursor(::NodeTypeUnknown, ::NonIndexedChildren, ::ParentLinks, ::ImplicitSib
 TreeCursor(::NodeTypeUnknown, ::IndexedChildren, ::StoredParents, ::StoredSiblings, node) = TrivialCursor(node)
 TreeCursor(::NodeTypeUnknown, ::NonIndexedChildren, ::StoredParents, ::StoredSiblings, node) = TrivialCursor(node)
 
-function ischildenempty(x::TreeCursor)
-    (ischildenempty ∘ children ∘ nodevalue)(x)
-end 
+function ischildrenempty(x::TreeCursor)
+    (ischildrenempty ∘ children ∘ nodevalue)(x)
+end

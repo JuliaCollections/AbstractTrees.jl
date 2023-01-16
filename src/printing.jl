@@ -208,7 +208,7 @@ function print_tree(printnode::Function, io::IO, node;
     c = children(node)
 
     # No children?
-    ischildenempty(c) && return
+    ischildrenempty(c) && return
 
     # Reached max depth?
     if depth ≥ maxdepth
