@@ -229,7 +229,7 @@ trees with [`NodeTypeUnknown`](@ref) can implement methods to be converted to ty
 ```julia
 StableNode{T}(x::T, ch)
 StableNode(x, ch=())
-StableNode(𝒻, T, node)
+StableNode{T}(𝒻, node)
 ```
 
 ## Arguments
@@ -244,7 +244,7 @@ StableNode(𝒻, T, node)
 ```julia
 t = [1, [2,3]]
 
-node = StableNode(Union{Int,Nothing}, t) do n
+node = StableNode{Union{Int,Nothing}}(t) do n
     n isa Integer ? convert(Int, n) : nothing
 end
 ```
