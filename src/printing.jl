@@ -268,7 +268,7 @@ function print_tree(printnode::Function, print_child_key::Function, io::IO, node
 
         print_tree(printnode, print_child_key, io, child;
                    maxdepth=maxdepth, indicate_truncation=indicate_truncation, charset=charset,
-                   printkeys=printkeys, depth=depth+1, prefix=child_prefix, printnode_kw
+                   printkeys=printkeys, depth=depth+1, prefix=child_prefix, printnode_kw=printnode_kw,
                   )
     end
 end
