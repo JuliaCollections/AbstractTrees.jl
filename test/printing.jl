@@ -189,20 +189,39 @@ end
                    └─ "baz"
                    """)
 
-    # Test printnode override
-    _f(io, s) = s isa BoxNode ? print(io, s.s) : AbstractTrees.printnode(io, s)
-    _g(io, k) = AbstractTrees.print_child_key(io, k)
+    # Test printnode override do block syntax
+    str_do = repr_tree(tree) do io, s
+        if s isa BoxNode
+            print(io, s.s)
+        else
+            AbstractTrees.printnode(io, s)
+        end
+    end
+    @test endswith(str_do, """
+    ├─ "foo"
+    ├─ bar
+    │  ├─ 1
+    │  ├─ 2:4
+    │  │  ├─ 2
+    │  │  ├─ 3
+    │  │  └─ 4
+    │  └─ 5
+    └─ "baz"
+    """)
 
-    str = repr_tree(_f, _g, tree) 
+    # Test printnode and print_child_key override 
+    _f(io, s) = s isa BoxNode ? print(io, s.s) : AbstractTrees.printnode(io, s)
+    _g(io, k) = AbstractTrees.print_child_key(io, k-1)
+    str = repr_tree(_f, _g, tree; printkeys=true) 
     @test endswith(str, """
-                   ├─ "foo"
-                   ├─ bar
-                   │  ├─ 1
-                   │  ├─ 2:4
-                   │  │  ├─ 2
-                   │  │  ├─ 3
-                   │  │  └─ 4
-                   │  └─ 5
-                   └─ "baz"
+                   ├─ 0 ⇒ "foo"
+                   ├─ 1 ⇒ bar
+                   │      ├─ 0 ⇒ 1
+                   │      ├─ 1 ⇒ 2:4
+                   │      │      ├─ 0 ⇒ 2
+                   │      │      ├─ 1 ⇒ 3
+                   │      │      └─ 2 ⇒ 4
+                   │      └─ 2 ⇒ 5
+                   └─ 2 ⇒ "baz"
                    """)
 end

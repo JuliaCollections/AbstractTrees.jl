@@ -1,6 +1,7 @@
 """
     print_tree(tree; kw...)
     print_tree(io::IO, tree; kw...)
+    print_tree(f::Function, io::IO, tree; kw...)
     print_tree(f::Function, g::Function, io::IO, tree; kw...)
 
 Print a text representation of `tree` to the given `io` object.
@@ -20,6 +21,7 @@ signature `g(io::IO, key;)`.
 * `printkeys::Union{Bool, Nothing}` - Whether to print keys of child nodes (using
   `pairs(children(node))`). A value of `nothing` uses [`printkeys_default`](@ref) do decide the
   behavior on a node-by-node basis.
+* `printnode_kw = (;)` - keyword arguments to forward to `f`. 
 
 # Examples
 
@@ -77,12 +79,14 @@ function print_tree end
 
 
 """
-    printnode(io::IO, node)
+    printnode(io::IO, node; kw...)
 
 Print a compact representation of a single node.  By default, this prints `nodevalue(node)`.
 
 **OPTIONAL**: This can be extended for custom types and controls how nodes are shown
 in [`print_tree`](@ref).
+
+The keyword argument `printnode_kw` of [`print_tree`](@ref) will be passed to this function.
 """
 printnode(io::IO, node; kw...) = show(IOContext(io, :compact => true, :limit => true), nodevalue(node))
 
@@ -194,11 +198,11 @@ function print_tree(printnode::Function, print_child_key::Function, io::IO, node
                     printkeys::Union{Bool,Nothing}=nothing,
                     depth::Integer=0,
                     prefix::AbstractString="",
-                    kw...
+                    printnode_kw=(;),
                    )
     # Get node representation as string
     buf = IOBuffer()
-    printnode(IOContext(buf, io), node; kw...)
+    printnode(IOContext(buf, io), node; printnode_kw...)
     str = String(take!(buf))
 
     # Copy buffer to output, prepending prefix to each line
@@ -264,11 +268,12 @@ function print_tree(printnode::Function, print_child_key::Function, io::IO, node
 
         print_tree(printnode, print_child_key, io, child;
                    maxdepth=maxdepth, indicate_truncation=indicate_truncation, charset=charset,
-                   printkeys=printkeys, depth=depth+1, prefix=child_prefix
+                   printkeys=printkeys, depth=depth+1, prefix=child_prefix, printnode_kw
                   )
     end
 end
 
+print_tree(printnode::Function, io::IO, node; kw...) = print_tree(printnode, print_child_key, io, node; kw...)
 print_tree(io::IO, node; kw...) = print_tree(printnode, print_child_key, io, node; kw...)
 print_tree(node; kw...) = print_tree(stdout, node; kw...)
 
@@ -276,12 +281,14 @@ print_tree(node; kw...) = print_tree(stdout, node; kw...)
 """
     repr_tree(tree; context=nothing, kw...)
     repr_tree(f, tree; context=nothing, kw...)
+    repr_tree(f, g, tree; context=nothing, kw...)
 
 Get the string result of calling [`print_tree`](@ref) with the supplied arguments.
 
 The `context` argument works as it does in `Base.repr`.
 """
 repr_tree(tree; context=nothing, kw...) = repr_tree(printnode, print_child_key, tree; context=nothing, kw...)
+repr_tree(f::Function, tree; context=nothing, kw...) = repr_tree(f, print_child_key, tree; context=nothing, kw...)
 function repr_tree(f::Function, g::Function, tree; context=nothing, kw...)
     buf = IOBuffer()
     io = context === nothing ? buf : IOContext(buf, context)
