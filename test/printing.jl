@@ -198,16 +198,16 @@ end
         end
     end
     @test endswith(str_do, """
-    ├─ "foo"
-    ├─ bar
-    │  ├─ 1
-    │  ├─ 2:4
-    │  │  ├─ 2
-    │  │  ├─ 3
-    │  │  └─ 4
-    │  └─ 5
-    └─ "baz"
-    """)
+                   ├─ "foo"
+                   ├─ bar
+                   │  ├─ 1
+                   │  ├─ 2:4
+                   │  │  ├─ 2
+                   │  │  ├─ 3
+                   │  │  └─ 4
+                   │  └─ 5
+                   └─ "baz"
+                   """)
 
     # Test printnode and print_child_key override 
     _f(io, s) = s isa BoxNode ? print(io, s.s) : AbstractTrees.printnode(io, s)
