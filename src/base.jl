@@ -236,7 +236,7 @@ StableNode{T}(𝒻, node)
 - `x`: the value of the constructed node, returned by [`nodevalue`](@ref).
 - `ch`: the children of the node, each must be of type `StableNode`.
 - `𝒻`: A function which, when called on the node of a tree returns a value which should be wrapped
-    by a `StableNode`.  The return value of `𝒻` must be convertable to `T` (see example).
+    by a `StableNode`.  The return value of `𝒻` must be convertible to `T` (see example).
 - `T`: The value type of the `StableNode`s in a tree.
 - `node`: A node from a tree which is to be used to construct the `StableNode` tree.
 
