@@ -40,7 +40,7 @@ A summary of major internal changes from 0.3 to 0.4 is as follows:
 - Nodes can now implement `nodevalue` which allows for distinction between values associated with
     the nodes and the nodes themselves.
 - All tree navigation is now based on "cursors".  A cursor provides the necessary information for
-    moving betweeen adjacent nodes of a tree.  Iterators now specify the movement among cursor
+    moving between adjacent nodes of a tree.  Iterators now specify the movement among cursor
     nodes.
 - Iterators now depend only on iterator states.  This is mostly for internal convenience and does not
     change the external API.
