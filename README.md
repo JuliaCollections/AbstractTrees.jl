@@ -61,6 +61,10 @@ NaN
 └─ -Inf
 ```
 
+## Related Packages
+
+- [D3Trees.jl](https://github.com/sisl/D3Trees.jl) provides interactive rendering of large trees using the D3.js javascript package.
+
 [docs-latest-img]: https://img.shields.io/badge/docs-latest-blue.svg
 [docs-latest-url]: https://JuliaCollections.github.io/AbstractTrees.jl/dev
 
