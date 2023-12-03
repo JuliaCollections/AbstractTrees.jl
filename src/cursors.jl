@@ -191,7 +191,7 @@ A [`TreeCursor`](@ref) for tree nodes with the [`IndexedChildren`](@ref) trait b
 are not directly accessible.
 
 This type is very similar to [`ImplicitCursor`](@ref) except that it is free to assume that the child iteration
-state is an integer starting at `1` which drastially simplifies type inference and slightly simplifies the
+state is an integer starting at `1` which drastically simplifies type inference and slightly simplifies the
 iteration methods.
 """
 struct IndexedCursor{N,P} <: TreeCursor{N,P}

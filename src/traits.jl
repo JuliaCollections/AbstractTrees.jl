@@ -180,7 +180,7 @@ childstatetype(node) = childstatetype(typeof(node))
     NodeType(::Type)
     NodeType(node)
 
-A trait which specifiees whether a tree has a predictable node type (`HasNodeType()`) or not (`NodeTypeUnknown()`).
+A trait which specifies whether a tree has a predictable node type (`HasNodeType()`) or not (`NodeTypeUnknown()`).
 
 This is analogous to `Base.IteratorEltype`.  In particular the `IteratorEltype` of [`TreeIterator`](@ref) is dictated
 by this trait.

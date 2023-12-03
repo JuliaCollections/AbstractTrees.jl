@@ -95,7 +95,7 @@ printnode(io::IO, node; kw...) = show(IOContext(io, :compact => true, :limit => 
     repr_node(node; context=nothing)
 
 Get the string representation of a node using [`printnode`](@ref). This works
-analagously to `Base.repr`.
+analogously to `Base.repr`.
 
 `context` is an `IO` or `IOContext` object whose attributes are used for the
 I/O stream passed to `printnode`.
@@ -119,7 +119,7 @@ Set of characters (or strings) used to pretty-print tree branches in [`print_tre
 - `mid`: "Forked" branch segment connecting to middle children.
 - `terminator`: Final branch segment connecting to last child.
 - `skip`: Vertical branch segment.
-- `dash`: Horizontal branch segmentt printed to the right of `mid` and `terminator`.
+- `dash`: Horizontal branch segment printed to the right of `mid` and `terminator`.
 - `trunc`: Used to indicate the subtree has been truncated at the maximum depth.
 - `pair`: Printed between a child node and its key.
 """
@@ -163,7 +163,7 @@ function TreeCharSet(name::Symbol=:unicode)
     elseif name == :ascii
         TreeCharSet("+", "\\", "|", "--", "...", " => ")
     else
-        throw(ArgumentError("unrecognized dfeault TreeCharSet name: $name"))
+        throw(ArgumentError("unrecognized default TreeCharSet name: $name"))
     end
 end
 

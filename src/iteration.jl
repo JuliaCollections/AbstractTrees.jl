@@ -365,7 +365,7 @@ Any[1,Any[2,3]]
 we will get `[[1, [2,3]], 1, [2, 3], 2, 3]`.
 
 WARNING: This is \$O(n^2)\$, only use this if you know you need it, as opposed to
-a more standard statefull approach.
+a more standard stateful approach.
 """
 struct StatelessBFS{T} <: TreeIterator{T}
     root::T
@@ -469,7 +469,7 @@ Note that in most common cases tree nodes are of a type which depends on their c
 `Int` or `Vector`.  Alternatively, to only operate on leaves do `map(𝒻, Leaves(itr))`.
 
 It's very easy to write an `f` that makes `treemap` stack-overflow.  To avoid this, ensure that `f` eventually
-termiantes, i.e. that sometimes it returns empty `children`.  For example, if `f(n) = (nothing, [0; children(n)])` will
+terminates, i.e. that sometimes it returns empty `children`.  For example, if `f(n) = (nothing, [0; children(n)])` will
 stack-overflow because every node will have at least 1 child.
 
 To create a tree with [`HasNodeType`](@ref) which enables efficient iteration, see [`StableNode`](@ref) instead.
