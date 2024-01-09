@@ -37,7 +37,7 @@ export nextsibling, prevsibling
 export AbstractNode, StableNode
 
 # properties
-export ischild, isroot, isroot, intree, isdescendant, treesize, treebreadth, treeheight, descendleft, getroot
+export ischild, isroot, intree, isdescendant, treesize, treebreadth, treeheight, descendleft, getroot
 
 # cursors
 export TreeCursor, TrivialCursor, ImplicitCursor, SiblingCursor
