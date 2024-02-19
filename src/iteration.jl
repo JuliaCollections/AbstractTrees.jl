@@ -100,7 +100,7 @@ struct PreOrderState{T<:TreeCursor} <: IteratorState{T}
     PreOrderState(csr::TreeCursor) = new{typeof(csr)}(csr)
 end
 
-PreOrderState(node) = (PreOrderState ∘ TreeCursor)(node)
+PreOrderState(node) = PreOrderState(TreeCursor(node))
 
 initial(::Type{PreOrderState}, node) = PreOrderState(node)
 
@@ -175,9 +175,9 @@ struct PostOrderState{T<:TreeCursor} <: IteratorState{T}
     PostOrderState(csr::TreeCursor) = new{typeof(csr)}(csr)
 end
 
-PostOrderState(node) = (PostOrderState ∘ TreeCursor)(node)
+PostOrderState(node) = PostOrderState(TreeCursor(node))
 
-initial(::Type{PostOrderState}, node) = (PostOrderState ∘ descendleft ∘ TreeCursor)(node)
+initial(::Type{PostOrderState}, node) = PostOrderState(descendleft(TreeCursor(node)))
 
 function next(s::PostOrderState)
     n = nextsibling(s.cursor)
@@ -226,9 +226,9 @@ struct LeavesState{T<:TreeCursor} <: IteratorState{T}
     LeavesState(csr::TreeCursor) = new{typeof(csr)}(csr)
 end
 
-LeavesState(node) = (LeavesState ∘ TreeCursor)(node)
+LeavesState(node) = LeavesState(TreeCursor(node))
 
-initial(::Type{LeavesState}, node) = (LeavesState ∘ descendleft ∘ TreeCursor)(node)
+initial(::Type{LeavesState}, node) = LeavesState(descendleft(TreeCursor(node)))
 
 function next(s::LeavesState)
     csr = s.cursor
@@ -278,7 +278,7 @@ struct SiblingState{T<:TreeCursor} <: IteratorState{T}
     SiblingState(csr::TreeCursor) = new{typeof(csr)}(csr)
 end
 
-SiblingState(node) = (SiblingState ∘ TreeCursor)(node)
+SiblingState(node) = SiblingState(TreeCursor(node))
 
 initial(::Type{SiblingState}, node) = SiblingState(node)
 

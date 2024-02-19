@@ -60,10 +60,10 @@ parenttype(csr::TreeCursor) = parenttype(typeof(csr))
 # this is a fallback and may not always be the case
 Base.IteratorSize(::Type{<:TreeCursor{N,P}}) where {N,P} = Base.IteratorSize(childrentype(N))
 
-Base.length(tc::TreeCursor) = (length ∘ children ∘ nodevalue)(tc)
+Base.length(tc::TreeCursor) = length(children(nodevalue(tc)))
 
 # this is needed in case an iterator declares IteratorSize to be HasSize
-Base.size(tc::TreeCursor) = (size ∘ children ∘ nodevalue)(tc)
+Base.size(tc::TreeCursor) = size(children(nodevalue(tc)))
 
 Base.IteratorEltype(::Type{<:TreeCursor}) = EltypeUnknown()
 
@@ -112,7 +112,7 @@ end
 TrivialCursor(node) = TrivialCursor(parent(node), node)
 
 function Base.iterate(csr::TrivialCursor, s=InitialState())
-    cs = (children ∘ nodevalue)(csr)
+    cs = children(nodevalue(csr))
     r = s isa InitialState ? iterate(cs) : iterate(cs, s)
     isnothing(r) && return nothing
     (n′, s′) = r
@@ -159,12 +159,12 @@ function Base.eltype(::Type{ImplicitCursor{N,P,S}}) where {N,P,S}
 end
 
 function Base.eltype(csr::ImplicitCursor)
-    cst = (childstatetype ∘ parent ∘ nodevalue)(csr)
+    cst = childstatetype(parent(nodevalue(csr)))
     ImplicitCursor{childtype(nodevalue(csr)),nodevaluetype(csr),cst}
 end
 
 function Base.iterate(csr::ImplicitCursor, s=InitialState())
-    cs = (children ∘ nodevalue)(csr)
+    cs = children(nodevalue(csr))
     # do NOT just write an iterate(x, ::InitialState) method, it's an ambiguity nightmare
     r = s isa InitialState ? iterate(cs) : iterate(cs, s)
     isnothing(r) && return nothing
@@ -202,22 +202,22 @@ struct IndexedCursor{N,P} <: TreeCursor{N,P}
     IndexedCursor(p::Union{Nothing,IndexedCursor}, n, idx::Integer=1) = new{typeof(n),typeof(nodevalue(p))}(p, n, idx)
 end
 
-IndexedCursor(node)  = IndexedCursor(nothing, node)
+IndexedCursor(node) = IndexedCursor(nothing, node)
 
 Base.IteratorSize(::Type{<:IndexedCursor}) = HasLength()
 
 Base.eltype(::Type{IndexedCursor{N,P}}) where {N,P} = IndexedCursor{childtype(N),N}
 Base.eltype(csr::IndexedCursor) = IndexedCursor{childtype(nodevalue(csr)),nodevaluetype(csr)}
-Base.length(csr::IndexedCursor) = (length ∘ children ∘ nodevalue)(csr)
+Base.length(csr::IndexedCursor) = length(children(nodevalue(csr)))
 
 function Base.getindex(csr::IndexedCursor, idx)
-    cs = (children ∘ nodevalue)(csr)
+    cs = children(nodevalue(csr))
     IndexedCursor(csr, cs[idx], idx)
 end
 
 function Base.iterate(csr::IndexedCursor, idx=1)
     idx > length(csr) && return nothing
-    (csr[idx], idx+1)
+    (csr[idx], idx + 1)
 end
 
 function nextsibling(csr::IndexedCursor)
@@ -254,7 +254,7 @@ Base.IteratorEltype(::Type{<:SiblingCursor}) = HasEltype()
 Base.eltype(::Type{SiblingCursor{N,P}}) where {N,P} = SiblingCursor{childtype(N),N}
 
 function Base.iterate(csr::SiblingCursor, s=InitialState())
-    cs = (children ∘ nodevalue)(csr)
+    cs = children(nodevalue(csr))
     r = s isa InitialState ? iterate(cs) : iterate(cs, s)
     isnothing(r) && return nothing
     (n′, s′) = r
@@ -283,7 +283,7 @@ struct StableCursor{N,S} <: TreeCursor{N,N}
     # note that this very deliberately takes childstatetype(n) and *not* childstatetype(p)
     # this is because p may be nothing
     StableCursor(::Nothing, n, st) = new{typeof(n),childstatetype(n)}(nothing, n, st)
-    
+
     # this method is important for eliminating expensive calls to childstatetype
     StableCursor(p::StableCursor{N,S}, n, st) where {N,S} = new{N,S}(p, n, st)
 end
@@ -295,7 +295,7 @@ Base.IteratorEltype(::Type{<:StableCursor}) = HasEltype()
 Base.eltype(::Type{T}) where {T<:StableCursor} = T
 
 function Base.iterate(csr::StableCursor, s=InitialState())
-    cs = (children ∘ nodevalue)(csr)
+    cs = children(nodevalue(csr))
     r = s isa InitialState ? iterate(cs) : iterate(cs, s)
     isnothing(r) && return nothing
     (n′, s′) = r
@@ -331,16 +331,16 @@ Base.IteratorEltype(::Type{<:StableIndexedCursor}) = HasEltype()
 
 Base.eltype(::Type{T}) where {T<:StableIndexedCursor} = T
 
-Base.length(csr::StableIndexedCursor) = (length ∘ children ∘ nodevalue)(csr)
+Base.length(csr::StableIndexedCursor) = length(children(nodevalue(csr)))
 
 function Base.getindex(csr::StableIndexedCursor, idx)
-    cs = (children ∘ nodevalue)(csr)
+    cs = children(nodevalue(csr))
     StableIndexedCursor(csr, cs[idx], idx)
 end
 
 function Base.iterate(csr::StableIndexedCursor, idx=1)
     idx > length(csr) && return nothing
-    (csr[idx], idx+1)
+    (csr[idx], idx + 1)
 end
 
 function nextsibling(csr::StableIndexedCursor)
