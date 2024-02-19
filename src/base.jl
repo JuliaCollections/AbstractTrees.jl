@@ -100,7 +100,7 @@ or `parent(root, x) ≡ nothing`.  That is, while any node is the root of some t
 true for nodes which have parents which cannot be obtained with the `AbstractTrees` interface.
 """
 isroot(root, x) = isnothing(parent(root, x))
-isroot(x) = (isnothing ∘ parent)(x)
+isroot(x) = isnothing(parent(x))
 
 """
     intree(node, root; equiv=(≡))

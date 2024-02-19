@@ -1,7 +1,7 @@
 using AbstractTrees
 using Test
 
-include(joinpath(@__DIR__,"examples","idtree.jl"))
+include(joinpath(@__DIR__, "examples", "idtree.jl"))
 
 @testset "IDTree" begin
     tree = IDTree(1 => [
@@ -25,9 +25,9 @@ include(joinpath(@__DIR__,"examples","idtree.jl"))
 
     # Node/subtree properties
     #                              1   2  3  4  5  6  7  8  9 10 11 12 13 14 15 16
-    @test treesize.(nodes)    == [16, 4, 1, 2, 1, 1, 9, 8, 1, 1, 4, 1, 1, 1, 1, 1]
+    @test treesize.(nodes) == [16, 4, 1, 2, 1, 1, 9, 8, 1, 1, 4, 1, 1, 1, 1, 1]
     @test treebreadth.(nodes) == [10, 2, 1, 1, 1, 1, 6, 6, 1, 1, 3, 1, 1, 1, 1, 1]
-    @test treeheight.(nodes)  == [ 4, 2, 0, 1, 0, 0, 3, 2, 0, 0, 1, 0, 0, 0, 0, 0]
+    @test treeheight.(nodes) == [4, 2, 0, 1, 0, 0, 3, 2, 0, 0, 1, 0, 0, 0, 0, 0]
 
     # Child/descendant checking
     @test ischild(nodes[2], nodes[1])
@@ -61,44 +61,44 @@ include(joinpath(@__DIR__,"examples","idtree.jl"))
     @test [n.id for n in Leaves(tree.root)] == [3, 5, 6, 9, 10, 12, 13, 14, 15, 16]
 end
 
-include(joinpath(@__DIR__,"examples","onenode.jl"))
+include(joinpath(@__DIR__, "examples", "onenode.jl"))
 
 @testset "OneNode" begin
-    ot = OneNode([2,3,4,0], 1)
+    ot = OneNode([2, 3, 4, 0], 1)
     @inferred collect(Leaves(ot))
     @test nodevalue.(collect(Leaves(ot))) == [0]
     @test eltype(nodevalue.(collect(Leaves(ot)))) ≡ Int
-    @test nodevalue.(collect(PreOrderDFS(ot))) == [2,3,4,0]
-    @test nodevalue.(collect(PostOrderDFS(ot))) == [0,4,3,2]
+    @test nodevalue.(collect(PreOrderDFS(ot))) == [2, 3, 4, 0]
+    @test nodevalue.(collect(PostOrderDFS(ot))) == [0, 4, 3, 2]
 end
 
-include(joinpath(@__DIR__,"examples","onetree.jl"))
+include(joinpath(@__DIR__, "examples", "onetree.jl"))
 
 @testset "OneTree" begin
-    ot = OneTree([2,3,4,0])
+    ot = OneTree([2, 3, 4, 0])
     n = IndexNode(ot)
 
     @inferred collect(Leaves(n))
     @test nodevalue.(collect(Leaves(n))) == [0]
     @test eltype(nodevalue.(collect(Leaves(n)))) ≡ Int
-    @test nodevalue.(collect(PreOrderDFS(n))) == [2,3,4,0]
-    @test nodevalue.(collect(PostOrderDFS(n))) == [0,4,3,2]
+    @test nodevalue.(collect(PreOrderDFS(n))) == [2, 3, 4, 0]
+    @test nodevalue.(collect(PostOrderDFS(n))) == [0, 4, 3, 2]
 end
 
-include(joinpath(@__DIR__,"examples","fstree.jl"))
+include(joinpath(@__DIR__, "examples", "fstree.jl"))
 
 @testset "FSNode" begin
     Base.VERSION >= v"1.6" && mk_tree_test_dir() do path
         tree = Directory(".")
 
-        ls = nodevalue.((collect ∘ Leaves)(tree))
+        ls = nodevalue.(collect(Leaves(tree)))
         # use set so we don't have to guarantee ordering
-        @test Set(ls) == Set([joinpath(".","A","f2"), joinpath(".","B"), joinpath(".","f1")])
+        @test Set(ls) == Set([joinpath(".", "A", "f2"), joinpath(".", "B"), joinpath(".", "f1")])
         @test treeheight(tree) == 2
     end
 end
 
-include(joinpath(@__DIR__,"examples","binarytree.jl"))
+include(joinpath(@__DIR__, "examples", "binarytree.jl"))
 
 @testset "BinaryNode" begin
     t = binarynode_example()
@@ -107,12 +107,12 @@ include(joinpath(@__DIR__,"examples","binarytree.jl"))
     @test nodevalue.(ls) == [3, 2]
 
     predfs = @inferred collect(PreOrderDFS(t))
-    @test nodevalue.(predfs) == [0,1,3,2]
+    @test nodevalue.(predfs) == [0, 1, 3, 2]
 
     postdfs = @inferred collect(PostOrderDFS(t))
-    @test nodevalue.(postdfs) == [3,1,2,0]
+    @test nodevalue.(postdfs) == [3, 1, 2, 0]
 
     sbfs = @inferred collect(StatelessBFS(t))
-    @test nodevalue.(sbfs) == [0,1,2,3]
+    @test nodevalue.(sbfs) == [0, 1, 2, 3]
 end
 
