@@ -184,6 +184,8 @@ treebreadth
 treeheight
 descendleft
 getroot
+printtree
+printnode
 ```
 
 ## Example Implementations
