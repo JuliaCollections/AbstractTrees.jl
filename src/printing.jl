@@ -19,7 +19,7 @@ signature `g(io::IO, key;)`.
   truncated nodes.
 * `charset::TreeCharSet` - [`TreeCharSet`](@ref) to use to print branches.
 * `printkeys::Union{Bool, Nothing}` - Whether to print keys of child nodes (using
-  `pairs(children(node))`). A value of `nothing` uses [`printkeys_default`](@ref) do decide the
+  `pairs(children(node))`). A value of `nothing` uses [`shouldprintkeys`](@ref) to decide the
   behavior on a node-by-node basis.
 * `printnode_kw = (;)` - keyword arguments to forward to `f`. 
 

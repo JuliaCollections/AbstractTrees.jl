@@ -34,6 +34,7 @@ PostOrderDFS
 Leaves
 Siblings
 StatelessBFS
+MapNode
 treemap
 ```
 
@@ -56,4 +57,6 @@ instance
 initial
 next
 statetype
+ascend
+descend
 ```
