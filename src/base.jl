@@ -2,7 +2,7 @@
 """
     nodevalue(node)
 
-Get the value associated with a node in a tree.  This removes wrappers such as [`Indexed`](@ref) or [`TreeCursor`](@ref)s.
+Get the value associated with a node in a tree.  This removes wrappers such as [`IndexNode`](@ref) or [`TreeCursor`](@ref)s.
 
 By default, this function is the identity.
 

@@ -36,7 +36,7 @@ Obtain the next [`IteratorState`](@ref) after the current one.  If `s` is the fi
 `nothing`.
 
 This provides an alternative iteration protocol which only uses the states directly as opposed to
-[`Base.iterate`](@ref) which takes an iterator object and the current state as separate arguments.
+`Base.iterate` which takes an iterator object and the current state as separate arguments.
 """
 function next end
 

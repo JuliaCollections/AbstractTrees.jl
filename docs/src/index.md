@@ -85,6 +85,7 @@ Types with the `IndexedChildren` trait *must* return an indexable object from `c
 NodeType
 NodeTypeUnknown
 HasNodeType
+nodetype
 ```
 
 Providing the `HasNodeType` trait will guarantee that all nodes connected to the node must be of the
@@ -180,12 +181,18 @@ ischild
 isroot
 intree
 isdescendant
+treesize
 treebreadth
 treeheight
 descendleft
 getroot
-printtree
+print_tree
 printnode
+print_child_key
+TreeCharSet
+shouldprintkeys
+repr_tree
+repr_node
 ```
 
 ## Example Implementations
