@@ -116,3 +116,31 @@ include(joinpath(@__DIR__, "examples", "binarytree.jl"))
     @test nodevalue.(sbfs) == [0, 1, 2, 3]
 end
 
+include(joinpath(@__DIR__, "examples", "juliatypes.jl"))
+
+@testset "TypeTree" begin
+    t = TypeTree(JuliaTypesExamples.AbstractSuperType)
+
+    ls = collect(Leaves(t))
+    @test issetequal(nodevalue.(ls), [JuliaTypesExamples.DirectDescendant, JuliaTypesExamples.Foo, JuliaTypesExamples.Bar])
+
+    predfs = nodevalue.(collect(PreOrderDFS(t)))
+    for (i,T) in enumerate(predfs)
+        @test !any(map(x->T <: x, predfs[i+1:end]))
+    end
+
+    postdfs = nodevalue.(collect(PostOrderDFS(t)))
+    for (i,T) in enumerate(postdfs)
+        @test !any(map(x->T <: x, postdfs[1:i-1]))
+    end
+
+    sbfs = nodevalue.(collect(StatelessBFS(t)))
+    for (i,T) in enumerate(sbfs)
+        parents = collect(supertypes(T)[2:end])
+        for j in (i+1):length(sbfs)
+            later_parents = collect(supertypes(sbfs[j])[2:end])
+            @test (parents ∩ later_parents) == parents
+        end
+    end
+end
+
