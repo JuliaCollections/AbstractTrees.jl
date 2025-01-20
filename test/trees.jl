@@ -83,6 +83,8 @@ include(joinpath(@__DIR__, "examples", "onetree.jl"))
     @test eltype(nodevalue.(collect(Leaves(n)))) ≡ Int
     @test nodevalue.(collect(PreOrderDFS(n))) == [2, 3, 4, 0]
     @test nodevalue.(collect(PostOrderDFS(n))) == [0, 4, 3, 2]
+    @test ParentLinks(n) == StoredParents()
+    @test SiblingLinks(n) == StoredSiblings()
 end
 
 include(joinpath(@__DIR__, "examples", "fstree.jl"))
