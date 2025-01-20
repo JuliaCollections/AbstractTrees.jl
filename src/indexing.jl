@@ -116,8 +116,8 @@ end
 
 IndexNode(tree) = IndexNode(tree, rootindex(tree))
 
-ParentLinks(::Type{<:IndexNode{N,T}}) where {N,T} = ParentLinks(T)
-SiblingLinks(::Type{<:IndexNode{N,T}}) where {N,T} = SiblingLinks(T)
+ParentLinks(::Type{<:IndexNode{T,I}}) where {T,I} = ParentLinks(T)
+SiblingLinks(::Type{<:IndexNode{T,I}}) where {T,I} = SiblingLinks(T)
 
 nodevalue(idx::IndexNode) = nodevalue(idx.tree, idx.index)
 
