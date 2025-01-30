@@ -11,7 +11,7 @@ Print a text representation of `tree` to the given `io` object.
 * `f::Function` - custom implementation of [`printnode`](@ref) to use. Should have the
   signature `f(io::IO, node; kw...)`.
 * `g::Function` -  custom implementation of [`print_child_key`](@ref) to use. Should have the
-signature `g(io::IO, key;)`.
+  signature `g(io::IO, key;)`.
 * `io::IO` - IO stream to write to.
 * `tree` - tree to print.
 * `maxdepth::Integer = 5` - truncate printing of subtrees at this depth.
