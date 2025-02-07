@@ -107,7 +107,7 @@ initial(::Type{PreOrderState}, node) = PreOrderState(node)
 function next(f, s::PreOrderState)
     if f(nodevalue(s.cursor))
         ch = children(s.cursor)
-        isempty(ch) || return instance(PreOrderState, first(ch))
+        ischildrenempty(ch) || return instance(PreOrderState, first(ch))
     end
 
     csr = s.cursor
@@ -376,7 +376,7 @@ Base.iterate(ti::StatelessBFS) = (ti.root, [])
 function _descend_left(inds, next_node, level)
     while length(inds) ≠ level
         ch = children(next_node)
-        isempty(ch) && break
+        ischildrenempty(ch) && break
         push!(inds, 1)
         next_node = first(ch)
     end
