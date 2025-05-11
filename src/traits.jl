@@ -1,3 +1,7 @@
+function throw_not_supported_exc()
+    @noinline
+    throw(ArgumentError("not supported"))
+end
 
 """
     ParentLinks(::Type{T})
@@ -42,6 +46,7 @@ the tree structure and cannot be inferred through a single node.
 """
 struct ImplicitParents <: ParentLinks; end
 
+ParentLinks(::Type{Union{}}) = throw_not_supported_exc()  # prevent type piracy in dependent package
 ParentLinks(::Type) = ImplicitParents()
 ParentLinks(tree) = ParentLinks(typeof(tree))
 
@@ -84,6 +89,7 @@ from the tree structure.
 """
 struct ImplicitSiblings <: SiblingLinks; end
 
+SiblingLinks(::Type{Union{}}) = throw_not_supported_exc()  # prevent type piracy in dependent package
 SiblingLinks(::Type) = ImplicitSiblings()
 SiblingLinks(tree) = SiblingLinks(typeof(tree))
 
@@ -126,6 +132,7 @@ class of indexable trees consisting of arrays.
 """
 struct NonIndexedChildren <: ChildIndexing end
 
+ChildIndexing(::Type{Union{}}) = throw_not_supported_exc()  # prevent type piracy in dependent package
 ChildIndexing(::Type) = NonIndexedChildren()
 ChildIndexing(node) = ChildIndexing(typeof(node))
 
@@ -143,6 +150,7 @@ If the `childrentype` can be inferred from the type of the node alone, the type 
 **OPTIONAL**: In most cases, [`childtype`](@ref) is used instead.  If `childtype` is not defined it will fall back
 to `eltype ∘ childrentype`.
 """
+childrentype(::Type{Union{}}) = throw_not_supported_exc()  # prevent type piracy in dependent package
 childrentype(::Type{T}) where {T} = Base._return_type(children, Tuple{T})
 childrentype(node) = typeof(children(node))
 
@@ -159,6 +167,7 @@ If `childtype` can be inferred from the type of the node alone, the type `::Type
 can be type-stable.  If `childrentype` is defined and can be known from the node type alone, this function will
 fall back to `eltype(childrentype(T))`.  If this gives a correct result it's not necessary to define `childtype`.
 """
+childtype(::Type{Union{}}) = throw_not_supported_exc()  # prevent type piracy in dependent package
 childtype(::Type{T}) where {T} = eltype(childrentype(T))
 childtype(node) = eltype(childrentype(node))
 
@@ -172,6 +181,7 @@ traversal is type stable.
 
 **OPTIONAL**: Type inference is used to attempt to
 """
+childstatetype(::Type{Union{}}) = throw_not_supported_exc()  # prevent type piracy in dependent package
 childstatetype(::Type{T}) where {T} = Iterators.approx_iter_type(childrentype(T))
 childstatetype(node) = childstatetype(typeof(node))
 
@@ -204,6 +214,7 @@ type.
 """
 struct NodeTypeUnknown <: NodeType end
 
+NodeType(::Type{Union{}}) = throw_not_supported_exc()  # prevent type piracy in dependent package
 NodeType(::Type) = NodeTypeUnknown()
 NodeType(node) = NodeType(typeof(node))
 
@@ -214,5 +225,6 @@ NodeType(node) = NodeType(typeof(node))
 Returns a type which must be a parent type of all nodes in the tree connected to `node`.  This can be used to,
 for example, specify the `eltype` of any `TreeIterator` on `node`.
 """
+nodetype(::Type{Union{}}) = throw_not_supported_exc()  # prevent type piracy in dependent package
 nodetype(::Type) = Any
 nodetype(node) = nodetype(typeof(node))
