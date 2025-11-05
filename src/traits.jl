@@ -1,5 +1,4 @@
-function throw_not_supported_exc()
-    @noinline
+@noinline function throw_not_supported_exc()
     throw(ArgumentError("not supported"))
 end
 
