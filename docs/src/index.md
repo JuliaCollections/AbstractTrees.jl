@@ -188,6 +188,7 @@ descendleft
 getroot
 print_tree
 printnode
+nodevalue_distance
 print_child_key
 TreeCharSet
 shouldprintkeys
