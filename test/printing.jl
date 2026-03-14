@@ -123,7 +123,7 @@ end
     # Elided siblings are not recursed into, so they do not contribute maxdepth truncation lines.
     ptxt = repr_tree([[1, 2], [1, 2], [1, 2], [3, 4]], maxdepth=1, maxsibling=2)
     lines = [strip(line) for line in split(ptxt, '\n') if !isempty(strip(line))]
-    @test count(==(truncation_str), lines) == 3
+    @test count(line -> endswith(line, truncation_str), lines) == 3
     @test any(line -> occursin(" (1 siblings elided)", line), lines)
 end
 
