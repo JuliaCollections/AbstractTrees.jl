@@ -15,6 +15,10 @@ Print a text representation of `tree` to the given `io` object.
 * `io::IO` - IO stream to write to.
 * `tree` - tree to print.
 * `maxdepth::Integer = 5` - truncate printing of subtrees at this depth.
+* `maxsibling::Union{Nothing,Integer} = nothing` - if set, print at most this many
+  consecutive similar siblings and then elide the rest of that run.
+* `sibling_similarity_threshold::Real = 0` - threshold for considering sibling node values
+  similar. Non-numeric node values currently only support exact matching.
 * `indicate_truncation::Bool = true` - print a vertical ellipsis character beneath
   truncated nodes.
 * `charset::TreeCharSet` - [`TreeCharSet`](@ref) to use to print branches.
@@ -191,8 +195,38 @@ print_child_key(io::IO, key::CartesianIndex) = show(io, Tuple(key))
 
 branchwidth(cs::TreeCharSet) = sum(textwidth.((cs.mid, cs.dash)))
 
+
+"""
+    nodevalue_distance(v1, v2; kw...)::Real
+
+Compute the distance between the values of two child nodes.  By default, equivalent to isequal.
+It must return a Real
+
+**OPTIONAL**: This can be extended for custom types and controls how nodes are shown
+in [`print_tree`](@ref).
+"""
+nodevalue_distance(v1, v2) = ifelse(isequal(v1, v2), zero(Float64), Inf)
+
+function print_and_child_prefix(io::IO, prefix::AbstractString, is_last::Bool, charset::TreeCharSet)
+    print(io, prefix)
+
+    if is_last
+        print(io, charset.terminator)
+        child_prefix = prefix * " " ^ (textwidth(charset.skip) + textwidth(charset.dash) + 1)
+    else
+        print(io, charset.mid)
+        child_prefix = prefix * charset.skip * " " ^ (textwidth(charset.dash) + 1)
+    end
+
+    print(io, charset.dash, ' ')
+
+    return child_prefix
+end
+
 function print_tree(printnode::Function, print_child_key::Function, io::IO, node;
                     maxdepth::Integer=5,
+                    maxsibling::Union{Nothing,Integer}=nothing,
+                    sibling_similarity_threshold::Real=0,
                     indicate_truncation::Bool=true,
                     charset::TreeCharSet=TreeCharSet(),
                     printkeys::Union{Bool,Nothing}=nothing,
@@ -200,6 +234,7 @@ function print_tree(printnode::Function, print_child_key::Function, io::IO, node
                     prefix::AbstractString="",
                     printnode_kw=(;),
                    )
+
     # Get node representation as string
     buf = IOBuffer()
     printnode(IOContext(buf, io), node; printnode_kw...)
@@ -233,9 +268,13 @@ function print_tree(printnode::Function, print_child_key::Function, io::IO, node
     # Print children
     s = Iterators.Stateful(this_printkeys ? pairs(c) : c)
 
-    while !isempty(s)
-        child_prefix = prefix
+    use_sibling_elision = !isnothing(maxsibling)
+    prev_child_value = nothing
+    seen_child = false
+    similar_run_length = 0
+    elided_count = 0
 
+    while !isempty(s)
         if this_printkeys
             child_key, child = popfirst!(s)
         else
@@ -243,18 +282,29 @@ function print_tree(printnode::Function, print_child_key::Function, io::IO, node
             child_key = nothing
         end
 
-        print(io, prefix)
-
-        # Last child?
-        if isempty(s)
-            print(io, charset.terminator)
-            child_prefix *= " " ^ (textwidth(charset.skip) + textwidth(charset.dash) + 1)
-        else
-            print(io, charset.mid)
-            child_prefix *= charset.skip * " " ^ (textwidth(charset.dash) + 1)
+        child_value = nodevalue(child)
+        if use_sibling_elision
+            if seen_child && nodevalue_distance(prev_child_value, child_value) <= sibling_similarity_threshold
+                similar_run_length += 1
+            else
+                if elided_count > 0
+                    print_and_child_prefix(io, prefix, false, charset)
+                    println(io, charset.trunc, " (", elided_count, " siblings elided)")
+                    elided_count = 0
+                end
+                similar_run_length = 1
+            end
         end
 
-        print(io, charset.dash, ' ')
+        prev_child_value = child_value
+        seen_child = true
+
+        if use_sibling_elision && similar_run_length > maxsibling
+            elided_count += 1
+            continue
+        end
+
+        child_prefix = print_and_child_prefix(io, prefix, isempty(s) && elided_count == 0, charset)
 
         # Print key
         if this_printkeys
@@ -267,9 +317,16 @@ function print_tree(printnode::Function, print_child_key::Function, io::IO, node
         end
 
         print_tree(printnode, print_child_key, io, child;
-                   maxdepth=maxdepth, indicate_truncation=indicate_truncation, charset=charset,
-                   printkeys=printkeys, depth=depth+1, prefix=child_prefix, printnode_kw=printnode_kw,
+                   maxdepth=maxdepth, maxsibling=maxsibling,
+                   sibling_similarity_threshold=sibling_similarity_threshold,
+                   indicate_truncation=indicate_truncation, charset=charset, printkeys=printkeys,
+                   depth=depth+1, prefix=child_prefix, printnode_kw=printnode_kw,
                   )
+    end
+
+    if elided_count > 0
+        print_and_child_prefix(io, prefix, true, charset)
+        println(io, charset.trunc, " (", elided_count, " siblings elided)")
     end
 end
 

@@ -94,6 +94,39 @@ AbstractTrees.printnode(io::IO, u::UnindexableChildren) = AbstractTrees.printnod
     @test numlines == 4 # 1 (head node) + 3 (depth)
 end
 
+@testset "Sibling elision" begin
+    truncation_str = TreeCharSet().trunc
+
+    # Start eliding only after the first N similar siblings.
+    ptxt = repr_tree([1, 1, 1, 2, 2, 2, 3], maxsibling=2)
+    @test endswith(ptxt, """
+                   ├─ 1
+                   ├─ 1
+                   ├─ $(truncation_str) (1 siblings elided)
+                   ├─ 2
+                   ├─ 2
+                   ├─ $(truncation_str) (1 siblings elided)
+                   └─ 3
+                   """)
+
+    # If an elided run ends the sibling list, the summary line is the terminator.
+    ptxt = repr_tree((1, 1, 1), maxsibling=2, printkeys=true)
+    @test endswith(ptxt, """
+                   ├─ 1 ⇒ 1
+                   ├─ 2 ⇒ 1
+                   └─ $(truncation_str) (1 siblings elided)
+                   """)
+
+    tree = UnindexableChildren([1, 1, 1, 2])
+    @test repr_tree(tree, maxsibling=2) == repr_tree(tree.node, maxsibling=2)
+
+    # Elided siblings are not recursed into, so they do not contribute maxdepth truncation lines.
+    ptxt = repr_tree([[1, 2], [1, 2], [1, 2], [3, 4]], maxdepth=1, maxsibling=2)
+    lines = [strip(line) for line in split(ptxt, '\n') if !isempty(strip(line))]
+    @test count(==(truncation_str), lines) == 3
+    @test any(line -> occursin(" (1 siblings elided)", line), lines)
+end
+
 
 @testset "Child keys" begin
     @testset "AbstractVector" begin
