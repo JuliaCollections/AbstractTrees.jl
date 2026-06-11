@@ -63,8 +63,10 @@ abstract type TreeIterator{T} end
 _iterator_eltype(::NodeTypeUnknown) = EltypeUnknown()
 _iterator_eltype(::HasNodeType) = HasEltype()
 
+Base.IteratorEltype(::Type{<:TreeIterator{Union{}}}) = throw_not_supported_exc()  # prevent type piracy in dependent package
 Base.IteratorEltype(::Type{<:TreeIterator{T}}) where {T}  = _iterator_eltype(NodeType(T))
 
+Base.eltype(::Type{<:TreeIterator{Union{}}}) = throw_not_supported_exc()  # prevent type piracy in dependent package
 Base.eltype(::Type{<:TreeIterator{T}}) where {T} = nodetype(T)
 Base.eltype(ti::TreeIterator) = eltype(typeof(ti))
 
