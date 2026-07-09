@@ -258,11 +258,11 @@ function print_tree(printnode::Function, print_child_key::Function, io::IO, node
 
         # Print key
         if this_printkeys
-            print_child_key(IOContext(buf, io), child_key)
+            print_child_key(io, child_key)
+            print(io, charset.pair)
+
+            print_child_key(IOContext(IOContext(buf, io), :color=>false), child_key)
             key_str = String(take!(buf))
-
-            print(io, key_str, charset.pair)
-
             child_prefix *= " " ^ (textwidth(key_str) + textwidth(charset.pair))
         end
 
