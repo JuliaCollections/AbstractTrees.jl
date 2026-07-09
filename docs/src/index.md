@@ -203,3 +203,4 @@ repr_node
 - [`OneTree`](https://github.com/JuliaCollections/AbstractTrees.jl/blob/master/test/examples/onetree.jl)
 - [`FSNode`](https://github.com/JuliaCollections/AbstractTrees.jl/blob/master/test/examples/fstree.jl)
 - [`BinaryNode`](https://github.com/JuliaCollections/AbstractTrees.jl/blob/master/test/examples/binarytree.jl)
+- [`TypeTree`](https://github.com/JuliaCollections/AbstractTrees.jl/blob/master/test/examples/juliatypes.jl)
